@@ -243,8 +243,8 @@ function WebZone({ url }: { url: string }) {
   );
 }
 
-/** Dispatches a single layout zone. The zone with `content_type: "playlist"`
- * is where the campaign's playlist plays; every other zone runs on its own
+/** Dispatches a single layout zone. `currentItem` is passed only to the zone
+ * hosting the campaign's playlist; every other zone runs on its own timeline
  * and is never reset by the playlist advancing. */
 export function ZoneContent({
   zone,
@@ -258,15 +258,19 @@ export function ZoneContent({
   const { source } = context;
   const text = String(zone.content_config.text ?? zone.name);
 
+  // The host zone plays the playlist whatever it is declared as — it may be
+  // an explicit `playlist` zone or an unconfigured `placeholder` slot.
+  if (currentItem) {
+    return (
+      <div className={`h-full w-full ${transitionClass(currentItem)}`} key={context.itemKey}>
+        <PlaylistItemContent item={currentItem} context={context} />
+      </div>
+    );
+  }
+
   switch (zone.content_type) {
     case "playlist":
-      return currentItem ? (
-        <div className={`h-full w-full ${transitionClass(currentItem)}`} key={context.itemKey}>
-          <PlaylistItemContent item={currentItem} context={context} />
-        </div>
-      ) : (
-        <ZoneFallback label="Playlist" detail="No item to play" />
-      );
+      return <ZoneFallback label="Playlist" detail="No item to play" />;
     case "image":
     case "video":
       return (

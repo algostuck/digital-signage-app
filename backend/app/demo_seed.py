@@ -513,6 +513,12 @@ class OrgBuilder:
                 f"10.{self.rng.randint(1, 40)}.{self.rng.randint(1, 250)}"
                 f".{self.rng.randint(2, 250)}"
             )
+            # A portrait-mounted panel reports its rotated resolution. Picking
+            # orientation independently of w/h produced "portrait" screens
+            # advertising 1920x1080, which made every consumer of the geometry
+            # (preview framing included) disagree with itself.
+            orientation = "landscape" if self.rng.random() < 0.85 else "portrait"
+            screen_w, screen_h = (w, h) if orientation == "landscape" else (h, w)
             device = Device(
                 organization_id=self.org.id,
                 location_id=location_id,
@@ -527,9 +533,9 @@ class OrgBuilder:
                 status=status,
                 approved_at=approved,
                 last_heartbeat_at=heartbeat,
-                screen_width=w,
-                screen_height=h,
-                orientation="landscape" if self.rng.random() < 0.85 else "portrait",
+                screen_width=screen_w,
+                screen_height=screen_h,
+                orientation=orientation,
                 timezone="Asia/Kolkata",
                 mac_address=":".join(f"{self.rng.randint(0, 255):02x}" for _ in range(6)),
                 ip_address=lan_ip,
@@ -647,16 +653,23 @@ class OrgBuilder:
                     "z_index": z, "rotation": 0, "style": {}, "content_type": content_type,
                     "content_config": config or {}}
 
+        # The main zone is typed `playlist`: that is the slot the campaign's
+        # playlist plays in. Leaving it `placeholder` (the schema default)
+        # describes a layout nobody has finished configuring, which is not
+        # what a published demo layout should look like.
         shapes = {
-            "fullscreen": [zone("main", "Main", 0, 0, 1920, 1080)],
-            "split": [zone("main", "Main", 0, 0, 1250, 1080),
-                      zone("side", "Information", 1250, 0, 670, 1080)],
-            "ticker": [zone("header", "Header", 0, 0, 1920, 110),
-                       zone("main", "Main", 0, 110, 1920, 860),
+            "fullscreen": [zone("main", "Main", 0, 0, 1920, 1080, content_type="playlist")],
+            "split": [zone("main", "Main", 0, 0, 1250, 1080, content_type="playlist"),
+                      zone("side", "Information", 1250, 0, 670, 1080, content_type="text",
+                           config={"text": self.rng.choice(TICKER_MESSAGES)})],
+            "ticker": [zone("header", "Header", 0, 0, 1920, 110, content_type="clock"),
+                       zone("main", "Main", 0, 110, 1920, 860, content_type="playlist"),
                        zone("ticker", "Ticker", 0, 970, 1920, 110, content_type="ticker",
                             config={"text": self.rng.choice(TICKER_MESSAGES)})],
-            "grid": [zone(f"z{i + 1}", f"Panel {i + 1}", (i % 3) * 640, (i // 3) * 540, 640, 540)
-                     for i in range(6)],
+            "grid": [zone("main", "Panel 1", 0, 0, 640, 540, content_type="playlist")]
+                    + [zone(f"z{i + 1}", f"Panel {i + 1}", (i % 3) * 640, (i // 3) * 540,
+                            640, 540)
+                       for i in range(1, 6)],
         }
 
         self.layouts: list[Layout] = []
