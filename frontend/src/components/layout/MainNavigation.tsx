@@ -32,6 +32,10 @@ export function MainNavigation({ collapsed, onNavigate }: Props) {
     () => filterNavigation(NAVIGATION, { hasPermission, isSuperuser: user?.is_superuser ?? false }),
     [hasPermission, user?.is_superuser],
   );
+  // Collapsed, the rail flattens to destinations: antd 6 does not mount
+  // popup portals for inline-collapsed submenus (and forcing them renders
+  // the popups in-flow, stretching the rail to full width), so grouping
+  // would leave sections unopenable. See docs/SIDEBAR_UX_AUDIT.md §7.
   const items = useMemo(() => toMenuItems(nodes, collapsed), [nodes, collapsed]);
   const paths = useMemo(() => pathIndex(nodes), [nodes]);
   const { selectedKeys, openKeys: routeOpenKeys } = useMemo(

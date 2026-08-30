@@ -192,10 +192,17 @@ AccountMenu,HeaderActions}.tsx`.
 1. **Collapsed rail flattens to destinations.** antd 6 does not mount the
    popup portal for inline-collapsed submenus in this setup (verified:
    `aria-expanded="true"` with no popup node in the document, while
-   Dropdown portals work normally). Rather than ship a rail whose groups
-   cannot be opened, the 80px rail lists every permitted destination with
-   its own icon — one click to anywhere, which is what §14's "do not
-   destroy navigation usability" actually requires.
+   Dropdown portals work normally).
+
+   `forceSubMenuRender` *does* make the popups mount (5 appear in the
+   DOM), but they render **in-flow inside the Sider**, stretching the
+   collapsed rail from 80px back to the full 260px — a worse defect than
+   the one it fixes, so it was reverted.
+
+   Rather than ship a rail whose groups cannot be opened, the 80px rail
+   lists every permitted destination with its own icon — one click to
+   anywhere, which is what §14's "do not destroy navigation usability"
+   actually requires. Revisit when antd fixes the popup portal.
 2. **Sub-page tabs are not nav entries.** Templates/Widgets, Device
    Groups, Roles, Subscription etc. are tabs inside their parent route;
    deep-linking them would require page-level routing changes that this

@@ -266,7 +266,8 @@ export function SchedulesPage() {
                             : "processing"
                       }
                       icon={event.kind === "blackout" ? <StopOutlined /> : undefined}
-                      bordered={event.conflict}
+                      // Conflicts get an outline as a second, non-colour cue.
+                      variant={event.conflict ? "outlined" : "filled"}
                       className="!mr-0 w-full whitespace-normal"
                       title={`${event.campaign_name} · priority ${event.campaign_priority}${
                         event.timezone ? ` · ${event.timezone}` : ""
