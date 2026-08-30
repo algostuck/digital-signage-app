@@ -370,6 +370,17 @@ async def open_incident_if_absent(
     )
     db.add(incident)
     await db.flush()
+
+    from app.services import events
+
+    await events.emit(
+        db,
+        organization_id,
+        event_type="incident.opened",
+        entity_type="incident",
+        entity_id=incident.id,
+        payload={"type": type, "severity": severity, "device_id": str(device_id)},
+    )
     return incident
 
 
@@ -399,6 +410,18 @@ async def resolve_device_incidents(
         resolved.append(incident)
     if resolved:
         await db.flush()
+
+        from app.services import events
+
+        for incident in resolved:
+            await events.emit(
+                db,
+                organization_id,
+                event_type="incident.resolved",
+                entity_type="incident",
+                entity_id=incident.id,
+                payload={"type": incident.type, "resolution": resolution},
+            )
     return resolved
 
 
@@ -451,6 +474,17 @@ async def transition_incident(
         incident.state = IncidentState.RESOLVED.value
         incident.resolved_at = datetime.now(UTC)
         incident.resolution = "Resolved manually"
+
+        from app.services import events
+
+        await events.emit(
+            db,
+            organization_id,
+            event_type="incident.resolved",
+            entity_type="incident",
+            entity_id=incident.id,
+            payload={"type": incident.type, "resolution": incident.resolution},
+        )
     else:
         raise NotFoundError("Unknown incident action")
     await db.flush()

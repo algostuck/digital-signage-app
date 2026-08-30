@@ -58,6 +58,14 @@ def prune_retention() -> dict:
     return _run(tenant_admin.prune_retention)
 
 
+@celery_app.task(name="app.workers.maintenance.push_event_deliveries")
+def push_event_deliveries() -> dict:
+    """P3 3A-1: signed domain-event pushes (backoff, dead-letter)."""
+    from app.services import events
+
+    return _run(events.process_deliveries)
+
+
 @celery_app.task(name="app.workers.maintenance.subscription_lifecycle")
 def subscription_lifecycle() -> dict:
     """SaaS core: trial expiry, renewals, dunning ladder
@@ -95,6 +103,10 @@ celery_app.conf.beat_schedule = {
     "prune-retention": {
         "task": "app.workers.maintenance.prune_retention",
         "schedule": 86400.0,  # daily
+    },
+    "push-event-deliveries": {
+        "task": "app.workers.maintenance.push_event_deliveries",
+        "schedule": 60.0,
     },
     "subscription-lifecycle": {
         "task": "app.workers.maintenance.subscription_lifecycle",

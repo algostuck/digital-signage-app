@@ -264,6 +264,22 @@ async def publish_campaign(
         after={"deployment_id": str(deployment.id), "version": version,
                "devices": len(device_ids)},
     )
+
+    from app.services import events
+
+    await events.emit(
+        db,
+        organization_id,
+        event_type="campaign.published",
+        entity_type="campaign",
+        entity_id=campaign.id,
+        payload={
+            "name": campaign.name,
+            "deployment_id": str(deployment.id),
+            "version": version,
+            "devices": len(device_ids),
+        },
+    )
     logger.info(
         "Campaign %s published: deployment v%s (%s devices)",
         campaign.id,
@@ -313,6 +329,7 @@ async def _recompute_status(db: AsyncSession, deployment: Deployment) -> None:
         return
     acked = counts.get(DeploymentDeviceStatus.ACKNOWLEDGED.value, 0)
     failed = counts.get(DeploymentDeviceStatus.FAILED.value, 0)
+    previous = deployment.status
     if acked == total:
         deployment.status = DeploymentStatus.PUBLISHED.value
         deployment.completed_at = _now()
@@ -323,6 +340,31 @@ async def _recompute_status(db: AsyncSession, deployment: Deployment) -> None:
         deployment.status = DeploymentStatus.PARTIAL.value
     else:
         deployment.status = DeploymentStatus.PUBLISHING.value
+
+    # Domain events fire once per terminal transition (3A-1) — the caller
+    # holds the deployment row lock, so no double emission under load.
+    if deployment.status != previous and deployment.status in (
+        DeploymentStatus.PUBLISHED.value,
+        DeploymentStatus.FAILED.value,
+    ):
+        from app.services import events
+
+        await events.emit(
+            db,
+            deployment.organization_id,
+            event_type="deployment.completed"
+            if deployment.status == DeploymentStatus.PUBLISHED.value
+            else "deployment.failed",
+            entity_type="deployment",
+            entity_id=deployment.id,
+            payload={
+                "campaign_id": str(deployment.campaign_id),
+                "version": deployment.version,
+                "acknowledged": acked,
+                "failed": failed,
+                "total": total,
+            },
+        )
 
 
 async def acknowledge_deployment(

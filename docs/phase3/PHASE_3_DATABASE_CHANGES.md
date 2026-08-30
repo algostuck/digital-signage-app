@@ -5,17 +5,16 @@ Rules unchanged from Phases 1–2: additive + reversible migrations, tenant
 indexes per access pattern, model↔migration drift guarded by the parity
 test (now on PostgreSQL). Secrets: never raw — hash or secret-ref columns.
 
-> **Note (Aug 2026):** migration `0020` is now taken by the SaaS core
-> (`0020_saas_core`: tenant_users, plans, plan_entitlements, subscriptions,
-> subscription_items, subscription_events, usage_counters, usage_events,
-> invoices, payments — see `docs/SAAS_CORE.md`). Phase-3 migrations start at
-> **0021**; shift every planned number below by +1.
+> **Note (Aug 2026):** migrations `0020`+`0021` are taken by the SaaS core
+> (`0020_saas_core` + `0021_plan_change_requests` — see `docs/SAAS_CORE.md`).
+> Phase-3 migrations start at **0022**: the 3A-1 event bus landed as
+> `0022_domain_events`; shift the remaining planned numbers accordingly.
 
 ## Planned migrations (0021+, one per slice; numbers may shift with actual slicing)
 
 | Migration | Tables / changes | Sub-phase |
 |---|---|---|
-| 0021 | ~~features namespace~~ (superseded: feature gating is the SaaS-core entitlement engine); `domain_events` (org, event_type, entity_type, entity_id, payload_json, occurred_at, request_id); `event_subscriptions` (org, event_types_json, destination_ref/url, secret, active); `event_deliveries` (subscription_id, event_id, state, attempt_no, response_code, next_attempt_at) — clones the proven 2H delivery shape | P3-A |
+| **0022 (applied)** | ~~features namespace~~ (superseded: feature gating is the SaaS-core entitlement engine); `domain_events` (org, event_type, entity_type, entity_id, payload_json, occurred_at, request_id); `event_subscriptions` (org, name, url, event_types_json, secret, active); `event_deliveries` (subscription_id, event_id, state, attempt_no, response_code, next_attempt_at) — clones the proven 2H delivery shape | P3-A (3A-1 ✅) |
 | 0021 | `data_sources` (org, name, type rest_json/rss, endpoint, auth_ref, cache_ttl_seconds, refresh_seconds, state, last_ok_at); `data_source_schemas` (source_id, version_no, schema_json); `data_source_snapshots` (source_id, fetched_at, valid, payload_json — bounded history, last-known-good); widget binding extension: `widgets`/zone binding may carry data_source_id + transform_json | P3-A |
 | 0022 | `api_products` (name, description) + `api_versions` (product_id, version, lifecycle_state, sunset_at) — developer platform metadata | P3-A |
 | 0023 | `ai_policies` (org, policy_type, rules_json, active); `ai_requests` (org, actor_id, operation, provider, model_ref, template_version, status, created_at); `ai_outputs` (request_id, output_kind, output_ref/asset_id, content_json, confidence, safety_status, approved_by, revision_no) | P3-B |

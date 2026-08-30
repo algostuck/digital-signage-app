@@ -28,6 +28,7 @@ from app.models.device import (
     Screenshot,
     device_tags,
 )
+from app.models.events import DomainEvent, EventDelivery, EventSubscription
 from app.models.integration import (
     ApiKey,
     WebhookDelivery,
@@ -63,6 +64,9 @@ from app.models.studio import (
 from app.models.user import Permission, Role, User, role_permissions, user_roles
 
 __all__ = [
+    "DomainEvent",
+    "EventDelivery",
+    "EventSubscription",
     "Organization",
     "User",
     "Role",

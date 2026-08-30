@@ -5,6 +5,7 @@ import { Spinner } from "../../components/ui/Spinner";
 import { api, ApiError } from "../../lib/api";
 import { useAuth } from "../../lib/auth";
 import { ApprovalPolicySection } from "./ApprovalPolicySection";
+import { EventBusSection } from "./EventBusSection";
 import { IntegrationsSection } from "./IntegrationsSection";
 import { PlanBillingSection } from "./PlanBillingSection";
 import { QuotasRetentionSection } from "./QuotasRetentionSection";
@@ -127,6 +128,7 @@ export function OrganizationSettingsPage() {
       <ApprovalPolicySection canManage={canManage} />
       <QuotasRetentionSection />
       <IntegrationsSection />
+      <EventBusSection />
     </div>
   );
 }

@@ -24,6 +24,8 @@ from app.models import (
     Device,
     DeviceEvent,
     DeviceHeartbeat,
+    DomainEvent,
+    EventDelivery,
     Notification,
     Organization,
     PlaybackEvent,
@@ -43,6 +45,9 @@ RETENTION_POLICY: dict[str, tuple[int, int, int]] = {
     "notifications": (1, 365, 90),
     "webhook_deliveries": (1, 365, 30),
     "audit_logs": (90, 3650, 365),  # compliance floor: 90 days minimum
+    # Phase-3 streams (3A-1): bounded raw history, aggregate-fed later.
+    "domain_events": (1, 730, 90),
+    "event_deliveries": (1, 365, 30),
 }
 
 
@@ -276,6 +281,14 @@ async def _prune_org(db: AsyncSession, org_id: uuid.UUID) -> dict[str, int]:
         "audit_logs": delete(AuditLog).where(
             AuditLog.organization_id == org_id,
             AuditLog.created_at < cutoff("audit_logs"),
+        ),
+        "domain_events": delete(DomainEvent).where(
+            DomainEvent.organization_id == org_id,
+            DomainEvent.occurred_at < cutoff("domain_events"),
+        ),
+        "event_deliveries": delete(EventDelivery).where(
+            EventDelivery.organization_id == org_id,
+            EventDelivery.created_at < cutoff("event_deliveries"),
         ),
     }
     pruned: dict[str, int] = {}

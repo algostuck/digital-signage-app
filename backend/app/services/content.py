@@ -248,6 +248,17 @@ async def publish_asset(
         db, organization_id, action="CONTENT_PUBLISHED", entity_type="asset",
         entity_id=asset.id, after={"name": asset.name},
     )
+
+    from app.services import events
+
+    await events.emit(
+        db,
+        organization_id,
+        event_type="content.published",
+        entity_type="asset",
+        entity_id=asset.id,
+        payload={"name": asset.name, "type": asset.type},
+    )
     return asset
 
 

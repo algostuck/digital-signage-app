@@ -143,6 +143,17 @@ async def register_device(
             message="Approve or reject it on the Devices page.",
             payload={"device_id": str(device.id)},
         )
+
+        from app.services import events
+
+        await events.emit(
+            db,
+            org.id,
+            event_type="device.registered",
+            entity_type="device",
+            entity_id=device.id,
+            payload={"serial_no": serial_no, "platform": platform},
+        )
         logger.info("Device registration requested: %s (%s)", device.id, serial_no)
         return device, None
 
@@ -314,6 +325,17 @@ async def approve_device(
 
     await audit.record(
         db, organization_id, action="DEVICE_APPROVED", entity_type="device", entity_id=device.id
+    )
+
+    from app.services import events
+
+    await events.emit(
+        db,
+        organization_id,
+        event_type="device.approved",
+        entity_type="device",
+        entity_id=device.id,
+        payload={"serial_no": device.serial_no},
     )
     logger.info("Device approved: %s", device.id)
     return device

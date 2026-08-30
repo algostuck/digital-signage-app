@@ -10,7 +10,7 @@ PostgreSQL** (2026-08-29); initiation audit in PHASE_3_INITIATION_REPORT.md.
 
 | # | Slice | SRS modules | Status |
 |---|---|---|---|
-| 3A-1 | Foundation: ~~tenant feature flags~~ (done pre-Phase-3 by the SaaS-core entitlement engine, `docs/SAAS_CORE.md`), domain event bus (events + subscriptions + signed deliveries), retention keys for new streams | P3-M09 (part) | Pending |
+| 3A-1 | Foundation: ~~tenant feature flags~~ (done pre-Phase-3 by the SaaS-core entitlement engine, `docs/SAAS_CORE.md`), domain event bus (events + subscriptions + signed deliveries), retention keys for new streams | P3-M09 (part) | **Done** (2026-08-30; migration 0022 up/down/up on PG; `app/services/events.py` with 10-type catalogue, emissions wired into devices/monitoring/content/publishing/incidents/subscriptions; delivery beat 60 s; retention keys domain_events 90 d / event_deliveries 30 d; APIs `/events`, `/events/catalogue`, `/subscriptions*`; Event Bus UI in Settings→Integrations; 6 tests in test_event_bus.py incl. signature verify, filter, retry→dead→replay, RBAC, isolation, retention; live E2E verified) |
 | 3A-2 | Dynamic data: sources + schemas + guarded fetch + snapshots/cache + transforms + widget bindings + manifest data block; Data Source Manager + widget-designer extension | P3-M02 | Pending |
 | 3A-3 | Developer platform: versioned OpenAPI publication, sandbox tenant flow, Developer Portal screen | P3-M12, P3-INT-103 | Pending |
 | 3B-1 | AI foundation: provider adapter + local deterministic provider, policies/requests/outputs governance, approval adapter, AI Content Studio + Variant Manager | P3-M01 | Pending |

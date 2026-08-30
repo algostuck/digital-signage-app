@@ -447,6 +447,17 @@ async def transition(
         actor_id=actor_id,
     )
     await db.flush()
+
+    from app.services import events as domain_events
+
+    await domain_events.emit(
+        db,
+        organization_id,
+        event_type="subscription.status_changed",
+        entity_type="subscription",
+        entity_id=subscription.id,
+        payload={"from": old, "to": to_status, "event": event},
+    )
     logger.info("Subscription %s: %s -> %s (%s)", subscription.id, old, to_status, event)
     return subscription
 

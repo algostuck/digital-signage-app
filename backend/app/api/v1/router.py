@@ -8,6 +8,7 @@ from app.api.v1 import (
     campaigns,
     deployments,
     devices,
+    events,
     health,
     integrations,
     layouts,
@@ -50,3 +51,4 @@ api_router.include_router(integrations.router, tags=["integrations"])
 api_router.include_router(search.router, tags=["search"])
 api_router.include_router(billing.router, tags=["billing"])
 api_router.include_router(platform.router, tags=["platform"])
+api_router.include_router(events.router, tags=["events"])

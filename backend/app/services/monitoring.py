@@ -294,6 +294,17 @@ async def detect_offline_devices(db: AsyncSession) -> int:
                 message="No heartbeat within the configured threshold.",
                 payload={"device_id": str(device.id), "incident_id": str(incident.id)},
             )
+
+            from app.services import events
+
+            await events.emit(
+                db,
+                org_id,
+                event_type="device.offline",
+                entity_type="device",
+                entity_id=device.id,
+                payload={"incident_id": str(incident.id)},
+            )
             created += 1
     await db.flush()
     return created
