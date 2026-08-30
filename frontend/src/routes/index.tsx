@@ -22,6 +22,7 @@ import { AdsPage } from "../modules/ads/AdsPage";
 import { DeveloperPage } from "../modules/developer/DeveloperPage";
 import { OrganizationSettingsPage } from "../modules/organization/OrganizationSettingsPage";
 import { PlatformPage } from "../modules/platform/PlatformPage";
+import { SecurityPage } from "../modules/security/SecurityPage";
 import { UsersRolesPage } from "../modules/users/UsersRolesPage";
 import { ProtectedRoute } from "./ProtectedRoute";
 
@@ -56,6 +57,7 @@ export const router = createBrowserRouter([
           { path: "settings", element: <OrganizationSettingsPage /> },
           { path: "developer", element: <DeveloperPage /> },
           { path: "ads", element: <AdsPage /> },
+          { path: "security", element: <SecurityPage /> },
           { path: "platform", element: <PlatformPage /> },
         ],
       },

@@ -135,6 +135,7 @@ async def update_tenant(
     *,
     name: str | None = None,
     timezone: str | None = None,
+    region: str | None = None,
     actor_id: uuid.UUID | None = None,
 ) -> Organization:
     org = await db.get(Organization, organization_id)
@@ -150,6 +151,9 @@ async def update_tenant(
         validate_timezone(timezone)
         org.timezone = timezone
         changes["timezone"] = timezone
+    if region is not None and region != org.region:
+        org.region = region  # residency metadata (P3-GLO-004)
+        changes["region"] = region
     if changes:
         await db.flush()
 

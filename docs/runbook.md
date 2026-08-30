@@ -109,6 +109,11 @@ Logs are structured JSON with `request_id`; every API response echoes
 | prune_retention | daily | Tenant retention pruning (audited) |
 | push_event_deliveries | 1 min | P3 3A-1: signed domain-event pushes (backoff 1m→8m, replayable dead-letter) |
 | refresh_data_sources | 1 min | P3 3A-2: guarded feed refresh per source interval; last-known-good preserved on failure |
+| reconcile_ad_bookings | hourly | P3 3D-1: link proof-of-play to confirmed bookings (idempotent, billing-ready) |
+| aggregate_analytics | daily | P3 3D-2: idempotent daily aggregate recompute (late events self-heal) |
+| run_data_exports | daily | P3 3D-2: scheduled dataset exports to the storage adapter |
+| detect_anomalies | hourly | P3 3D-3: deterministic fleet anomaly scan with evidence + auto-resolve |
+| security_sweep | daily | P3 3E-3: credential-age policy violations (open/self-resolve) |
 | subscription_lifecycle | hourly | SaaS core: trial expiry, renewals + invoices, dunning ladder past_due→grace→suspended (docs/SAAS_CORE.md) |
 | snapshot_usage | 15 min | SaaS core: refresh usage_counters (devices/users/storage/locations) with effective limits |
 

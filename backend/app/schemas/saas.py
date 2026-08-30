@@ -40,6 +40,7 @@ class PlanRequestDecision(BaseModel):
 class TenantUpdate(BaseModel):
     name: str | None = Field(default=None, min_length=1, max_length=200)
     timezone: str | None = None
+    region: str | None = Field(default=None, min_length=1, max_length=50)
 
 
 class CancelRequest(BaseModel):

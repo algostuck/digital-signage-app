@@ -245,11 +245,15 @@ async def dispatch(db: AsyncSession, notification: Notification) -> int:
                 delivery.delivered_at = now
             elif channel == DeliveryChannel.EMAIL.value:
                 from app.integrations.email import get_email_provider
+                from app.models import Organization
+                from app.services.white_label import sender_identity
 
+                org = await db.get(Organization, notification.organization_id)
                 sent = get_email_provider().send(
                     to=delivery.recipient,
                     subject=f"[{notification.severity.upper()}] {notification.title}",
                     body=notification.message or notification.title,
+                    from_addr=sender_identity(org) if org else None,
                 )
                 delivery.attempts = 1
                 if sent:

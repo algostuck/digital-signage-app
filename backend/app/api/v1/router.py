@@ -9,6 +9,7 @@ from app.api.v1 import (
     auth,
     billing,
     campaigns,
+    connectors,
     data_sources,
     decisioning,
     deployments,
@@ -31,6 +32,8 @@ from app.api.v1 import (
     releases,
     roles,
     search,
+    security,
+    sso,
     storage_local,
     studio,
     users,
@@ -72,3 +75,6 @@ api_router.include_router(edge.router, tags=["edge"])
 api_router.include_router(ads.router, tags=["ads"])
 api_router.include_router(analytics.router, tags=["analytics"])
 api_router.include_router(fleet_intelligence.router, tags=["fleet-intelligence"])
+api_router.include_router(sso.router, tags=["sso"])
+api_router.include_router(security.router, tags=["security"])
+api_router.include_router(connectors.router, tags=["connectors"])

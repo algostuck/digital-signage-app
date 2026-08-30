@@ -44,6 +44,31 @@ async def update_retention(
     )
 
 
+@router.get("/white-label", dependencies=[require_permissions("organization.view")])
+async def get_white_label(
+    tenant_id: CurrentTenantId, db: AsyncSession = Depends(get_db)
+) -> dict:
+    from app.services import white_label
+
+    return success(await white_label.get_white_label(db, tenant_id))
+
+
+@router.put("/white-label", dependencies=[require_permissions("organization.manage")])
+async def update_white_label(
+    body: dict,
+    tenant_id: CurrentTenantId,
+    user: CurrentUser,
+    db: AsyncSession = Depends(get_db),
+) -> dict:
+    """P3 3E-2: custom-domain metadata + tenant email sender identity
+    (white_label entitlement enforced in the service)."""
+    from app.services import white_label
+
+    return success(
+        await white_label.update_white_label(db, tenant_id, body, user_id=user.id)
+    )
+
+
 @router.patch("", dependencies=[require_permissions("organization.manage")])
 async def update_organization(
     body: OrganizationUpdate, tenant_id: CurrentTenantId, db: AsyncSession = Depends(get_db)

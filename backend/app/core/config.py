@@ -27,6 +27,14 @@ class Settings(BaseSettings):
     # AI provider adapter (P3 3B-1): "local" = deterministic rules, no
     # external calls. Real providers are config swaps; credentials via env.
     ai_provider: str = "local"
+    # Email adapter (P3 3E-2): "log" (dev/test) or "smtp".
+    email_backend: str = "log"
+    smtp_host: str = "localhost"
+    smtp_port: int = 587
+    smtp_starttls: bool = True
+    smtp_username: str | None = None
+    smtp_password: str | None = None
+    smtp_from: str = "no-reply@signage.cloud"
     local_storage_dir: str = "./var/storage"
     s3_endpoint: str = "http://localhost:9000"
     s3_bucket: str = "signage-media"

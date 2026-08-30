@@ -64,6 +64,13 @@ from app.models.saas import (
     UsageEvent,
 )
 from app.models.saved_view import SavedView
+from app.models.security import (
+    DeviceIdentity,
+    IdentityCredential,
+    PolicyViolation,
+    SecurityPolicy,
+)
+from app.models.sso import SsoProvider
 from app.models.studio import (
     AssetCollection,
     AssetCollectionItem,
@@ -160,6 +167,11 @@ __all__ = [
     "SubscriptionEvent",
     "UsageCounter",
     "UsageEvent",
+    "DeviceIdentity",
+    "IdentityCredential",
+    "PolicyViolation",
+    "SecurityPolicy",
+    "SsoProvider",
     "VideoWall",
     "VideoWallMember",
     "Invoice",

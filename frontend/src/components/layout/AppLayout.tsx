@@ -21,6 +21,7 @@ const NAV = [
   { to: "/users", label: "Users & Roles" },
   { to: "/notifications", label: "Notifications" },
   { to: "/audit", label: "Audit Logs" },
+  { to: "/security", label: "Security" },
   { to: "/settings", label: "Settings" },
   { to: "/developer", label: "Developer" },
 ];

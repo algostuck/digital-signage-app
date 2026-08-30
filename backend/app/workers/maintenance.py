@@ -107,6 +107,14 @@ def detect_anomalies() -> dict:
     return _run(anomaly.detect)
 
 
+@celery_app.task(name="app.workers.maintenance.security_sweep")
+def security_sweep() -> dict:
+    """P3 3E-3: credential-age policy violations (open/resolve)."""
+    from app.services import security_center
+
+    return _run(security_center.sweep_violations)
+
+
 @celery_app.task(name="app.workers.maintenance.subscription_lifecycle")
 def subscription_lifecycle() -> dict:
     """SaaS core: trial expiry, renewals, dunning ladder
@@ -168,6 +176,10 @@ celery_app.conf.beat_schedule = {
     "detect-anomalies": {
         "task": "app.workers.maintenance.detect_anomalies",
         "schedule": 3600.0,  # hourly
+    },
+    "security-sweep": {
+        "task": "app.workers.maintenance.security_sweep",
+        "schedule": 86400.0,  # daily
     },
     "subscription-lifecycle": {
         "task": "app.workers.maintenance.subscription_lifecycle",

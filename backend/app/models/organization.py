@@ -23,6 +23,8 @@ class Organization(UUIDPrimaryKeyMixin, TimestampMixin, Base):
     )
     timezone: Mapped[str] = mapped_column(String(64), nullable=False, default="UTC")
     locale: Mapped[str] = mapped_column(String(16), nullable=False, default="en")
+    # Residency metadata (P3-GLO-004): informational until multi-region infra.
+    region: Mapped[str] = mapped_column(String(50), nullable=False, default="default")
     branding_json: Mapped[dict | None] = mapped_column(JSONType(), nullable=True)
     quotas_json: Mapped[dict | None] = mapped_column(JSONType(), nullable=True)
     # Per-tenant policy store (P2-MON-002 thresholds; later: defaults,

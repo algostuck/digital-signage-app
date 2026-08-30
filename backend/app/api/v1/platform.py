@@ -74,10 +74,30 @@ async def update_tenant(
     db: AsyncSession = Depends(get_db),
 ) -> dict:
     org = await platform_service.update_tenant(
-        db, tenant_id, name=body.name, timezone=body.timezone, actor_id=admin.id
+        db, tenant_id, name=body.name, timezone=body.timezone,
+        region=body.region, actor_id=admin.id,
     )
     return success(
-        {"id": str(org.id), "name": org.name, "code": org.code, "timezone": org.timezone}
+        {"id": str(org.id), "name": org.name, "code": org.code,
+         "timezone": org.timezone, "region": org.region}
+    )
+
+
+@router.post("/tenants/{tenant_id}/verify-domain")
+async def verify_domain(
+    tenant_id: uuid.UUID,
+    body: dict,
+    admin: PlatformAdmin,
+    db: AsyncSession = Depends(get_db),
+) -> dict:
+    """P3 3E-2: white-label custom-domain verification is an explicit,
+    audited platform-admin decision (DNS/edge routing is deployment-side)."""
+    from app.services import white_label
+
+    return success(
+        await white_label.verify_domain(
+            db, tenant_id, verified=bool(body.get("verified", True)), actor_id=admin.id
+        )
     )
 
 

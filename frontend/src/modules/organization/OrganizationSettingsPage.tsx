@@ -1,4 +1,4 @@
-﻿import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useState, type FormEvent } from "react";
 import { FormField } from "../../components/ui/FormField";
 import { Spinner } from "../../components/ui/Spinner";
@@ -7,8 +7,11 @@ import { useAuth } from "../../lib/auth";
 import { ApprovalPolicySection } from "./ApprovalPolicySection";
 import { DataSourcesSection } from "./DataSourcesSection";
 import { EventBusSection } from "./EventBusSection";
+import { IntegrationCatalogSection } from "./IntegrationCatalogSection";
 import { IntegrationsSection } from "./IntegrationsSection";
 import { PlanBillingSection } from "./PlanBillingSection";
+import { SsoSection } from "./SsoSection";
+import { WhiteLabelSection } from "./WhiteLabelSection";
 import { QuotasRetentionSection } from "./QuotasRetentionSection";
 
 interface Organization {
@@ -128,9 +131,12 @@ export function OrganizationSettingsPage() {
       <PlanBillingSection />
       <ApprovalPolicySection canManage={canManage} />
       <QuotasRetentionSection />
+      <IntegrationCatalogSection />
       <IntegrationsSection />
       <EventBusSection />
       <DataSourcesSection />
+      <WhiteLabelSection />
+      <SsoSection />
     </div>
   );
 }

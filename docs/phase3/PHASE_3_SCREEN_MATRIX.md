@@ -23,12 +23,12 @@ when the tenant flag is off.
 | P3-13 | Offline Bundle Manager | /devices → Bundles tab | devices.manage + edge_bundles flag | /edge/bundles (+publish) | bundle builder (scope + TTL), publish/supersede, sync coverage | **done (3C-2)** |
 | P3-14 | Fleet Intelligence | /monitoring → Intelligence tab | monitoring.view + fleet_ai flag | /fleet-intelligence/anomalies (+ack/remediate) | anomaly list with score chips, evidence drilldown, recommendation, ack + whitelisted remediation buttons | **done (3D-3)** |
 | P3-15 | AI Operations Rules | /monitoring → Intelligence tab (rules section) | settings.manage | /fleet-intelligence/rules | rule create (signal picker, defaults merged), enable/disable | **done (3D-3)** |
-| P3-16 | White-Label Settings | /settings → Branding section (EXT) | organization.manage + white_label flag | /organization branding, domain, email identity | theme editor, domain status, email preview | pending |
-| P3-17 | Enterprise SSO | /settings → SSO section (new) | settings.manage + sso flag | /sso/providers (+test) | provider form, claim mapping, test connection | pending |
+| P3-16 | White-Label Settings | /settings → White label section | organization.manage + white_label flag | /organization/white-label, /organization branding | theme fields, domain + verification badge, email identity | **done (3E-2)** |
+| P3-17 | Enterprise SSO | /settings → SSO section | settings.manage + sso flag | /sso/providers (+test) | provider form (secret env ref), claim-mapping JSON, discovery test, login URL | **done (3E-1)** |
 | P3-18 | Regional Platform Admin | /platform (new, superuser) | is_superuser | /platform/regions | tenant/region table, residency metadata | pending |
-| P3-19 | Integration Catalog | /settings → Integrations (EXT of 2H section) | webhooks.manage | /connectors | catalogue cards, install/configure flow | pending |
+| P3-19 | Integration Catalog | /settings → Integration catalog section | webhooks.manage | /connectors | catalogue cards with configured counts + plan-locked states | **done (3E-4)** |
 | P3-20 | Event Bus / Subscriptions | /settings → Integrations (EXT) | webhooks.manage | /events, /subscriptions | event type picker, consumer status, delivery log (2H pattern) | **done (3A-1)** |
-| P3-21 | Security Center | /security (new page) | settings.manage | /security/* | identity table, rotation actions, violations, auth anomalies | pending |
+| P3-21 | Security Center | /security | settings.manage (identities: devices.view) | /security/* | posture tiles, age policies, violations with resolve, identity table + rotate | **done (3E-3)** |
 | P3-22 | Analytics Data Export | /reports → Exports tab | reports.export | /data-exports (+run) | dataset picker, nightly schedule, run-now, state + object key evidence | **done (3D-2)** |
 | P3-23 | Developer Portal | /developer (new page) | api_keys.manage + developer_portal flag | /developer/openapi, sandbox (+simulate-device); keys stay in Settings→Integrations (2H) | docs links, sandbox panel with enrollment key + one-time device token, contract versions + changelog | **done (3A-3)** |
 | P3-24 | Platform Operations | /platform → Operations tab (superuser) | is_superuser | /platform/regions, queues/health | service status, queue depth, worker health, incidents | pending |

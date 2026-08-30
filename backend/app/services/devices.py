@@ -162,6 +162,11 @@ async def register_device(
         device.token_hash = security.hash_token(token)
         device.token_issued_at = _now()
         await db.flush()
+
+        # Credential lifecycle record (P3 3E-3) — fingerprint only.
+        from app.services.security_center import record_issuance
+
+        await record_issuance(db, device)
         logger.info("Device credential issued: %s", device.id)
         return device, token
 

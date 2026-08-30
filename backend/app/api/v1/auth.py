@@ -1,4 +1,5 @@
 from fastapi import APIRouter, Depends
+from pydantic import BaseModel, EmailStr, Field
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import CurrentUser, user_permission_codes
@@ -60,6 +61,43 @@ async def me(user: CurrentUser) -> dict:
     out = CurrentUserOut.model_validate(user)
     out.permissions = sorted(user_permission_codes(user))
     return success(out.model_dump(mode="json"))
+
+
+class PasswordResetRequest(BaseModel):
+    email: EmailStr
+
+
+class PasswordResetConfirm(BaseModel):
+    token: str
+    new_password: str = Field(min_length=10, max_length=200)
+
+
+@router.post(
+    "/password-reset/request",
+    dependencies=[rate_limit("password-reset",
+                             lambda: get_settings().rate_limit_login_per_minute)],
+)
+async def password_reset_request(
+    body: PasswordResetRequest, db: AsyncSession = Depends(get_db)
+) -> dict:
+    """P3 3E-2 (closes the Phase-1 deferral): always responds success —
+    the reset token goes out via the email adapter when the account exists."""
+    from app.services import white_label
+
+    await white_label.request_password_reset(db, email=body.email)
+    return success({"requested": True})
+
+
+@router.post("/password-reset/confirm")
+async def password_reset_confirm(
+    body: PasswordResetConfirm, db: AsyncSession = Depends(get_db)
+) -> dict:
+    from app.services import white_label
+
+    await white_label.confirm_password_reset(
+        db, token=body.token, new_password=body.new_password
+    )
+    return success({"reset": True})
 
 
 @router.get("/memberships")
