@@ -22,15 +22,19 @@ async def make_published_playlist(client, tokens, name="Pub PL") -> dict:
     return resp.json()["data"]
 
 
-async def ready_campaign(client, tokens, *, device_ids, priority=50, name="Ready Campaign"):
+async def ready_campaign(
+    client, tokens, *, device_ids, priority=50, name="Ready Campaign", schedule=None
+):
     """Campaign with published playlist, always-on schedule, device targets,
-    approved and ready to publish."""
+    approved and ready to publish. `schedule` overrides the always-on window."""
     playlist = await make_published_playlist(client, tokens, name=f"{name} PL")
     campaign = await create_campaign(
         client, tokens, name=name, playlist_id=playlist["id"], priority=priority
     )
     await client.post(
-        "/api/v1/schedules", headers=bearer(tokens), json={"campaign_id": campaign["id"]}
+        "/api/v1/schedules",
+        headers=bearer(tokens),
+        json={"campaign_id": campaign["id"], **(schedule or {})},
     )
     resp = await client.post(
         f"/api/v1/campaigns/{campaign['id']}/targets",
@@ -343,6 +347,73 @@ async def test_failed_ack_retry_and_cancel(client, admin_tokens):
         json={"success": True},
     )
     assert resp.status_code == 409
+
+
+async def test_preview_manifest_matches_what_the_device_would_fetch(client, admin_tokens):
+    """The operator preview must resolve content exactly as the player does,
+    otherwise the preview lies about what is on the screen."""
+    dev, token = await enroll_active_device(client, admin_tokens, "SN-PREVIEW")
+    campaign = await ready_campaign(client, admin_tokens, device_ids=[dev], name="Previewable")
+    await publish(client, admin_tokens, campaign["id"])
+
+    resp = await client.get(
+        f"/api/v1/devices/{dev}/preview-manifest", headers=bearer(admin_tokens)
+    )
+    assert resp.status_code == 200, resp.text
+    preview = resp.json()["data"]
+    resp = await client.get(f"/api/v1/player/{dev}/manifest", headers=device_headers(token))
+    player = resp.json()["data"]
+
+    # `generated_at` is the evaluation instant and the signed asset URLs carry
+    # their own expiry, so both differ between two calls by construction.
+    ignored = {"generated_at", "assets"}
+    assert {k: v for k, v in preview.items() if k not in ignored} == {
+        k: v for k, v in player.items() if k not in ignored
+    }
+    assert [a["sha256"] for a in preview["assets"]] == [a["sha256"] for a in player["assets"]]
+    # The preview's URLs must actually serve bytes, not just look plausible.
+    fetched = await client.get(preview["assets"][0]["url"])
+    assert fetched.status_code == 200
+
+
+async def test_preview_manifest_evaluates_schedules_at_a_chosen_instant(client, admin_tokens):
+    """`at` is what makes 'what does this screen show at 7pm Saturday?'
+    answerable on the server instead of re-deriving schedule rules in JS."""
+    dev, _ = await enroll_active_device(client, admin_tokens, "SN-PREVIEW-AT")
+    campaign = await ready_campaign(
+        client,
+        admin_tokens,
+        device_ids=[dev],
+        name="Evening Only",
+        schedule={"start_time": "18:00", "end_time": "22:00", "timezone": "UTC"},
+    )
+    await publish(client, admin_tokens, campaign["id"])
+
+    async def active_at(instant: str) -> bool:
+        resp = await client.get(
+            f"/api/v1/devices/{dev}/preview-manifest",
+            headers=bearer(admin_tokens),
+            params={"at": instant},
+        )
+        assert resp.status_code == 200, resp.text
+        return resp.json()["data"]["campaign_active_now"]
+
+    assert await active_at("2026-06-10T19:30:00+00:00") is True
+    assert await active_at("2026-06-10T09:00:00+00:00") is False
+    # Outside the window the campaign is still shipped (the player evaluates
+    # windows locally, offline-first) — only the active flag changes.
+    resp = await client.get(
+        f"/api/v1/devices/{dev}/preview-manifest",
+        headers=bearer(admin_tokens),
+        params={"at": "2026-06-10T09:00:00+00:00"},
+    )
+    assert resp.json()["data"]["active_campaign"] == campaign["id"]
+
+
+async def test_preview_manifest_requires_device_view_permission(client, admin_tokens):
+    dev, _ = await enroll_active_device(client, admin_tokens, "SN-PREVIEW-AUTH")
+    resp = await client.get(f"/api/v1/devices/{dev}/preview-manifest")
+    assert resp.status_code == 401
 
 
 async def test_republish_supersedes_previous_deployment(client, admin_tokens):

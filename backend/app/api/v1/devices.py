@@ -1,5 +1,6 @@
 import secrets
 import uuid
+from datetime import datetime
 
 from fastapi import APIRouter, Depends, Query
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -29,6 +30,7 @@ from app.schemas.devices import (
 from app.schemas.envelope import success
 from app.services import device_ops
 from app.services import devices as service
+from app.services import manifest as manifest_service
 from app.services import organization as org_service
 
 router = APIRouter()
@@ -187,6 +189,29 @@ async def get_capabilities(
 ) -> dict:
     device = await service.get_device(db, tenant_id, device_id)
     return success(_detail_out(device)["capabilities"])
+
+
+@router.get(
+    "/devices/{device_id}/preview-manifest", dependencies=[require_permissions("devices.view")]
+)
+async def preview_manifest(
+    device_id: uuid.UUID,
+    tenant_id: CurrentTenantId,
+    at: datetime | None = Query(
+        None, description="Evaluate as of this instant instead of now (ISO 8601)."
+    ),
+    db: AsyncSession = Depends(get_db),
+) -> dict:
+    """The player manifest for this device, for operator preview.
+
+    Identical to what the device itself would fetch from
+    `GET /player/{device_id}/manifest`, but authenticated as a console user
+    so the portal can render a screen preview without duplicating any of the
+    schedule, targeting or decisioning logic. Read-only: it resolves content
+    and signs asset URLs, and never queues a command or touches a deployment.
+    """
+    device = await service.get_device(db, tenant_id, device_id)
+    return success(await manifest_service.build_manifest(db, device, at=at))
 
 
 @router.post(

@@ -100,10 +100,19 @@ async def _collect_asset_ids(payloads: list[dict | None], layout_canvas: dict | 
     return asset_ids
 
 
-async def build_manifest(db: AsyncSession, device: Device) -> dict:
+async def build_manifest(db: AsyncSession, device: Device, *, at: datetime | None = None) -> dict:
+    """Resolves everything a player needs to render this device's screen.
+
+    `at` evaluates the manifest as of another instant instead of now, which
+    is what schedule-aware preview ("what does this screen show at 19:30 on
+    Saturday?") needs. It keeps schedule and decisioning evaluation on the
+    server, so no caller has to re-derive those rules. Naive values are
+    read as UTC. Passing `at` changes nothing else: the call remains a pure
+    read with no side effects.
+    """
     settings = get_settings()
     timezone = await device_effective_timezone(db, device)
-    now = datetime.now(UTC)
+    now = datetime.now(UTC) if at is None else (at if at.tzinfo else at.replace(tzinfo=UTC))
 
     # Candidate campaigns: any non-cancelled deployment covering this device,
     # whose campaign is currently published.
