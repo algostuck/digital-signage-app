@@ -121,6 +121,26 @@ All sweeps are idempotent with DB-backed state — worker restarts lose
 nothing (NFR2-08). Watch the `maintenance` queue depth and the
 webhook dead-letter count (`webhook_deliveries.state='dead'`).
 
+## 7b-2. Demo dataset (non-production only)
+
+`python -m app.demo_seed` builds three fictional Indian demo tenants
+(`RRL-DEMO`, `BMR-DEMO`, `USP-DEMO`) with ~260 displays, 320 locations
+and ~14k proof-of-play events. It is **scoped**: it only ever deletes
+organizations whose code is in that list, so system master data, real
+tenants and the `demo` fixture org (which homes `platform@signage.cloud`)
+are never touched. It refuses to run when `ENVIRONMENT=production`.
+
+| Command | Effect |
+|---|---|
+| `python -m app.demo_seed` | reset + rebuild the three demo tenants, then validate |
+| `python -m app.demo_seed --validate` | 17 integrity checks, changes nothing |
+| `python -m app.demo_seed --refresh` | re-stamp device heartbeats (~1s) so an idle demo DB looks live again |
+| `python -m app.demo_seed --reset` | remove the demo tenants only |
+| `python scripts/demo_api_validation.py` | 50 live API checks incl. cross-tenant isolation |
+
+See docs/DEMO_SEED_MASTER_DATA.md, DEMO_CREDENTIALS.md,
+DEMO_DATA_CATALOG.md and DEMO_SEED_VALIDATION.md.
+
 ## 7c. Testing policy
 
 The automated suite runs exclusively on PostgreSQL (`digital_app_test`,
