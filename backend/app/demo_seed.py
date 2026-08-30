@@ -76,11 +76,11 @@ from app.models.campaign import (
 from app.models.content import Asset, AssetVersion, Folder
 from app.models.device import Device, DeviceGroup, Incident
 from app.models.experiment import Experiment, ExperimentVariant
-from app.models.layout import Layout, Template
+from app.models.layout import Layout, LayoutVersion, Template
 from app.models.location import Tag
 from app.models.ops import AuditLog, Notification, PlaybackEvent
 from app.models.organization import OrganizationStatus
-from app.models.playlist import Playlist, PlaylistItem
+from app.models.playlist import Playlist, PlaylistItem, PlaylistVersion
 from app.models.saas import TenantUser
 from app.models.studio import Widget, WidgetVersion
 from app.models.user import UserStatus
@@ -660,14 +660,29 @@ class OrgBuilder:
         }
 
         self.layouts: list[Layout] = []
+        self.published_layouts: list[Layout] = []
         for name, shape in TEMPLATE_PRESETS:
+            canvas_json = canvas(shapes[shape])
             layout = Layout(
                 organization_id=self.org.id, name=name,
-                draft_canvas_json=canvas(shapes[shape]),
+                draft_canvas_json=canvas_json,
                 status="published" if self.rng.random() < 0.7 else "draft",
                 created_at=_back(days=self.rng.randint(20, 160)),
             )
             self.db.add(layout)
+            await self.db.flush()
+            # A published layout without a version is not actually publishable
+            # content: `build_manifest` resolves the canvas through
+            # `current_version_id`, so a device would receive layout=null and
+            # show nothing at all.
+            if layout.status == "published":
+                version = LayoutVersion(
+                    layout_id=layout.id, version_no=1, canvas_json=canvas_json
+                )
+                self.db.add(version)
+                await self.db.flush()
+                layout.current_version_id = version.id
+                self.published_layouts.append(layout)
             self.layouts.append(layout)
             self._bump("layouts")
             self.db.add(Template(
@@ -697,6 +712,7 @@ class OrgBuilder:
 
     async def create_playlists(self) -> None:
         self.playlists: list[Playlist] = []
+        self.published_playlists: list[Playlist] = []
         published = [a for a in self.assets if a.status == "published"] or self.assets
         for name in PLAYLIST_NAMES:
             playlist = Playlist(
@@ -707,12 +723,37 @@ class OrgBuilder:
             )
             self.db.add(playlist)
             await self.db.flush()
+            snapshot: list[dict] = []
             for position, asset in enumerate(self.rng.sample(published, self.rng.randint(3, 7))):
+                duration_ms = self.rng.choice([10000, 12000, 15000, 20000, 30000])
                 self.db.add(PlaylistItem(
                     playlist_id=playlist.id, position=position, item_type="asset",
                     asset_id=asset.id, enabled=True,
-                    duration_ms=self.rng.choice([10000, 12000, 15000, 20000, 30000]),
+                    duration_ms=duration_ms,
                 ))
+                snapshot.append({
+                    "position": position + 1,
+                    "item_type": "asset",
+                    "duration_ms": duration_ms,
+                    "transition": None,
+                    "asset_id": str(asset.id),
+                    "asset_type": asset.type,
+                    "name": asset.name,
+                    "asset_version_no": 1,
+                })
+            # Same reasoning as layouts: without a version the manifest
+            # resolves playlist=null, so every device in the demo fleet would
+            # receive an empty screen. The snapshot mirrors what
+            # `playlists.publish_playlist` writes.
+            if playlist.status == "published":
+                version = PlaylistVersion(
+                    playlist_id=playlist.id, version_no=1,
+                    items_json={"loop": playlist.loop_enabled, "items": snapshot},
+                )
+                self.db.add(version)
+                await self.db.flush()
+                playlist.current_version_id = version.id
+                self.published_playlists.append(playlist)
             self.playlists.append(playlist)
             self._bump("playlists")
         await self.db.flush()
@@ -739,13 +780,18 @@ class OrgBuilder:
                 name = f"{name} — Phase {i // len(CAMPAIGN_NAMES) + 1}"
             state = distribution[i % len(distribution)]
             status = "published" if state == "scheduled_like" else state
+            # A published campaign must point at *versioned* content or the
+            # manifest resolves nothing and the screen stays black; drafts may
+            # reference work in progress, which is realistic.
+            playlist_pool = self.published_playlists if status == "published" else self.playlists
+            layout_pool = self.published_layouts if status == "published" else self.layouts
             campaign = Campaign(
                 organization_id=self.org.id,
                 name=name,
                 status=status,
                 priority=self.rng.choice([40, 50, 55, 60, 70, 80]),
-                playlist_id=self.rng.choice(self.playlists).id,
-                layout_id=self.rng.choice(self.layouts).id,
+                playlist_id=self.rng.choice(playlist_pool or self.playlists).id,
+                layout_id=self.rng.choice(layout_pool or self.layouts).id,
                 created_at=_back(days=self.rng.randint(2, 90)),
             )
             self.db.add(campaign)
@@ -1395,6 +1441,29 @@ async def validate_demo(db: AsyncSession) -> tuple[list[str], list[str]]:
         "SELECT count(DISTINCT status) FROM campaigns WHERE organization_id = ANY(:ids)"
     ), {"ids": org_ids})).scalar_one()
     check(statuses >= 5, f"campaign lifecycle is varied ({statuses} distinct statuses)")
+
+    # Published content must be *versioned*: `build_manifest` resolves the
+    # canvas and item list through `current_version_id`, so a published
+    # playlist or layout without one leaves every targeted device with an
+    # empty manifest and a black screen.
+    unversioned_pl = (await db.execute(text(
+        "SELECT count(*) FROM playlists WHERE organization_id = ANY(:ids) "
+        "AND status = 'published' AND current_version_id IS NULL"
+    ), {"ids": org_ids})).scalar_one()
+    check(unversioned_pl == 0, "every published playlist has a version")
+
+    unversioned_layout = (await db.execute(text(
+        "SELECT count(*) FROM layouts WHERE organization_id = ANY(:ids) "
+        "AND status = 'published' AND current_version_id IS NULL"
+    ), {"ids": org_ids})).scalar_one()
+    check(unversioned_layout == 0, "every published layout has a version")
+
+    dangling = (await db.execute(text(
+        "SELECT count(*) FROM campaigns c JOIN playlists p ON p.id = c.playlist_id "
+        "WHERE c.organization_id = ANY(:ids) AND c.status = 'published' "
+        "AND p.current_version_id IS NULL"
+    ), {"ids": org_ids})).scalar_one()
+    check(dangling == 0, "every published campaign resolves playable content")
 
     return passed, failed
 
