@@ -63,6 +63,30 @@ draw only from versioned content. Three checks in `validate_demo` guard
 the invariant. After reseeding, **239 of 263 devices resolve a playable
 manifest** (the remainder correctly have no covering deployment).
 
+## The frozen-screen bug
+
+Reported against "Electronic City Store · Waiting Area". Three causes:
+
+1. **The playlist only played in a zone typed `playlist`.** Demo layouts
+   (and any layout straight out of `default_canvas`) use `placeholder`,
+   the schema default, so a 7-item playlist was ignored while two static
+   tiles sat there. Fixed by the host-zone resolution rule in the
+   architecture doc.
+2. **Zones were scaled by the screen, not the canvas.** On a device whose
+   screen aspect differed from the canvas, zones were drawn at the wrong
+   scale and overflowed. The canvas is now fitted and centred inside the
+   screen.
+3. **The seeder chose `orientation` independently of `screen_width` /
+   `screen_height`**, so "portrait" devices advertised 1920×1080. Portrait
+   devices now report rotated resolutions, and demo layouts declare a real
+   content zone.
+
+After reseeding: 220 of 258 demo devices resolve a playable manifest, and
+**220 of 220 now have an explicit playlist zone**.
+
+> Reseeding changes device names — the RNG stream shifted — so a device
+> referenced before the fix will not exist afterwards.
+
 ## Verification
 
 - `pytest tests/test_publishing_api.py` — 12 passed, including manifest

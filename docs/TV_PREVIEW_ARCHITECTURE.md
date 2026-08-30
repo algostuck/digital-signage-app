@@ -86,16 +86,39 @@ does not fast-forward on return.
 
 ## Zone rendering
 
-`TVScreen` fits the screen on both axes (`min(boxW/w, boxH/h)`) — the
-Screen Designer's width-only scale overflows tall canvases. Zones are
-absolutely positioned, z-sorted, rotation applied, and each gets
+There are **two** scales, and conflating them is a bug:
+
+1. `screenScale = min(boxW/screenW, boxH/screenH)` — how large the screen
+   is drawn in the available space. (The Screen Designer's width-only
+   scale overflows tall canvases, so both axes are fitted.)
+2. `zoneScale = min(screenW/canvasW, screenH/canvasH) × screenScale` —
+   zone coordinates live in **canvas** space, which is not always the
+   screen's. A 1920×1080 layout on a portrait panel is fitted inside the
+   screen and centred, the way a player letterboxes content whose aspect
+   ratio does not match the display. 38 of the seeded demo devices are in
+   exactly that state.
+
+Zones are absolutely positioned, z-sorted, rotation applied, and each gets
 `container-type: size` so text can scale against its zone.
 
-`ZoneContent` dispatches on `content_type`. The zone typed `playlist` is
-where the campaign's playlist plays; every other zone runs independently
-and is never reset when the playlist advances. With no layout resolved,
-the playlist takes the whole screen — which is what a device does when its
-campaign has a playlist but no layout.
+### Where the playlist plays
+
+`playlist` is a declared zone content type, but `placeholder` is the
+schema default — it is what `canvas.default_canvas` produces for a new
+layout and what the Screen Designer leaves a zone as until content is
+assigned. So the host zone is resolved as:
+
+1. a zone typed `playlist`, if the layout declares one;
+2. otherwise the **largest `placeholder` zone** — the unconfigured main
+   slot;
+3. otherwise, with no layout at all, the playlist takes the whole screen,
+   which is what a device does when its campaign has a playlist but no
+   layout.
+
+Only the host zone receives `currentItem`; every other zone runs its own
+timeline and is never reset when the playlist advances. Without rule 2 a
+layout of plain placeholders renders a frozen screen while its playlist is
+silently ignored.
 
 Coverage of the ten declared types:
 
