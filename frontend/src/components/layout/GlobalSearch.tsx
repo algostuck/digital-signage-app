@@ -1,8 +1,9 @@
 import { SearchOutlined } from "@ant-design/icons";
 import { useQuery } from "@tanstack/react-query";
-import { AutoComplete, Input, Tag, Typography, theme } from "antd";
+import { AutoComplete, Flex, Typography, theme } from "antd";
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { StatusBadge } from "../ui/StatusBadge";
 import { api } from "../../lib/api";
 
 interface SearchRow {
@@ -59,26 +60,42 @@ export function GlobalSearch() {
         : Object.entries(data.modules)
             .filter(([, rows]) => rows.length > 0)
             .map(([module, rows]) => ({
-              label: <span className="text-xs font-semibold uppercase tracking-wide text-slate-400">{module}</span>,
+              label: (
+                <Typography.Text
+                  type="secondary"
+                  className="!text-xs font-semibold uppercase tracking-wider"
+                >
+                  {module}
+                </Typography.Text>
+              ),
               options: rows.map((row) => ({
                 value: `${module}::${row.id}`,
                 label: (
-                  <span className="flex items-center gap-2">
-                    <span className="font-medium text-slate-800">{row.name}</span>
-                    {row.subtitle && <span className="text-xs text-slate-400">{row.subtitle}</span>}
-                    {row.status && (
-                      <Tag className="ml-auto" variant="filled">
-                        {row.status}
-                      </Tag>
+                  <Flex align="center" gap="small">
+                    <Typography.Text strong ellipsis>
+                      {row.name}
+                    </Typography.Text>
+                    {row.subtitle && (
+                      <Typography.Text type="secondary" ellipsis className="!text-xs">
+                        {row.subtitle}
+                      </Typography.Text>
                     )}
-                  </span>
+                    {row.status && (
+                      <span className="ms-auto shrink-0">
+                        <StatusBadge status={row.status} />
+                      </span>
+                    )}
+                  </Flex>
                 ),
               })),
             }));
 
   return (
+    // AutoComplete renders its own control. Nesting a custom <Input> here
+    // made the field stretch to the full 64px header height; the native
+    // control sizes correctly (40px at size="large").
     <AutoComplete
-      className="w-full max-w-[360px] min-w-[180px]"
+      className="w-full max-w-[420px] min-w-[160px]"
       value={term}
       options={options}
       open={open && debounced.length >= 2}
@@ -93,16 +110,14 @@ export function GlobalSearch() {
         setTerm("");
         navigate(MODULE_ROUTES[module] ?? "/dashboard");
       }}
-      popupMatchSelectWidth={360}
-    >
-      <Input
-        placeholder="Search devices, content, campaigns…"
-        aria-label="Global search"
-        prefix={<SearchOutlined style={{ color: token.colorTextTertiary }} />}
-        allowClear
-        variant="filled"
-        size="large"
-      />
-    </AutoComplete>
+      size="large"
+      variant="filled"
+      allowClear
+      placeholder="Search devices, content, campaigns…"
+      aria-label="Global search"
+      prefix={<SearchOutlined style={{ color: token.colorTextTertiary }} />}
+      popupMatchSelectWidth={420}
+      notFoundContent={null}
+    />
   );
 }

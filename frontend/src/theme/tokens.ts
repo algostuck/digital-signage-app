@@ -77,6 +77,11 @@ export function buildTheme(mode: ThemeMode): ThemeConfig {
       colorTextTertiary: dark ? "rgba(255, 255, 255, 0.65)" : "#64748B",
 
       colorBgLayout: dark ? "#0B1220" : "#F8FAFC",
+      // Dark surfaces stay in the same navy family as the canvas and the
+      // sidebar; antd's stock neutral greys read as a different palette
+      // sitting on top of the app. Both are darker than the defaults, so
+      // every measured contrast ratio improves.
+      ...(dark ? { colorBgContainer: "#111A2E", colorBgElevated: "#16203A" } : {}),
 
       fontFamily:
         '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif',
