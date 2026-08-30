@@ -23,14 +23,14 @@ existing endpoint changes shape; new player-manifest blocks are additive.
 | GET/POST/DELETE | /experiments (+/transition, /{id}/results) | campaigns.manage + experiments (view: campaigns.view) | allocation validation; stable assignment; per-arm results | **done (3B-3)** |
 | GET/POST/DELETE | /video-walls(/{id}) (+/members) | devices.manage + video_wall (view: devices.view) | canvas/viewport validation; member uniqueness (one wall per device) | **done (3C-1)** |
 | POST | /video-walls/{id}/sync | devices.control | start/stop session: epoch marker + tolerance; degraded state surfaced + incident | **done (3C-1)** |
-| GET/POST/PATCH | /ad-inventory(/{id}) | ads.manage + advertising | slot/hours/rate-card | pending |
-| GET/POST/PATCH | /ad-campaigns(/{id}) | ads.manage | booking against availability; approval adapter | pending |
-| GET | /reports/ad-performance | reports.view | booked vs delivered; export via 2I engine | pending |
+| GET/POST/PATCH | /ad-inventory(/{id}) | ads.manage + advertising (view: ads.view) | slot/hours/rate-card; device or location scope | **done (3D-1)** |
+| GET/POST | /ad-campaigns (+/{id}/cancel) | ads.manage | overlap-refused booking; 2A approval adapter (pending→confirmed) | **done (3D-1)** |
+| GET | /reports/ad-performance | reports.view | booked vs delivered vs fill rate; export via 2I engine (report ad-performance) | **done (3D-1)** |
 | GET/POST | /edge/bundles (+/{id}/publish) | devices.manage + edge_bundles (view: devices.view) | signed manifest, TTL expiry, supersede-on-publish, rollout state | **done (3C-2)** |
 | GET | /edge/metrics | monitoring.view | bundle states, sync coverage, bandwidth policy | **done (3C-2)** |
-| GET | /fleet-intelligence/anomalies | monitoring.view + fleet_ai | score + evidence | pending |
-| POST | /fleet-intelligence/{id}/acknowledge | incidents.manage | human-in-the-loop | pending |
-| POST | /fleet-intelligence/{id}/remediation | devices.control | whitelisted commands only; logged | pending |
+| GET | /fleet-intelligence/anomalies (+/rules CRUD, /{id}/actions) | monitoring.view + fleet_ai (rules write: settings.manage) | score + evidence + recommendation; hourly detect beat with auto-resolve | **done (3D-3)** |
+| POST | /fleet-intelligence/{id}/acknowledge | incidents.manage | human-in-the-loop with action trail | **done (3D-3)** |
+| POST | /fleet-intelligence/{id}/remediation | devices.control | whitelisted commands only (restart/clear_cache/refresh_content) via the 1E command queue; logged + audited | **done (3D-3)** |
 | GET/POST/PATCH | /sso/providers (+/{id}/test) | settings.manage + sso | OIDC first; secrets by ref; test = metadata/JWKS fetch | pending |
 | GET/POST | /connectors (+instances) | webhooks.manage | catalogue + install/config/health | pending |
 | GET | /events, /events/catalogue | webhooks.manage | normalized domain events (paginated, filterable) + type catalogue | **done (3A-1)** |
@@ -38,7 +38,7 @@ existing endpoint changes shape; new player-manifest blocks are additive.
 | GET | /security/devices/{id}/identity | devices.view | identity + credential lifecycle | pending |
 | POST | /security/certificates/rotate | settings.manage | rotation sweep trigger; audited | pending |
 | GET | /security/policy-violations | settings.manage | central policy engine output | pending |
-| GET/POST | /data-exports | reports.export | dataset/schedule/destination; runs via beat | pending |
+| GET/POST/DELETE | /data-exports (+/{id}/run) + GET /analytics/aggregates|metrics|reconciliation | reports.export (reads: reports.view) | daily-grain aggregates, semantic metrics, reconciliation, scheduled exports via beat | **done (3D-2)** |
 | GET | /platform/regions | is_superuser | tenant/region/service health; no tenant content | pending |
 | GET | /developer/openapi | api_keys.manage + developer_portal | versioned OpenAPI + changelog metadata | **done (3A-3)** |
 | GET/POST | /developer/sandbox (+/simulate-device) | api_keys.manage + developer_portal | idempotent sandbox org + owner membership; simulator via real player pipeline | **done (3A-3)** |

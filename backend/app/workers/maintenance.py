@@ -75,6 +75,38 @@ def refresh_data_sources() -> dict:
     return _run(data_sources.refresh_due_sources)
 
 
+@celery_app.task(name="app.workers.maintenance.reconcile_ad_bookings")
+def reconcile_ad_bookings() -> dict:
+    """P3 3D-1: link proof-of-play events to confirmed ad bookings."""
+    from app.services import ads
+
+    return _run(ads.reconcile_bookings)
+
+
+@celery_app.task(name="app.workers.maintenance.aggregate_analytics")
+def aggregate_analytics() -> dict:
+    """P3 3D-2: idempotent daily aggregate recompute (late events heal)."""
+    from app.services import analytics
+
+    return _run(analytics.aggregate_daily)
+
+
+@celery_app.task(name="app.workers.maintenance.run_data_exports")
+def run_data_exports() -> dict:
+    """P3 3D-2: scheduled dataset exports to the storage adapter."""
+    from app.services import analytics
+
+    return _run(analytics.run_due_exports)
+
+
+@celery_app.task(name="app.workers.maintenance.detect_anomalies")
+def detect_anomalies() -> dict:
+    """P3 3D-3: deterministic anomaly scan over fleet telemetry."""
+    from app.services import anomaly
+
+    return _run(anomaly.detect)
+
+
 @celery_app.task(name="app.workers.maintenance.subscription_lifecycle")
 def subscription_lifecycle() -> dict:
     """SaaS core: trial expiry, renewals, dunning ladder
@@ -120,6 +152,22 @@ celery_app.conf.beat_schedule = {
     "refresh-data-sources": {
         "task": "app.workers.maintenance.refresh_data_sources",
         "schedule": 60.0,
+    },
+    "reconcile-ad-bookings": {
+        "task": "app.workers.maintenance.reconcile_ad_bookings",
+        "schedule": 3600.0,  # hourly
+    },
+    "aggregate-analytics": {
+        "task": "app.workers.maintenance.aggregate_analytics",
+        "schedule": 86400.0,  # daily
+    },
+    "run-data-exports": {
+        "task": "app.workers.maintenance.run_data_exports",
+        "schedule": 86400.0,  # daily
+    },
+    "detect-anomalies": {
+        "task": "app.workers.maintenance.detect_anomalies",
+        "schedule": 3600.0,  # hourly
     },
     "subscription-lifecycle": {
         "task": "app.workers.maintenance.subscription_lifecycle",

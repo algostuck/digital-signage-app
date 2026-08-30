@@ -17,6 +17,7 @@ const NAV = [
   { to: "/releases", label: "Updates" },
   { to: "/monitoring", label: "Monitoring" },
   { to: "/reports", label: "Reports" },
+  { to: "/ads", label: "Advertising" },
   { to: "/users", label: "Users & Roles" },
   { to: "/notifications", label: "Notifications" },
   { to: "/audit", label: "Audit Logs" },

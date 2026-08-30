@@ -18,6 +18,7 @@ import { PlaylistEditorPage } from "../modules/playlists/PlaylistEditorPage";
 import { PlaylistsPage } from "../modules/playlists/PlaylistsPage";
 import { MonitoringPage } from "../modules/monitoring/MonitoringPage";
 import { ReleasesPage } from "../modules/releases/ReleasesPage";
+import { AdsPage } from "../modules/ads/AdsPage";
 import { DeveloperPage } from "../modules/developer/DeveloperPage";
 import { OrganizationSettingsPage } from "../modules/organization/OrganizationSettingsPage";
 import { PlatformPage } from "../modules/platform/PlatformPage";
@@ -54,6 +55,7 @@ export const router = createBrowserRouter([
           { path: "audit", element: <AuditPage /> },
           { path: "settings", element: <OrganizationSettingsPage /> },
           { path: "developer", element: <DeveloperPage /> },
+          { path: "ads", element: <AdsPage /> },
           { path: "platform", element: <PlatformPage /> },
         ],
       },

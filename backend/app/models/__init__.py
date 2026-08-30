@@ -1,6 +1,9 @@
 """Import all models here so Base.metadata and Alembic see the full schema."""
 
+from app.models.ads import AdBooking, AdInventory, AdPlaybackLink
 from app.models.ai import AiOutput, AiPolicy, AiRequest
+from app.models.analytics import AnalyticsAggregate, DataExport
+from app.models.anomaly import Anomaly, AnomalyAction, AnomalyRule
 from app.models.approval import ApprovalAction, ApprovalPolicy, ApprovalRequest
 from app.models.auth import RefreshToken
 from app.models.campaign import (
@@ -71,11 +74,19 @@ from app.models.user import Permission, Role, User, role_permissions, user_roles
 from app.models.video_wall import VideoWall, VideoWallMember
 
 __all__ = [
+    "AdBooking",
+    "AdInventory",
+    "AdPlaybackLink",
     "AiOutput",
     "AiPolicy",
     "AiRequest",
+    "AnalyticsAggregate",
+    "Anomaly",
+    "AnomalyAction",
+    "AnomalyRule",
     "ApiProduct",
     "ApiVersion",
+    "DataExport",
     "DataSource",
     "DecisionLog",
     "DecisionPolicy",

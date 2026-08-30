@@ -1,7 +1,9 @@
 from fastapi import APIRouter
 
 from app.api.v1 import (
+    ads,
     ai,
+    analytics,
     approvals,
     assets,
     auth,
@@ -15,6 +17,7 @@ from app.api.v1 import (
     edge,
     events,
     experiments,
+    fleet_intelligence,
     health,
     integrations,
     layouts,
@@ -66,3 +69,6 @@ api_router.include_router(decisioning.router, tags=["decisioning"])
 api_router.include_router(experiments.router, tags=["experiments"])
 api_router.include_router(video_walls.router, tags=["video-walls"])
 api_router.include_router(edge.router, tags=["edge"])
+api_router.include_router(ads.router, tags=["ads"])
+api_router.include_router(analytics.router, tags=["analytics"])
+api_router.include_router(fleet_intelligence.router, tags=["fleet-intelligence"])

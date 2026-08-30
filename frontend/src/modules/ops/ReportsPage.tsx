@@ -4,6 +4,7 @@ import { Spinner } from "../../components/ui/Spinner";
 import { StatusBadge } from "../../components/ui/StatusBadge";
 import { api } from "../../lib/api";
 import { CampaignAnalyticsTab, ProofOfPlayTab, UptimeTab } from "./AnalyticsTabs";
+import { AdsReportTab, ExportsTab } from "./ExportsAdsTabs";
 
 interface DeploymentRow {
   campaign_id: string;
@@ -38,6 +39,8 @@ const TABS = [
   { key: "pop", label: "Proof of play" },
   { key: "analytics", label: "Campaign analytics" },
   { key: "uptime", label: "Uptime" },
+  { key: "ads", label: "Ads" },
+  { key: "exports", label: "Exports" },
 ] as const;
 
 /** SCR-24 Reports + P2-15/16/17 analytics & exports. */
@@ -71,8 +74,12 @@ export function ReportsPage() {
           <ProofOfPlayTab />
         ) : tab === "analytics" ? (
           <CampaignAnalyticsTab />
-        ) : (
+        ) : tab === "uptime" ? (
           <UptimeTab />
+        ) : tab === "ads" ? (
+          <AdsReportTab />
+        ) : (
+          <ExportsTab />
         )}
       </div>
     </div>

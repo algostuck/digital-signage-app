@@ -3,6 +3,7 @@ import { useState } from "react";
 import { Spinner } from "../../components/ui/Spinner";
 import { StatusBadge } from "../../components/ui/StatusBadge";
 import { api, ApiError } from "../../lib/api";
+import { IntelligenceTab } from "./IntelligenceTab";
 import { useAuth } from "../../lib/auth";
 import { timeAgo } from "../devices/types";
 
@@ -40,6 +41,7 @@ interface Incident {
 const TABS = [
   { key: "health", label: "Fleet health" },
   { key: "incidents", label: "Incidents" },
+  { key: "intelligence", label: "Intelligence" },
 ] as const;
 
 /** P2-13 Fleet Monitoring + P2-14 Incident Center. */
@@ -66,7 +68,7 @@ export function MonitoringPage() {
           </button>
         ))}
       </div>
-      <div className="mt-4">{tab === "health" ? <FleetHealthTab /> : <IncidentsTab />}</div>
+      <div className="mt-4">{tab === "health" ? <FleetHealthTab /> : tab === "intelligence" ? <IntelligenceTab /> : <IncidentsTab />}</div>
     </div>
   );
 }

@@ -23,7 +23,7 @@ from app.models.approval import ApprovalRequestState
 
 logger = logging.getLogger("app.approvals")
 
-SUPPORTED_ENTITY_TYPES = ("campaign", "template", "ai_output")
+SUPPORTED_ENTITY_TYPES = ("campaign", "template", "ai_output", "ad_booking")
 
 
 @dataclass(frozen=True)

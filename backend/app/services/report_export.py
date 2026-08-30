@@ -26,6 +26,7 @@ REPORTS = {
     "playback": "Asset playback",
     "locations": "Location health",
     "audit": "Audit trail",  # additionally requires audit.view (P2-22)
+    "ad-performance": "Ad performance (booked vs delivered)",  # P3 3D-1
 }
 
 
@@ -57,6 +58,12 @@ async def run_report(
         )
     date_from = _parse_date(filters.get("date_from"), "date_from")
     date_to = _parse_date(filters.get("date_to"), "date_to")
+    if report == "ad-performance":
+        from app.services import ads as ads_service
+
+        return await ads_service.ad_performance(
+            db, organization_id, date_from=date_from, date_to=date_to
+        )
     if report == "proof-of-play":
         return await reports.proof_of_play(
             db,

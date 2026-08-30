@@ -44,6 +44,8 @@ PERMISSIONS: dict[str, str] = {
     "settings.manage": "Manage platform settings",
     "api_keys.manage": "Manage API keys",
     "webhooks.manage": "Manage webhook subscriptions",
+    "ads.view": "View ad inventory and bookings",
+    "ads.manage": "Manage ad inventory and bookings",
     "billing.view": "View plan, subscription, usage and invoices",
     "billing.manage": "Change plans, cancel/reactivate the subscription",
     "members.manage": "Add, update and remove tenant members",
