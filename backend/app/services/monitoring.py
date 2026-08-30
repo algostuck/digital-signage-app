@@ -14,6 +14,7 @@ from app.models import (
     Organization,
 )
 from app.models.device import DeviceStatus
+from app.services import organization as org_service
 from app.services.devices import connection_status
 
 
@@ -37,7 +38,8 @@ async def summary(db: AsyncSession, organization_id: uuid.UUID) -> dict:
         .all()
     )
     now = datetime.now(UTC)
-    connections = [connection_status(d, now) for d in devices]
+    thresholds = await org_service.get_monitoring_thresholds(db, organization_id)
+    connections = [connection_status(d, now, thresholds) for d in devices]
     device_status = {}
     for device in devices:
         device_status[device.status] = device_status.get(device.status, 0) + 1
@@ -91,6 +93,7 @@ async def device_feed(db: AsyncSession, organization_id: uuid.UUID) -> list[dict
         .all()
     )
     now = datetime.now(UTC)
+    thresholds = await org_service.get_monitoring_thresholds(db, organization_id)
     order = {"offline": 0, "warning": 1, "online": 2, "n/a": 3}
     entries = []
     for device in devices:
@@ -100,7 +103,7 @@ async def device_feed(db: AsyncSession, organization_id: uuid.UUID) -> list[dict
                 "id": str(device.id),
                 "name": device.name,
                 "platform": device.platform,
-                "connection_status": connection_status(device, now),
+                "connection_status": connection_status(device, now, thresholds),
                 "last_heartbeat_at": (
                     device.last_heartbeat_at.isoformat() if device.last_heartbeat_at else None
                 ),

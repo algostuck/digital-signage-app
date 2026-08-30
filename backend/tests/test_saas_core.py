@@ -629,6 +629,18 @@ async def test_guest_membership_and_tenant_switch(client, admin_tokens, org_b): 
     resp = await client.get("/api/v1/auth/me", headers=bearer(switched))
     assert resp.json()["data"]["active_organization_id"] == guest_row["organization_id"]
 
+    # ...and so does a refresh. The portal restores its session from the
+    # refresh token on every page load; if that response reported the home
+    # org, the tenant switcher would show the wrong organization while the
+    # API stayed scoped to the switched one.
+    resp = await client.post(
+        "/api/v1/auth/refresh", json={"refresh_token": switched["refresh_token"]}
+    )
+    assert resp.status_code == 200, resp.text
+    refreshed = resp.json()["data"]
+    assert refreshed["user"]["active_organization_id"] == guest_row["organization_id"]
+    switched = refreshed
+
     # Removing the membership kills the switched token.
     resp = await client.delete(
         f"/api/v1/organization/members/{membership_id}", headers=bearer(admin_tokens)

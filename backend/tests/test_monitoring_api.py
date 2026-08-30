@@ -301,3 +301,56 @@ async def test_fleet_health_isolation(client, admin_tokens, org_b, db_session): 
 
     orgs = (await db_session.execute(select(Organization.id))).scalars().all()
     assert len(orgs) >= 2  # fixture sanity
+
+
+async def test_tenant_thresholds_apply_consistently_across_surfaces(client, admin_tokens):
+    """A tenant that widens its thresholds must see the same connection
+    state everywhere. Fleet health always honoured the override; the
+    dashboard summary, the device list and the location report used the
+    platform defaults, so one tenant read three different fleets."""
+    device_id, token = await enroll_with(client, admin_tokens, "SN-THRESHOLD-CONSISTENCY")
+    await heartbeat(client, device_id, token)
+
+    # Age the heartbeat past the platform default (300s) but well inside a
+    # widened tenant window.
+    from app.db.session import get_session_factory
+    from app.models import Device
+
+    async with get_session_factory()() as db:
+        await db.execute(
+            update(Device)
+            .where(Device.id == device_id)
+            .values(last_heartbeat_at=dt.datetime.now(dt.UTC) - dt.timedelta(minutes=30))
+        )
+        await db.commit()
+
+    async def get(path):
+        response = await client.get(path, headers=bearer(admin_tokens))
+        return response.json()["data"]
+
+    # Platform defaults: 30 minutes old is offline everywhere.
+    summary = await get("/api/v1/monitoring/summary")
+    device = await get(f"/api/v1/devices/{device_id}")
+    assert device["connection_status"] == "offline"
+    assert summary["devices"]["offline"] >= 1
+
+    resp = await client.put(
+        "/api/v1/monitoring/thresholds",
+        headers=bearer(admin_tokens),
+        json={"warning_after_seconds": 3600, "offline_after_seconds": 7200},
+    )
+    assert resp.status_code == 200, resp.text
+
+    # With the tenant window, the same device is online on every surface.
+    device = await get(f"/api/v1/devices/{device_id}")
+    assert device["connection_status"] == "online", "device detail ignored tenant thresholds"
+
+    listed = await get("/api/v1/devices?page_size=100")
+    row = next(d for d in listed if d["id"] == str(device_id))
+    assert row["connection_status"] == "online", "device list ignored tenant thresholds"
+
+    summary = await get("/api/v1/monitoring/summary")
+    health = await get("/api/v1/monitoring/fleet-health")
+    assert summary["devices"]["online"] == health["organization"]["online"], (
+        "dashboard summary and fleet health disagree about the same fleet"
+    )

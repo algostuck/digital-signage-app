@@ -34,15 +34,15 @@ from app.services import organization as org_service
 router = APIRouter()
 
 
-def _out(device: Device) -> dict:
+def _out(device: Device, thresholds: dict | None = None) -> dict:
     out = DeviceOut.model_validate(device)
-    out.connection_status = service.connection_status(device)
+    out.connection_status = service.connection_status(device, thresholds=thresholds)
     return out.model_dump(mode="json")
 
 
-def _detail_out(device: Device) -> dict:
+def _detail_out(device: Device, thresholds: dict | None = None) -> dict:
     out = DeviceDetailOut.model_validate(device)
-    out.connection_status = service.connection_status(device)
+    out.connection_status = service.connection_status(device, thresholds=thresholds)
     out.has_credential = device.token_hash is not None
     return out.model_dump(mode="json")
 
@@ -78,8 +78,9 @@ async def list_devices(
         page=pagination.page,
         page_size=pagination.page_size,
     )
+    thresholds = await org_service.get_monitoring_thresholds(db, tenant_id)
     return success(
-        [_out(d) for d in devices],
+        [_out(d, thresholds) for d in devices],
         page=pagination.page,
         page_size=pagination.page_size,
         total=total,
@@ -102,7 +103,7 @@ async def get_device(
     device_id: uuid.UUID, tenant_id: CurrentTenantId, db: AsyncSession = Depends(get_db)
 ) -> dict:
     device = await service.get_device(db, tenant_id, device_id)
-    return success(_detail_out(device))
+    return success(_detail_out(device, await org_service.get_monitoring_thresholds(db, tenant_id)))
 
 
 @router.patch("/devices/{device_id}", dependencies=[require_permissions("devices.manage")])
@@ -123,7 +124,7 @@ async def update_device(
         orientation=body.orientation,
         tags=[(t.key, t.value) for t in body.tags] if body.tags is not None else None,
     )
-    return success(_detail_out(device))
+    return success(_detail_out(device, await org_service.get_monitoring_thresholds(db, tenant_id)))
 
 
 @router.post("/devices/{device_id}/approve", dependencies=[require_permissions("devices.manage")])
@@ -131,7 +132,7 @@ async def approve_device(
     device_id: uuid.UUID, tenant_id: CurrentTenantId, db: AsyncSession = Depends(get_db)
 ) -> dict:
     device = await service.approve_device(db, tenant_id, device_id)
-    return success(_out(device))
+    return success(_out(device, await org_service.get_monitoring_thresholds(db, tenant_id)))
 
 
 @router.post("/devices/{device_id}/reject", dependencies=[require_permissions("devices.manage")])
@@ -139,7 +140,7 @@ async def reject_device(
     device_id: uuid.UUID, tenant_id: CurrentTenantId, db: AsyncSession = Depends(get_db)
 ) -> dict:
     device = await service.reject_device(db, tenant_id, device_id)
-    return success(_out(device))
+    return success(_out(device, await org_service.get_monitoring_thresholds(db, tenant_id)))
 
 
 @router.post(
@@ -149,7 +150,7 @@ async def decommission_device(
     device_id: uuid.UUID, tenant_id: CurrentTenantId, db: AsyncSession = Depends(get_db)
 ) -> dict:
     device = await service.decommission_device(db, tenant_id, device_id)
-    return success(_out(device))
+    return success(_out(device, await org_service.get_monitoring_thresholds(db, tenant_id)))
 
 
 @router.post(
@@ -159,7 +160,7 @@ async def reset_device_token(
     device_id: uuid.UUID, tenant_id: CurrentTenantId, db: AsyncSession = Depends(get_db)
 ) -> dict:
     device = await service.reset_device_token(db, tenant_id, device_id)
-    return success(_detail_out(device))
+    return success(_detail_out(device, await org_service.get_monitoring_thresholds(db, tenant_id)))
 
 
 @router.post(
@@ -175,7 +176,7 @@ async def assign_location(
     device = await service.assign_location(
         db, tenant_id, device_id, location_id=body.location_id
     )
-    return success(_out(device))
+    return success(_out(device, await org_service.get_monitoring_thresholds(db, tenant_id)))
 
 
 @router.get(

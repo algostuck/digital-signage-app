@@ -37,6 +37,13 @@ async def _issue_token_pair(
         token_hash=security.hash_token(refresh_token),
         expires_at=refresh_expires,
     )
+    # Mirror the tenant the tokens actually carry onto the returned user.
+    # Without this, /auth/refresh reports active_organization_id=None after
+    # a tenant switch, so the portal's switcher falls back to the home org
+    # label while the API is still scoped to the switched tenant — the UI
+    # and the data would disagree after every page reload.
+    # `get_current_user` sets the same attribute per request.
+    user.active_organization_id = org_id  # type: ignore[attr-defined]
     return {
         "access_token": access_token,
         "refresh_token": refresh_token,

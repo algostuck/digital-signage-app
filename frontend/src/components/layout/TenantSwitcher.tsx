@@ -36,9 +36,15 @@ export function TenantSwitcher() {
     setSwitching(true);
     try {
       await switchTenant(organizationId);
-      // Everything on screen is tenant-scoped: drop all caches.
       queryClient.clear();
-    } finally {
+      // Every byte on screen is tenant-scoped, and in-flight requests
+      // issued with the previous token can still land after the cache is
+      // cleared — which briefly renders the OLD tenant's data under the
+      // NEW tenant's name. A full reload is the only way to guarantee no
+      // cross-tenant bleed, and it is what the user expects from an
+      // explicit tenant switch anyway.
+      window.location.assign("/dashboard");
+    } catch {
       setSwitching(false);
     }
   }

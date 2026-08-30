@@ -18,6 +18,7 @@ from app.models import (
     Location,
     PlaybackEvent,
 )
+from app.services import organization as org_service
 from app.services.devices import connection_status
 
 
@@ -408,6 +409,7 @@ async def locations_report(db: AsyncSession, organization_id: uuid.UUID) -> list
         .all()
     )
     now = datetime.now(UTC)
+    thresholds = await org_service.get_monitoring_thresholds(db, organization_id)
     report = []
     for location in locations:
         subtree = [
@@ -421,7 +423,7 @@ async def locations_report(db: AsyncSession, organization_id: uuid.UUID) -> list
         ]
         if not subtree:
             continue
-        connections = [connection_status(d, now) for d in subtree]
+        connections = [connection_status(d, now, thresholds) for d in subtree]
         report.append(
             {
                 "location_id": str(location.id),
