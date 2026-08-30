@@ -1,0 +1,58 @@
+[project]
+name = "signage-cloud-backend"
+version = "0.1.0"
+description = "Digital Signage Cloud Platform - backend (modular monolith)"
+requires-python = ">=3.12"
+dependencies = [
+    "fastapi>=0.115",
+    "uvicorn[standard]>=0.30",
+    "sqlalchemy[asyncio]>=2.0.35",
+    "asyncpg>=0.30",
+    "alembic>=1.13",
+    "pydantic>=2.9",
+    "pydantic-settings>=2.5",
+    "email-validator>=2.0",
+    "redis>=5.0",
+    "celery[redis]>=5.4",
+    "httpx>=0.27",
+    "pyjwt>=2.9",
+    "argon2-cffi>=23.1",
+    "pillow>=10.4",
+    "boto3>=1.35",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.3",
+    "pytest-asyncio>=0.24",
+    "ruff>=0.6",
+]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "S"]
+# B008: `Depends(...)` in defaults is FastAPI's dependency-injection idiom.
+ignore = ["B008"]
+
+[tool.ruff.lint.per-file-ignores]
+# Bandit-style rules target application code; tests/migrations use asserts
+# and fixed test credentials by design.
+"tests/*" = ["S"]
+# conftest must set the test environment before importing app modules.
+"tests/conftest.py" = ["S", "E402"]
+"migrations/*" = ["S"]
+"scripts/*" = ["S101"]
+
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+include = ["app*"]

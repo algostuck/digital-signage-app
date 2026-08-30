@@ -1,0 +1,113 @@
+name: signage-cloud
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: signage
+      POSTGRES_PASSWORD: signage
+      POSTGRES_DB: signage
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U signage -d signage"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  minio:
+    image: minio/minio:latest
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: signage
+      MINIO_ROOT_PASSWORD: signage-secret
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    volumes:
+      - miniodata:/data
+    healthcheck:
+      test: ["CMD", "mc", "ready", "local"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  api:
+    build: ./backend
+    command: sh -c "alembic upgrade head && uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload"
+    environment:
+      DATABASE_URL: postgresql+asyncpg://signage:signage@postgres:5432/signage
+      REDIS_URL: redis://redis:6379/0
+      STORAGE_BACKEND: s3
+      MEDIA_PROCESSING_INLINE: "false"
+      S3_ENDPOINT: http://minio:9000
+      S3_BUCKET: signage-media
+      S3_ACCESS_KEY: signage
+      S3_SECRET_KEY: signage-secret
+      JWT_SECRET: dev-only-secret
+      ENVIRONMENT: development
+      DEBUG: "true"
+      LOG_JSON: "false"
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./backend:/srv/app
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  worker:
+    build: ./backend
+    command: celery -A app.workers.celery_app worker -l info -Q default,media,publishing,maintenance
+    environment:
+      DATABASE_URL: postgresql+asyncpg://signage:signage@postgres:5432/signage
+      REDIS_URL: redis://redis:6379/0
+      STORAGE_BACKEND: s3
+      MEDIA_PROCESSING_INLINE: "false"
+      S3_ENDPOINT: http://minio:9000
+      S3_BUCKET: signage-media
+      S3_ACCESS_KEY: signage
+      S3_SECRET_KEY: signage-secret
+      JWT_SECRET: dev-only-secret
+      ENVIRONMENT: development
+    volumes:
+      - ./backend:/srv/app
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  beat:
+    build: ./backend
+    command: celery -A app.workers.celery_app beat -l info
+    environment:
+      DATABASE_URL: postgresql+asyncpg://signage:signage@postgres:5432/signage
+      REDIS_URL: redis://redis:6379/0
+      JWT_SECRET: dev-only-secret
+      ENVIRONMENT: development
+    volumes:
+      - ./backend:/srv/app
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+volumes:
+  pgdata:
+  miniodata:

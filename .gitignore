@@ -1,0 +1,31 @@
+# Python
+__pycache__/
+*.pyc
+.venv/
+.pytest_cache/
+.ruff_cache/
+*.egg-info/
+
+# Node
+node_modules/
+dist/
+
+# Environment / secrets
+.env
+.env.*
+!.env.example
+
+# Local data / artifacts (never in git)
+*.db
+backend/var/
+backend/.pytest_storage/
+
+# Editors / OS / local tooling
+.vscode/
+.idea/
+.claude/
+Thumbs.db
+.DS_Store
+
+# Build artifacts
+*.tsbuildinfo

@@ -1,0 +1,52 @@
+from fastapi import APIRouter
+
+from app.api.v1 import (
+    approvals,
+    assets,
+    auth,
+    billing,
+    campaigns,
+    deployments,
+    devices,
+    health,
+    integrations,
+    layouts,
+    locations,
+    notification_rules,
+    ops,
+    organization,
+    platform,
+    player,
+    playlists,
+    releases,
+    roles,
+    search,
+    storage_local,
+    studio,
+    users,
+)
+
+api_router = APIRouter()
+api_router.include_router(health.router, tags=["health"])
+api_router.include_router(auth.router, tags=["auth"])
+api_router.include_router(users.router, tags=["users"])
+api_router.include_router(roles.router, tags=["roles"])
+api_router.include_router(organization.router, tags=["organization"])
+api_router.include_router(locations.router, tags=["locations"])
+api_router.include_router(assets.router, tags=["content"])
+api_router.include_router(storage_local.router, tags=["storage"])
+api_router.include_router(devices.router, tags=["devices"])
+api_router.include_router(player.router, tags=["player"])
+api_router.include_router(layouts.router, tags=["layouts"])
+api_router.include_router(playlists.router, tags=["playlists"])
+api_router.include_router(campaigns.router, tags=["campaigns"])
+api_router.include_router(deployments.router, tags=["deployments"])
+api_router.include_router(ops.router, tags=["operations"])
+api_router.include_router(approvals.router, tags=["approvals"])
+api_router.include_router(releases.router, tags=["releases"])
+api_router.include_router(studio.router, tags=["studio"])
+api_router.include_router(notification_rules.router, tags=["notification-rules"])
+api_router.include_router(integrations.router, tags=["integrations"])
+api_router.include_router(search.router, tags=["search"])
+api_router.include_router(billing.router, tags=["billing"])
+api_router.include_router(platform.router, tags=["platform"])
