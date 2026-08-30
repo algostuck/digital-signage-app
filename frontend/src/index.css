@@ -7,10 +7,81 @@
 
 @import "tailwindcss";
 
-:root {
-  color-scheme: light;
+body {
+  @apply antialiased;
+  /* Matches Layout's colorBgLayout token in each mode so the canvas
+   * behind the app never flashes the wrong theme. */
+  background: #f8fafc;
+}
+:root[data-theme="dark"] body {
+  background: #0b1220;
 }
 
-body {
-  @apply bg-slate-50 text-slate-900 antialiased;
+/* Applied only for the ~200ms of a light/dark swap (see ThemeProvider):
+ * without it every surface cross-fades and text passes through its own
+ * background colour. This is the one place !important is warranted — it
+ * must beat antd's own per-component transitions. */
+.theme-switching,
+.theme-switching *,
+.theme-switching *::before,
+.theme-switching *::after {
+  transition: none !important;
+}
+
+/* --- Sidebar navigation band -------------------------------------------
+ * The only hand-written CSS in the shell: antd exposes no tokens for
+ * scrollbar rendering or for a menu's active-row accent bar. */
+
+/* Subtle but still discoverable scrollbar, in both themes. */
+.sidebar-scroll {
+  scrollbar-width: thin;
+  scrollbar-color: rgb(100 116 139 / 45%) transparent;
+}
+.sidebar-scroll::-webkit-scrollbar {
+  width: 6px;
+}
+.sidebar-scroll::-webkit-scrollbar-track {
+  background: transparent;
+}
+.sidebar-scroll::-webkit-scrollbar-thumb {
+  background: rgb(100 116 139 / 45%);
+  border-radius: 3px;
+}
+.sidebar-scroll::-webkit-scrollbar-thumb:hover {
+  background: rgb(100 116 139 / 70%);
+}
+:root[data-theme="dark"] .sidebar-scroll {
+  scrollbar-color: rgb(255 255 255 / 20%) transparent;
+}
+:root[data-theme="dark"] .sidebar-scroll::-webkit-scrollbar-thumb {
+  background: rgb(255 255 255 / 18%);
+}
+:root[data-theme="dark"] .sidebar-scroll::-webkit-scrollbar-thumb:hover {
+  background: rgb(255 255 255 / 32%);
+}
+
+/* Account trigger hover/focus, theme-aware. */
+.account-trigger {
+  transition: background-color 0.2s;
+}
+.account-trigger:hover {
+  background: rgb(100 116 139 / 12%);
+}
+:root[data-theme="dark"] .account-trigger:hover {
+  background: rgb(255 255 255 / 10%);
+}
+.account-trigger:focus-visible {
+  outline: 2px solid #1d4ed8;
+  outline-offset: 2px;
+}
+:root[data-theme="dark"] .account-trigger:focus-visible {
+  outline-color: #93c5fd;
+}
+
+/* The selected row and the parent of a selected row both shift to a
+ * heavier weight, so the active state is never carried by hue alone
+ * (WCAG 2.2 §1.4.1) — the filled pill is reinforcement, not the signal. */
+.sidebar-scroll .ant-menu-item-selected,
+.sidebar-scroll .ant-menu-submenu-selected > .ant-menu-submenu-title {
+  font-weight: 600;
 }

@@ -1,6 +1,6 @@
 import { SearchOutlined } from "@ant-design/icons";
 import { useQuery } from "@tanstack/react-query";
-import { AutoComplete, Input, Tag, Typography } from "antd";
+import { AutoComplete, Input, Tag, Typography, theme } from "antd";
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { api } from "../../lib/api";
@@ -30,6 +30,7 @@ const MODULE_ROUTES: Record<string, string> = {
 
 /** P2-SRC-001 global search: one box, every module you may view. */
 export function GlobalSearch() {
+  const { token } = theme.useToken();
   const navigate = useNavigate();
   const [term, setTerm] = useState("");
   const [debounced, setDebounced] = useState("");
@@ -77,7 +78,7 @@ export function GlobalSearch() {
 
   return (
     <AutoComplete
-      className="w-72"
+      className="w-full max-w-[360px] min-w-[180px]"
       value={term}
       options={options}
       open={open && debounced.length >= 2}
@@ -94,7 +95,14 @@ export function GlobalSearch() {
       }}
       popupMatchSelectWidth={360}
     >
-      <Input placeholder="Search everything…" aria-label="Global search" prefix={<SearchOutlined className="text-slate-400" />} allowClear />
+      <Input
+        placeholder="Search devices, content, campaigns…"
+        aria-label="Global search"
+        prefix={<SearchOutlined style={{ color: token.colorTextTertiary }} />}
+        allowClear
+        variant="filled"
+        size="large"
+      />
     </AutoComplete>
   );
 }
