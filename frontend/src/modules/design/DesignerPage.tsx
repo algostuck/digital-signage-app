@@ -1,7 +1,32 @@
+import {
+  CloudUploadOutlined,
+  CopyOutlined,
+  DeleteOutlined,
+  PlusOutlined,
+  SaveOutlined,
+} from "@ant-design/icons";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import {
+  App,
+  Breadcrumb,
+  Button,
+  Card,
+  Checkbox,
+  Col,
+  Flex,
+  Input,
+  InputNumber,
+  Modal,
+  Popconfirm,
+  Row,
+  Select,
+  Space,
+  Tag,
+  Typography,
+} from "antd";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Link, useParams } from "react-router-dom";
-import { Spinner } from "../../components/ui/Spinner";
+import { LoadingState } from "../../components/ui/states";
 import { StatusBadge } from "../../components/ui/StatusBadge";
 import { api, ApiError } from "../../lib/api";
 import { useAuth } from "../../lib/auth";
@@ -29,17 +54,22 @@ type DragState =
       origH: number;
     };
 
-/** SCR-16 Screen Designer: canvas, zones, drag/resize, properties, publish. */
+/** SCR-16 Screen Designer: canvas, zones, drag/resize, properties, publish.
+ * The canvas interaction layer (drag/resize/scale) is intentionally custom —
+ * antd has no composition-canvas primitive; only the surrounding chrome uses
+ * the design system. */
 export function DesignerPage() {
   const { layoutId } = useParams<{ layoutId: string }>();
   const { hasPermission } = useAuth();
+  const { message: toast } = App.useApp();
   const canManage = hasPermission("layouts.manage");
   const queryClient = useQueryClient();
 
   const [canvas, setCanvas] = useState<LayoutCanvas | null>(null);
   const [selectedKey, setSelectedKey] = useState<string | null>(null);
   const [dirty, setDirty] = useState(false);
-  const [message, setMessage] = useState<{ kind: "ok" | "error"; text: string } | null>(null);
+  const [templateModalOpen, setTemplateModalOpen] = useState(false);
+  const [templateName, setTemplateName] = useState("");
   const dragRef = useRef<DragState | null>(null);
 
   const layoutQuery = useQuery({
@@ -105,15 +135,12 @@ export function DesignerPage() {
     mutationFn: () => api.patch(`/layouts/${layoutId}`, { canvas_json: canvas }),
     onSuccess: () => {
       setDirty(false);
-      setMessage({ kind: "ok", text: "Draft saved." });
+      toast.success("Draft saved.");
       queryClient.invalidateQueries({ queryKey: ["layout", layoutId] });
       queryClient.invalidateQueries({ queryKey: ["layouts"] });
     },
     onError: (err) =>
-      setMessage({
-        kind: "error",
-        text: err instanceof ApiError ? err.message : "Failed to save draft",
-      }),
+      toast.error(err instanceof ApiError ? err.message : "Failed to save draft"),
   });
 
   const publish = useMutation({
@@ -123,32 +150,26 @@ export function DesignerPage() {
     },
     onSuccess: () => {
       setDirty(false);
-      setMessage({ kind: "ok", text: "Layout published." });
+      toast.success("Layout published.");
       queryClient.invalidateQueries({ queryKey: ["layout", layoutId] });
       queryClient.invalidateQueries({ queryKey: ["layouts"] });
     },
-    onError: (err) =>
-      setMessage({
-        kind: "error",
-        text: err instanceof ApiError ? err.message : "Failed to publish",
-      }),
+    onError: (err) => toast.error(err instanceof ApiError ? err.message : "Failed to publish"),
   });
 
   const saveAsTemplate = useMutation({
     mutationFn: (name: string) => api.post("/templates", { layout_id: layoutId, name }),
     onSuccess: () => {
-      setMessage({ kind: "ok", text: "Saved as a draft template (Design → Templates)." });
+      toast.success("Saved as a draft template (Design → Templates).");
+      setTemplateModalOpen(false);
       queryClient.invalidateQueries({ queryKey: ["templates"] });
     },
     onError: (err) =>
-      setMessage({
-        kind: "error",
-        text: err instanceof ApiError ? err.message : "Failed to save template",
-      }),
+      toast.error(err instanceof ApiError ? err.message : "Failed to save template"),
   });
 
   if (layoutQuery.isLoading || !canvas || !layout) {
-    return <Spinner label="Loading designer…" />;
+    return <LoadingState rows={8} />;
   }
 
   const selected = canvas.zones.find((z) => z.key === selectedKey) ?? null;
@@ -201,309 +222,309 @@ export function DesignerPage() {
 
   return (
     <div>
-      <div className="flex flex-wrap items-center justify-between gap-3">
+      <Flex wrap justify="space-between" align="flex-start" gap="small" className="mb-4">
         <div>
-          <Link to="/design" className="text-sm text-slate-500 hover:underline">
-            ← Layouts
-          </Link>
-          <h1 className="text-xl font-semibold text-slate-900">
-            {layout.name}
-            <span className="ml-3 align-middle">
-              <StatusBadge status={layout.status} />
-            </span>
-            {dirty && <span className="ml-2 text-sm font-normal text-amber-600">● unsaved</span>}
-          </h1>
+          <Breadcrumb
+            className="mb-1"
+            items={[
+              { title: <Link to="/design">Design</Link> },
+              { title: layout.name },
+            ]}
+          />
+          <Space align="center">
+            <Typography.Title level={3} className="!mb-0">
+              {layout.name}
+            </Typography.Title>
+            <StatusBadge status={layout.status} />
+            {dirty && (
+              <Tag color="warning" variant="filled">
+                Unsaved changes
+              </Tag>
+            )}
+          </Space>
         </div>
         {canManage && (
-          <div className="flex gap-2">
-            <button
-              type="button"
-              onClick={addZone}
-              className="rounded-md border border-slate-300 px-3 py-1.5 text-sm font-medium text-slate-600"
-            >
+          <Space wrap>
+            <Button icon={<PlusOutlined />} onClick={addZone}>
               Add zone
-            </button>
-            <button
-              type="button"
+            </Button>
+            <Button
+              icon={<SaveOutlined />}
+              disabled={!dirty}
+              loading={save.isPending}
               onClick={() => save.mutate()}
-              disabled={save.isPending || !dirty}
-              className="rounded-md border border-slate-300 px-3 py-1.5 text-sm font-medium text-slate-600 disabled:opacity-40"
             >
-              {save.isPending ? "Saving…" : "Save draft"}
-            </button>
-            <button
-              type="button"
+              Save draft
+            </Button>
+            <Button
+              icon={<CopyOutlined />}
+              loading={saveAsTemplate.isPending}
               onClick={() => {
-                const name = window.prompt("Template name:", `${layout.name} template`);
-                if (name) saveAsTemplate.mutate(name);
+                setTemplateName(`${layout.name} template`);
+                setTemplateModalOpen(true);
               }}
-              disabled={saveAsTemplate.isPending}
-              className="rounded-md border border-slate-300 px-3 py-1.5 text-sm font-medium text-slate-600 disabled:opacity-40"
             >
               Save as template
-            </button>
-            <button
-              type="button"
+            </Button>
+            <Button
+              type="primary"
+              icon={<CloudUploadOutlined />}
+              loading={publish.isPending}
               onClick={() => publish.mutate()}
-              disabled={publish.isPending}
-              className="rounded-md bg-emerald-600 px-3 py-1.5 text-sm font-medium text-white disabled:opacity-50"
             >
-              {publish.isPending ? "Publishing…" : "Publish"}
-            </button>
-          </div>
+              Publish
+            </Button>
+          </Space>
         )}
-      </div>
+      </Flex>
 
-      {message && (
-        <p
-          role="alert"
-          className={`mt-2 rounded-md px-3 py-2 text-sm ${
-            message.kind === "ok" ? "bg-emerald-50 text-emerald-700" : "bg-red-50 text-red-700"
-          }`}
-        >
-          {message.text}
-        </p>
-      )}
-
-      <div className="mt-4 grid grid-cols-1 gap-4 xl:grid-cols-[minmax(0,1fr)_300px]">
-        <div className="overflow-auto rounded-lg border border-slate-200 bg-slate-100 p-4">
-          <div
-            className="relative mx-auto overflow-hidden shadow"
-            style={{
-              width: canvas.canvas.width * scale,
-              height: canvas.canvas.height * scale,
-              background: canvas.canvas.background ?? "#000",
-            }}
-            onMouseDown={() => setSelectedKey(null)}
-            role="application"
-            aria-label="Layout canvas"
-          >
-            {[...canvas.zones]
-              .sort((a, b) => a.z_index - b.z_index)
-              .map((zone) => {
-                const asset = zone.content_config.asset_id
-                  ? assetById.get(String(zone.content_config.asset_id))
-                  : null;
-                const isSelected = zone.key === selectedKey;
-                return (
-                  <div
-                    key={zone.key}
-                    onMouseDown={(e) => {
-                      e.stopPropagation();
-                      setSelectedKey(zone.key);
-                      if (canManage) {
-                        dragRef.current = {
-                          kind: "move",
-                          key: zone.key,
-                          startX: e.clientX,
-                          startY: e.clientY,
-                          origX: zone.x,
-                          origY: zone.y,
-                        };
-                      }
-                    }}
-                    className={`absolute flex items-center justify-center overflow-hidden text-xs ${
-                      isSelected ? "ring-2 ring-sky-400" : "ring-1 ring-white/30"
-                    }`}
-                    style={{
-                      left: zone.x * scale,
-                      top: zone.y * scale,
-                      width: zone.width * scale,
-                      height: zone.height * scale,
-                      zIndex: zone.z_index,
-                      background:
-                        (zone.style.background as string) ??
-                        (zone.content_type === "placeholder" ? "#1e293b" : "#0f172a"),
-                      cursor: canManage ? "move" : "default",
-                    }}
-                  >
-                    {asset?.thumbnail_url ? (
-                      <img
-                        src={asset.thumbnail_url}
-                        alt=""
-                        className="h-full w-full object-cover opacity-90"
-                        draggable={false}
-                      />
-                    ) : zone.content_type === "text" || zone.content_type === "ticker" ? (
-                      <span className="px-2 text-white/90">
-                        {String(zone.content_config.text ?? zone.name)}
-                      </span>
-                    ) : (
-                      <span className="text-white/60">
-                        {zone.name} · {zone.content_type}
-                      </span>
-                    )}
-                    {canManage && isSelected && (
-                      <span
-                        onMouseDown={(e) => {
-                          e.stopPropagation();
+      <Row gutter={[16, 16]}>
+        <Col xs={24} xl={17}>
+          <Card size="small" styles={{ body: { background: "#f1f5f9", overflow: "auto" } }}>
+            <div
+              className="relative mx-auto overflow-hidden shadow"
+              style={{
+                width: canvas.canvas.width * scale,
+                height: canvas.canvas.height * scale,
+                background: canvas.canvas.background ?? "#000",
+              }}
+              onMouseDown={() => setSelectedKey(null)}
+              role="application"
+              aria-label="Layout canvas"
+            >
+              {[...canvas.zones]
+                .sort((a, b) => a.z_index - b.z_index)
+                .map((zone) => {
+                  const asset = zone.content_config.asset_id
+                    ? assetById.get(String(zone.content_config.asset_id))
+                    : null;
+                  const isSelected = zone.key === selectedKey;
+                  return (
+                    <div
+                      key={zone.key}
+                      onMouseDown={(e) => {
+                        e.stopPropagation();
+                        setSelectedKey(zone.key);
+                        if (canManage) {
                           dragRef.current = {
-                            kind: "resize",
+                            kind: "move",
                             key: zone.key,
                             startX: e.clientX,
                             startY: e.clientY,
-                            origW: zone.width,
-                            origH: zone.height,
+                            origX: zone.x,
+                            origY: zone.y,
                           };
-                        }}
-                        aria-label="Resize zone"
-                        className="absolute bottom-0 right-0 h-3 w-3 cursor-nwse-resize bg-sky-400"
-                      />
-                    )}
-                  </div>
-                );
-              })}
-          </div>
-          <p className="mt-2 text-center text-xs text-slate-400">
-            {canvas.canvas.width}×{canvas.canvas.height} · scale {(scale * 100).toFixed(0)}%
-          </p>
-        </div>
+                        }
+                      }}
+                      className={`absolute flex items-center justify-center overflow-hidden text-xs ${
+                        isSelected ? "ring-2 ring-sky-400" : "ring-1 ring-white/30"
+                      }`}
+                      style={{
+                        left: zone.x * scale,
+                        top: zone.y * scale,
+                        width: zone.width * scale,
+                        height: zone.height * scale,
+                        zIndex: zone.z_index,
+                        background:
+                          (zone.style.background as string) ??
+                          (zone.content_type === "placeholder" ? "#1e293b" : "#0f172a"),
+                        cursor: canManage ? "move" : "default",
+                      }}
+                    >
+                      {asset?.thumbnail_url ? (
+                        <img
+                          src={asset.thumbnail_url}
+                          alt=""
+                          className="h-full w-full object-cover opacity-90"
+                          draggable={false}
+                        />
+                      ) : zone.content_type === "text" || zone.content_type === "ticker" ? (
+                        <span className="px-2 text-white/90">
+                          {String(zone.content_config.text ?? zone.name)}
+                        </span>
+                      ) : (
+                        <span className="text-white/60">
+                          {zone.name} · {zone.content_type}
+                        </span>
+                      )}
+                      {canManage && isSelected && (
+                        <span
+                          onMouseDown={(e) => {
+                            e.stopPropagation();
+                            dragRef.current = {
+                              kind: "resize",
+                              key: zone.key,
+                              startX: e.clientX,
+                              startY: e.clientY,
+                              origW: zone.width,
+                              origH: zone.height,
+                            };
+                          }}
+                          aria-label="Resize zone"
+                          className="absolute bottom-0 right-0 h-3 w-3 cursor-nwse-resize bg-sky-400"
+                        />
+                      )}
+                    </div>
+                  );
+                })}
+            </div>
+            <Typography.Paragraph type="secondary" className="!mb-0 mt-2 text-center text-xs">
+              {canvas.canvas.width}×{canvas.canvas.height} · scale {(scale * 100).toFixed(0)}%
+            </Typography.Paragraph>
+          </Card>
+        </Col>
 
-        <aside className="rounded-lg border border-slate-200 bg-white p-4">
-          {!selected ? (
-            <p className="text-sm text-slate-500">
-              Select a zone on the canvas to edit its properties.
-            </p>
-          ) : (
-            <div className="space-y-3 text-sm">
-              <div className="flex items-center justify-between">
-                <h2 className="font-semibold text-slate-800">{selected.name}</h2>
+        <Col xs={24} xl={7}>
+          <Card size="small" title={selected ? selected.name : "Properties"}>
+            {!selected ? (
+              <Typography.Text type="secondary">
+                Select a zone on the canvas to edit its properties.
+              </Typography.Text>
+            ) : (
+              <Space orientation="vertical" size="small" className="w-full">
                 {canManage && (
-                  <div className="space-x-2 text-xs">
-                    <button
-                      type="button"
+                  <Space>
+                    <Button
+                      size="small"
+                      icon={<CopyOutlined />}
                       onClick={() => duplicateZone(selected)}
-                      className="font-medium text-slate-500 hover:underline"
                     >
                       Duplicate
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => deleteZone(selected.key)}
-                      className="font-medium text-red-600 hover:underline"
+                    </Button>
+                    <Popconfirm
+                      title={`Delete zone "${selected.name}"?`}
+                      onConfirm={() => deleteZone(selected.key)}
+                      okButtonProps={{ danger: true }}
                     >
-                      Delete
-                    </button>
-                  </div>
+                      <Button size="small" danger icon={<DeleteOutlined />}>
+                        Delete
+                      </Button>
+                    </Popconfirm>
+                  </Space>
                 )}
-              </div>
-              <PropInput
-                label="Name"
-                value={selected.name}
-                onChange={(v) => updateZone(selected.key, { name: v })}
-                disabled={!canManage}
-              />
-              <div className="grid grid-cols-2 gap-2">
-                {(["x", "y", "width", "height"] as const).map((prop) => (
+                <PropInput
+                  label="Name"
+                  value={selected.name}
+                  onChange={(v) => updateZone(selected.key, { name: v })}
+                  disabled={!canManage}
+                />
+                <Row gutter={8}>
+                  {(["x", "y", "width", "height"] as const).map((prop) => (
+                    <Col span={12} key={prop}>
+                      <PropNumber
+                        label={prop}
+                        value={Math.round(selected[prop])}
+                        onChange={(v) =>
+                          updateZone(selected.key, { [prop]: Math.max(0, v ?? 0) })
+                        }
+                        disabled={!canManage}
+                      />
+                    </Col>
+                  ))}
+                </Row>
+                <PropNumber
+                  label="Z-index"
+                  value={selected.z_index}
+                  onChange={(v) => updateZone(selected.key, { z_index: v ?? 0 })}
+                  disabled={!canManage}
+                />
+                <PropInput
+                  label="Background (CSS color)"
+                  value={String(selected.style.background ?? "")}
+                  onChange={(v) =>
+                    updateZone(selected.key, {
+                      style: { ...selected.style, background: v || null },
+                    })
+                  }
+                  disabled={!canManage}
+                />
+                <PropField label="Content type">
+                  <Select
+                    className="w-full"
+                    value={selected.content_type}
+                    disabled={!canManage}
+                    onChange={(value) =>
+                      updateZone(selected.key, { content_type: value, content_config: {} })
+                    }
+                    options={ZONE_CONTENT_TYPES.map((t) => ({ value: t, label: t }))}
+                    aria-label="Content type"
+                  />
+                </PropField>
+                {(selected.content_type === "image" || selected.content_type === "video") && (
+                  <PropField label="Asset">
+                    <Select
+                      className="w-full"
+                      value={String(selected.content_config.asset_id ?? "") || undefined}
+                      placeholder="— choose —"
+                      allowClear
+                      disabled={!canManage}
+                      onChange={(value) =>
+                        updateZone(selected.key, {
+                          content_config: value ? { asset_id: value } : {},
+                        })
+                      }
+                      options={assets
+                        .filter((a) => a.type === selected.content_type)
+                        .map((a) => ({ value: a.id, label: a.name }))}
+                      aria-label="Asset"
+                    />
+                  </PropField>
+                )}
+                {(selected.content_type === "text" || selected.content_type === "ticker") && (
                   <PropInput
-                    key={prop}
-                    label={prop}
-                    type="number"
-                    value={String(Math.round(selected[prop]))}
+                    label="Text"
+                    value={String(selected.content_config.text ?? "")}
                     onChange={(v) =>
-                      updateZone(selected.key, { [prop]: Math.max(0, Number(v) || 0) })
+                      updateZone(selected.key, {
+                        content_config: { ...selected.content_config, text: v },
+                      })
                     }
                     disabled={!canManage}
                   />
-                ))}
-              </div>
-              <PropInput
-                label="Z-index"
-                type="number"
-                value={String(selected.z_index)}
-                onChange={(v) => updateZone(selected.key, { z_index: Number(v) || 0 })}
-                disabled={!canManage}
-              />
-              <PropInput
-                label="Background (CSS color)"
-                value={String(selected.style.background ?? "")}
-                onChange={(v) =>
-                  updateZone(selected.key, { style: { ...selected.style, background: v || null } })
-                }
-                disabled={!canManage}
-              />
-              <div>
-                <label htmlFor="zone-content-type" className="block text-xs font-medium uppercase tracking-wide text-slate-400">
-                  Content type
-                </label>
-                <select
-                  id="zone-content-type"
-                  value={selected.content_type}
-                  disabled={!canManage}
-                  onChange={(e) =>
-                    updateZone(selected.key, { content_type: e.target.value, content_config: {} })
-                  }
-                  className="mt-1 block w-full rounded-md border border-slate-300 px-2 py-1.5"
-                >
-                  {ZONE_CONTENT_TYPES.map((t) => (
-                    <option key={t} value={t}>
-                      {t}
-                    </option>
-                  ))}
-                </select>
-              </div>
-              {(selected.content_type === "image" || selected.content_type === "video") && (
-                <div>
-                  <label htmlFor="zone-asset" className="block text-xs font-medium uppercase tracking-wide text-slate-400">
-                    Asset
-                  </label>
-                  <select
-                    id="zone-asset"
-                    value={String(selected.content_config.asset_id ?? "")}
-                    disabled={!canManage}
-                    onChange={(e) =>
+                )}
+                {selected.content_type === "web" && (
+                  <PropInput
+                    label="URL"
+                    value={String(selected.content_config.url ?? "")}
+                    onChange={(v) =>
                       updateZone(selected.key, {
-                        content_config: e.target.value ? { asset_id: e.target.value } : {},
+                        content_config: { ...selected.content_config, url: v },
                       })
                     }
-                    className="mt-1 block w-full rounded-md border border-slate-300 px-2 py-1.5"
-                  >
-                    <option value="">— choose —</option>
-                    {assets
-                      .filter((a) => a.type === selected.content_type)
-                      .map((a) => (
-                        <option key={a.id} value={a.id}>
-                          {a.name}
-                        </option>
-                      ))}
-                  </select>
-                </div>
-              )}
-              {(selected.content_type === "text" || selected.content_type === "ticker") && (
-                <PropInput
-                  label="Text"
-                  value={String(selected.content_config.text ?? "")}
-                  onChange={(v) =>
-                    updateZone(selected.key, {
-                      content_config: { ...selected.content_config, text: v },
-                    })
-                  }
-                  disabled={!canManage}
-                />
-              )}
-              {selected.content_type === "web" && (
-                <PropInput
-                  label="URL"
-                  value={String(selected.content_config.url ?? "")}
-                  onChange={(v) =>
-                    updateZone(selected.key, {
-                      content_config: { ...selected.content_config, url: v },
-                    })
-                  }
-                  disabled={!canManage}
-                />
-              )}
-              {selected.content_type === "widget" && (
-                <WidgetZonePanel
-                  zone={selected}
-                  updateZone={updateZone}
-                  disabled={!canManage}
-                />
-              )}
-            </div>
-          )}
-        </aside>
-      </div>
+                    disabled={!canManage}
+                  />
+                )}
+                {selected.content_type === "widget" && (
+                  <WidgetZonePanel zone={selected} updateZone={updateZone} disabled={!canManage} />
+                )}
+              </Space>
+            )}
+          </Card>
+        </Col>
+      </Row>
+
+      <Modal
+        title="Save as template"
+        open={templateModalOpen}
+        okText="Save template"
+        confirmLoading={saveAsTemplate.isPending}
+        onOk={() => {
+          if (templateName.trim()) saveAsTemplate.mutate(templateName.trim());
+        }}
+        onCancel={() => setTemplateModalOpen(false)}
+        destroyOnHidden
+      >
+        <Input
+          autoFocus
+          value={templateName}
+          onChange={(e) => setTemplateName(e.target.value)}
+          placeholder="Template name"
+          aria-label="Template name"
+          onPressEnter={() => {
+            if (templateName.trim()) saveAsTemplate.mutate(templateName.trim());
+          }}
+        />
+      </Modal>
     </div>
   );
 }
@@ -535,90 +556,86 @@ function WidgetZonePanel({
 
   function patchWidget(patch: Partial<NonNullable<ZoneDef["widget"]>>) {
     updateZone(zone.key, {
-      widget: ref
-        ? { ...ref, ...patch }
-        : { widget_id: "", config: {}, bindings: {}, ...patch },
+      widget: ref ? { ...ref, ...patch } : { widget_id: "", config: {}, bindings: {}, ...patch },
     });
   }
 
   return (
-    <div className="space-y-3 border-t border-slate-200 pt-3">
-      <div>
-        <label htmlFor="zone-widget" className="block text-xs font-medium uppercase tracking-wide text-slate-400">
-          Widget
-        </label>
-        <select
-          id="zone-widget"
-          value={ref?.widget_id ?? ""}
+    <Space orientation="vertical" size="small" className="w-full border-t border-slate-200 pt-3">
+      <PropField label="Widget">
+        <Select
+          className="w-full"
+          value={ref?.widget_id || undefined}
+          placeholder="— choose widget —"
+          allowClear
           disabled={disabled}
-          onChange={(e) =>
+          onChange={(value) =>
             updateZone(zone.key, {
-              widget: e.target.value
-                ? { widget_id: e.target.value, config: {}, bindings: {} }
-                : null,
+              widget: value ? { widget_id: value, config: {}, bindings: {} } : null,
             })
           }
-          className="mt-1 block w-full rounded-md border border-slate-300 px-2 py-1.5"
-        >
-          <option value="">— choose widget —</option>
-          {widgets.map((w) => (
-            <option key={w.id} value={w.id}>
-              {w.name} ({w.type})
-            </option>
-          ))}
-        </select>
-      </div>
+          options={widgets.map((w) => ({ value: w.id, label: `${w.name} (${w.type})` }))}
+          aria-label="Widget"
+        />
+      </PropField>
 
       {schema &&
         ref &&
         schema.fields.map((field) => {
           const value = ref.config?.[field.key];
-          const set = (v: unknown) =>
-            patchWidget({ config: { ...ref.config, [field.key]: v } });
+          const set = (v: unknown) => patchWidget({ config: { ...ref.config, [field.key]: v } });
           if (field.type === "boolean") {
             return (
-              <label key={field.key} className="flex items-center gap-2 text-sm text-slate-600">
-                <input
-                  type="checkbox"
-                  checked={Boolean(value)}
-                  disabled={disabled}
-                  onChange={(e) => set(e.target.checked)}
-                />
+              <Checkbox
+                key={field.key}
+                checked={Boolean(value)}
+                disabled={disabled}
+                onChange={(e) => set(e.target.checked)}
+              >
                 {field.label ?? field.key}
-                {field.required && <span className="text-red-500">*</span>}
-              </label>
+                {field.required && <Typography.Text type="danger"> *</Typography.Text>}
+              </Checkbox>
             );
           }
           if (field.type === "select") {
             return (
-              <div key={field.key}>
-                <label className="block text-xs font-medium uppercase tracking-wide text-slate-400">
-                  {field.label ?? field.key}
-                  {field.required && <span className="text-red-500">*</span>}
-                </label>
-                <select
-                  value={String(value ?? field.default ?? "")}
+              <PropField
+                key={field.key}
+                label={`${field.label ?? field.key}${field.required ? " *" : ""}`}
+              >
+                <Select
+                  className="w-full"
+                  value={String(value ?? field.default ?? "") || undefined}
+                  placeholder="— choose —"
                   disabled={disabled}
-                  onChange={(e) => set(e.target.value)}
-                  className="mt-1 block w-full rounded-md border border-slate-300 px-2 py-1.5"
-                >
-                  <option value="">— choose —</option>
-                  {(field.options ?? []).map((option) => (
-                    <option key={option} value={option}>
-                      {option}
-                    </option>
-                  ))}
-                </select>
-              </div>
+                  onChange={(v) => set(v)}
+                  options={(field.options ?? []).map((option) => ({
+                    value: option,
+                    label: option,
+                  }))}
+                  aria-label={field.label ?? field.key}
+                />
+              </PropField>
+            );
+          }
+          if (field.type === "number") {
+            return (
+              <PropNumber
+                key={field.key}
+                label={`${field.label ?? field.key}${field.required ? " *" : ""}`}
+                value={Number(value ?? field.default ?? 0)}
+                onChange={(v) => set(v)}
+                disabled={disabled}
+              />
             );
           }
           return (
             <PropInput
               key={field.key}
               label={`${field.label ?? field.key}${field.required ? " *" : ""}`}
-              type={field.type === "number" ? "number" : field.type === "color" ? "color" : "text"}
+              type={field.type === "color" ? "color" : "text"}
               value={String(value ?? field.default ?? "")}
-              onChange={(v) => set(field.type === "number" ? Number(v) : v)}
+              onChange={(v) => set(v)}
               disabled={disabled}
             />
           );
@@ -632,19 +649,19 @@ function WidgetZonePanel({
             onChange={(v) => patchWidget({ bindings: { ...ref.bindings, text: v } })}
             disabled={disabled}
           />
-          <p className="mt-1 text-xs text-slate-400">
+          <Typography.Text type="secondary" className="text-xs">
             Use {"{{token}}"} with approved variables:{" "}
             {(variablesQuery.data?.data ?? []).map((v) => v.token).join(", ")}
-          </p>
+          </Typography.Text>
         </div>
       )}
       {ref && <DataBindingEditor refWidget={ref} patchWidget={patchWidget} disabled={disabled} />}
       {widget?.fallback_json && (
-        <p className="text-xs text-slate-400">
+        <Typography.Text type="secondary" className="text-xs">
           Fallback when data unavailable: {JSON.stringify(widget.fallback_json)}
-        </p>
+        </Typography.Text>
       )}
-    </div>
+    </Space>
   );
 }
 
@@ -675,30 +692,26 @@ function DataBindingEditor({
   }
 
   return (
-    <div className="border-t border-slate-200 pt-3">
-      <label htmlFor="zone-data-source" className="block text-xs font-medium uppercase tracking-wide text-slate-400">
-        Live data source
-      </label>
-      <select
-        id="zone-data-source"
-        value={binding?.source_id ?? ""}
-        disabled={disabled}
-        onChange={(e) =>
-          patchWidget({
-            data_binding: e.target.value ? { source_id: e.target.value } : null,
-          })
-        }
-        className="mt-1 block w-full rounded-md border border-slate-300 px-2 py-1.5"
-      >
-        <option value="">— no live data —</option>
-        {sources.map((s) => (
-          <option key={s.id} value={s.id}>
-            {s.name} {s.state !== "active" ? `(${s.state})` : ""}
-          </option>
-        ))}
-      </select>
+    <Space orientation="vertical" size="small" className="w-full border-t border-slate-200 pt-3">
+      <PropField label="Live data source">
+        <Select
+          className="w-full"
+          value={binding?.source_id || undefined}
+          placeholder="— no live data —"
+          allowClear
+          disabled={disabled}
+          onChange={(value) =>
+            patchWidget({ data_binding: value ? { source_id: value } : null })
+          }
+          options={sources.map((s) => ({
+            value: s.id,
+            label: `${s.name}${s.state !== "active" ? ` (${s.state})` : ""}`,
+          }))}
+          aria-label="Live data source"
+        />
+      </PropField>
       {binding && (
-        <div className="mt-2 space-y-2">
+        <>
           <PropInput
             label="Transform path (e.g. items)"
             value={String(transform.path ?? "")}
@@ -725,23 +738,31 @@ function DataBindingEditor({
             }}
             disabled={disabled}
           />
-          <PropInput
+          <PropNumber
             label="Item limit"
-            type="number"
-            value={String(transform.limit ?? "")}
+            value={transform.limit ?? null}
             onChange={(v) =>
-              patchBinding({
-                transform: { ...transform, limit: v ? Number(v) : undefined },
-              })
+              patchBinding({ transform: { ...transform, limit: v ?? undefined } })
             }
             disabled={disabled}
           />
-          <p className="text-xs text-slate-400">
-            Snapshots are refreshed server-side; when the source is down the
-            player keeps last-known-good, then the widget fallback.
-          </p>
-        </div>
+          <Typography.Text type="secondary" className="text-xs">
+            Snapshots are refreshed server-side; when the source is down the player keeps
+            last-known-good, then the widget fallback.
+          </Typography.Text>
+        </>
       )}
+    </Space>
+  );
+}
+
+function PropField({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <div>
+      <Typography.Text type="secondary" className="block text-xs font-medium uppercase">
+        {label}
+      </Typography.Text>
+      <div className="mt-1">{children}</div>
     </div>
   );
 }
@@ -760,17 +781,38 @@ function PropInput({
   disabled?: boolean;
 }) {
   return (
-    <div>
-      <label className="block text-xs font-medium uppercase tracking-wide text-slate-400">
-        {label}
-      </label>
-      <input
+    <PropField label={label}>
+      <Input
         type={type}
         value={value}
         disabled={disabled}
         onChange={(e) => onChange(e.target.value)}
-        className="mt-1 block w-full rounded-md border border-slate-300 px-2 py-1.5 disabled:bg-slate-50"
+        aria-label={label}
       />
-    </div>
+    </PropField>
+  );
+}
+
+function PropNumber({
+  label,
+  value,
+  onChange,
+  disabled = false,
+}: {
+  label: string;
+  value: number | null;
+  onChange: (value: number | null) => void;
+  disabled?: boolean;
+}) {
+  return (
+    <PropField label={label}>
+      <InputNumber
+        className="w-full"
+        value={value}
+        disabled={disabled}
+        onChange={onChange}
+        aria-label={label}
+      />
+    </PropField>
   );
 }

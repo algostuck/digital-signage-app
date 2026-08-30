@@ -1,6 +1,9 @@
+import { CloudServerOutlined, PlayCircleOutlined } from "@ant-design/icons";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { Alert, Button, Card, Result, Space, Tag, Typography } from "antd";
 import { useState } from "react";
-import { Spinner } from "../../components/ui/Spinner";
+import { PageHeader } from "../../components/ui/PageHeader";
+import { LoadingState } from "../../components/ui/states";
 import { api, ApiError } from "../../lib/api";
 import { useAuth } from "../../lib/auth";
 
@@ -35,11 +38,11 @@ interface SimulatedDevice {
   manifest_url: string;
 }
 
-const LIFECYCLE_STYLE: Record<string, string> = {
-  current: "bg-emerald-100 text-emerald-700",
-  preview: "bg-sky-100 text-sky-700",
-  deprecated: "bg-amber-100 text-amber-700",
-  sunset: "bg-red-100 text-red-700",
+const LIFECYCLE_COLOR: Record<string, string> = {
+  current: "success",
+  preview: "processing",
+  deprecated: "warning",
+  sunset: "error",
 };
 
 /** P3-23 Developer Portal: versioned contracts + changelog, sandbox tenant,
@@ -86,159 +89,153 @@ export function DeveloperPage() {
 
   if (!hasPermission("api_keys.manage"))
     return (
-      <p className="text-sm text-red-600" role="alert">
-        Requires the api_keys.manage permission.
-      </p>
+      <Result
+        status="403"
+        title="Developer Portal unavailable"
+        subTitle="Requires the api_keys.manage permission."
+      />
     );
-  if (metaQuery.isLoading) return <Spinner label="Loading developer portal…" />;
+  if (metaQuery.isLoading) return <LoadingState rows={6} />;
   if (metaQuery.isError)
     return (
-      <p className="rounded-md bg-amber-50 px-3 py-2 text-sm text-amber-800" role="alert">
-        {metaQuery.error instanceof ApiError
-          ? metaQuery.error.message
-          : "Developer portal unavailable."}
-      </p>
+      <Alert
+        type="warning"
+        showIcon
+        role="alert"
+        message={
+          metaQuery.error instanceof ApiError
+            ? metaQuery.error.message
+            : "Developer portal unavailable."
+        }
+      />
     );
 
   const meta = metaQuery.data?.data;
   const sandbox = sandboxQuery.data?.data ?? null;
 
   return (
-    <div className="max-w-4xl space-y-8">
-      <div>
-        <h1 className="text-xl font-semibold text-slate-900">Developer Portal</h1>
-        <p className="mt-1 text-sm text-slate-500">
-          Versioned API contracts, sandbox tenant and device simulator. API
-          keys are managed in Settings → Integrations.
-        </p>
+    <div className="max-w-4xl">
+      <PageHeader
+        title="Developer Portal"
+        description="Versioned API contracts, sandbox tenant and device simulator. API keys are managed in Settings → Integrations."
+      />
+      <Space orientation="vertical" size="large" className="w-full">
         {meta?.docs_url && (
-          <p className="mt-2 text-sm">
+          <Typography.Text>
             Interactive docs:{" "}
-            <a
-              href={meta.docs_url}
-              target="_blank"
-              rel="noreferrer"
-              className="font-medium text-sky-700 underline"
-            >
+            <Typography.Link href={meta.docs_url} target="_blank" rel="noreferrer">
               {meta.docs_url}
-            </a>{" "}
+            </Typography.Link>{" "}
             · OpenAPI:{" "}
-            <a
-              href={meta.openapi_url ?? "#"}
-              target="_blank"
-              rel="noreferrer"
-              className="font-medium text-sky-700 underline"
-            >
+            <Typography.Link href={meta.openapi_url ?? "#"} target="_blank" rel="noreferrer">
               {meta.openapi_url}
-            </a>
-          </p>
+            </Typography.Link>
+          </Typography.Text>
         )}
-      </div>
 
-      <section className="rounded-lg border border-slate-200 bg-white p-4">
-        <h2 className="text-sm font-semibold uppercase tracking-wide text-slate-400">
-          Sandbox tenant
-        </h2>
-        <p className="mt-0.5 text-xs text-slate-400">
-          An isolated test organization — build and break freely without
-          touching production content or devices. You get an owner membership,
-          so it appears in the tenant switcher in the header.
-        </p>
-        {sandbox == null ? (
-          <button
-            type="button"
-            disabled={provision.isPending}
-            onClick={() => provision.mutate()}
-            className="mt-3 rounded-md bg-slate-900 px-4 py-2 text-sm font-medium text-white disabled:opacity-50"
-          >
-            Provision sandbox
-          </button>
-        ) : (
-          <div className="mt-3 space-y-2 text-sm">
-            <p>
-              <span className="font-medium text-slate-800">{sandbox.name}</span>{" "}
-              <span className="font-mono text-xs text-slate-500">({sandbox.code})</span>{" "}
-              · {sandbox.devices} device{sandbox.devices === 1 ? "" : "s"}
-            </p>
-            <p className="text-xs text-slate-500">
-              Enrollment key (for player registration):{" "}
-              <code className="rounded bg-slate-100 px-1.5 py-0.5 font-mono">
-                {sandbox.enrollment_key}
-              </code>
-            </p>
-            <button
-              type="button"
-              disabled={simulate.isPending}
-              onClick={() => simulate.mutate()}
-              className="rounded-md bg-slate-900 px-3 py-1.5 text-sm font-medium text-white disabled:opacity-50"
+        <Card size="small" title="Sandbox tenant">
+          <Typography.Paragraph type="secondary" className="!mb-2 text-xs">
+            An isolated test organization — build and break freely without
+            touching production content or devices. You get an owner membership,
+            so it appears in the tenant switcher in the header.
+          </Typography.Paragraph>
+          {sandbox == null ? (
+            <Button
+              type="primary"
+              icon={<CloudServerOutlined />}
+              loading={provision.isPending}
+              onClick={() => provision.mutate()}
             >
-              Simulate a device
-            </button>
-            {simulated && (
-              <div className="rounded-md border border-amber-300 bg-amber-50 px-3 py-2">
-                <p className="font-medium text-amber-800">
-                  Device {simulated.serial_no} enrolled — token shown only once:
-                </p>
-                <code className="mt-1 block break-all font-mono text-xs text-slate-800">
-                  {simulated.device_token}
-                </code>
-                <p className="mt-1 font-mono text-xs text-slate-500">
-                  POST {simulated.heartbeat_url} · GET {simulated.manifest_url}
-                  {"  "}(header X-Device-Token)
-                </p>
-              </div>
-            )}
-          </div>
-        )}
-      </section>
-
-      {(meta?.products ?? []).map((product) => (
-        <section key={product.name} className="rounded-lg border border-slate-200 bg-white p-4">
-          <h2 className="text-sm font-semibold uppercase tracking-wide text-slate-400">
-            {product.name}
-          </h2>
-          {product.description && (
-            <p className="mt-0.5 text-xs text-slate-400">{product.description}</p>
+              Provision sandbox
+            </Button>
+          ) : (
+            <Space orientation="vertical" size="small" className="w-full">
+              <Typography.Text>
+                <Typography.Text strong>{sandbox.name}</Typography.Text>{" "}
+                <Typography.Text code className="text-xs">
+                  {sandbox.code}
+                </Typography.Text>{" "}
+                · {sandbox.devices} device{sandbox.devices === 1 ? "" : "s"}
+              </Typography.Text>
+              <Typography.Text type="secondary" className="text-xs">
+                Enrollment key (for player registration):{" "}
+                <Typography.Text code copyable>
+                  {sandbox.enrollment_key}
+                </Typography.Text>
+              </Typography.Text>
+              <Button
+                icon={<PlayCircleOutlined />}
+                loading={simulate.isPending}
+                onClick={() => simulate.mutate()}
+              >
+                Simulate a device
+              </Button>
+              {simulated && (
+                <Alert
+                  type="warning"
+                  showIcon
+                  message={`Device ${simulated.serial_no} enrolled — token shown only once:`}
+                  description={
+                    <Space orientation="vertical" size={4}>
+                      <Typography.Text code copyable className="break-all text-xs">
+                        {simulated.device_token}
+                      </Typography.Text>
+                      <Typography.Text type="secondary" className="text-xs">
+                        POST {simulated.heartbeat_url} · GET {simulated.manifest_url}
+                        {"  "}(header X-Device-Token)
+                      </Typography.Text>
+                    </Space>
+                  }
+                />
+              )}
+            </Space>
           )}
-          <div className="mt-3 space-y-3">
-            {product.versions.map((v) => (
-              <div key={v.version} className="rounded-md border border-slate-200 p-3">
-                <div className="flex items-center gap-2">
-                  <span className="font-mono text-sm font-semibold text-slate-800">
-                    {v.version}
-                  </span>
-                  <span
-                    className={`rounded-full px-2 py-0.5 text-xs font-medium ${
-                      LIFECYCLE_STYLE[v.lifecycle_state] ?? "bg-slate-100 text-slate-600"
-                    }`}
-                  >
-                    {v.lifecycle_state}
-                  </span>
-                  {v.sunset_at && (
-                    <span className="text-xs text-red-600">
-                      sunset {new Date(v.sunset_at).toLocaleDateString()}
-                    </span>
-                  )}
-                </div>
-                <ul className="mt-2 space-y-1 text-sm text-slate-600">
-                  {v.changelog.map((entry, i) => (
-                    <li key={i}>
-                      <span className="font-mono text-xs text-slate-400">{entry.date}</span>{" "}
-                      {entry.note}
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            ))}
-          </div>
-        </section>
-      ))}
+        </Card>
 
-      {error && (
-        <p role="alert" className="rounded-md bg-red-50 px-3 py-2 text-sm text-red-700">
-          {error}
-        </p>
-      )}
+        {(meta?.products ?? []).map((product) => (
+          <Card size="small" key={product.name} title={product.name}>
+            {product.description && (
+              <Typography.Paragraph type="secondary" className="!mb-3 text-xs">
+                {product.description}
+              </Typography.Paragraph>
+            )}
+            <Space orientation="vertical" size="small" className="w-full">
+              {product.versions.map((v) => (
+                <Card key={v.version} type="inner" size="small">
+                  <Space wrap size="small">
+                    <Typography.Text strong code>
+                      {v.version}
+                    </Typography.Text>
+                    <Tag
+                      color={LIFECYCLE_COLOR[v.lifecycle_state] ?? "default"}
+                      variant="filled"
+                    >
+                      {v.lifecycle_state}
+                    </Tag>
+                    {v.sunset_at && (
+                      <Typography.Text type="danger" className="text-xs">
+                        sunset {new Date(v.sunset_at).toLocaleDateString()}
+                      </Typography.Text>
+                    )}
+                  </Space>
+                  <ul className="mb-0 mt-2 list-none space-y-1 p-0">
+                    {v.changelog.map((entry, i) => (
+                      <li key={i}>
+                        <Typography.Text type="secondary" className="text-xs">
+                          {entry.date}
+                        </Typography.Text>{" "}
+                        <Typography.Text>{entry.note}</Typography.Text>
+                      </li>
+                    ))}
+                  </ul>
+                </Card>
+              ))}
+            </Space>
+          </Card>
+        ))}
+
+        {error && <Alert type="error" showIcon role="alert" message={error} />}
+      </Space>
     </div>
   );
 }

@@ -1,6 +1,30 @@
+import { DownloadOutlined, PlusOutlined } from "@ant-design/icons";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useEffect, useState, type FormEvent } from "react";
-import { Spinner } from "../../components/ui/Spinner";
+import {
+  Alert,
+  App,
+  Button,
+  Card,
+  Col,
+  Drawer,
+  Form,
+  Input,
+  InputNumber,
+  Modal,
+  Popconfirm,
+  Result,
+  Row,
+  Select,
+  Space,
+  Table,
+  Tag,
+  Typography,
+  type TableProps,
+} from "antd";
+import { useEffect, useState } from "react";
+import { PageHeader } from "../../components/ui/PageHeader";
+import { EmptyState, LoadingState } from "../../components/ui/states";
+import { StatusBadge } from "../../components/ui/StatusBadge";
 import { api, ApiError } from "../../lib/api";
 import { useAuth } from "../../lib/auth";
 import { PlanEditor, type PlanRow } from "./PlanEditor";
@@ -47,6 +71,14 @@ interface PlanRequestRow {
   created_at: string | null;
 }
 
+interface CreateTenantValues {
+  name: string;
+  code: string;
+  owner_email: string;
+  owner_full_name: string;
+  owner_password?: string;
+}
+
 const PROVIDERS = ["manual", "stripe", "razorpay"];
 
 const SUB_STATUSES = [
@@ -62,9 +94,11 @@ const SUB_STATUSES = [
 /** SCR-PLAT: Super Admin console — tenants, plans, subscriptions, payments. */
 export function PlatformPage() {
   const { user } = useAuth();
+  const { message } = App.useApp();
   const queryClient = useQueryClient();
-  const [message, setMessage] = useState<{ kind: "ok" | "error"; text: string } | null>(null);
   const [selected, setSelected] = useState<TenantRow | null>(null);
+  const [createOpen, setCreateOpen] = useState(false);
+  const [createForm] = Form.useForm<CreateTenantValues>();
 
   const tenantsQuery = useQuery({
     queryKey: ["platform-tenants"],
@@ -113,31 +147,21 @@ export function PlatformPage() {
   const done = (text: string) => {
     queryClient.invalidateQueries({ queryKey: ["platform-tenants"] });
     if (selected) queryClient.invalidateQueries({ queryKey: ["platform-invoices", selected.id] });
-    setMessage({ kind: "ok", text });
+    message.success(text);
   };
   const onError = (err: unknown) =>
-    setMessage({
-      kind: "error",
-      text: err instanceof ApiError ? err.message : "Action failed",
-    });
+    message.error(err instanceof ApiError ? err.message : "Action failed");
 
-  // -- create tenant form state
-  const [form, setForm] = useState({
-    name: "",
-    code: "",
-    owner_email: "",
-    owner_full_name: "",
-    owner_password: "",
-  });
   const createTenant = useMutation({
-    mutationFn: () =>
+    mutationFn: (values: CreateTenantValues) =>
       api.post("/platform/tenants", {
-        ...form,
-        owner_password: form.owner_password || null,
+        ...values,
+        owner_password: values.owner_password || null,
       }),
     onSuccess: () => {
       done("Tenant created.");
-      setForm({ name: "", code: "", owner_email: "", owner_full_name: "", owner_password: "" });
+      createForm.resetFields();
+      setCreateOpen(false);
     },
     onError,
   });
@@ -216,466 +240,497 @@ export function PlatformPage() {
 
   if (!user?.is_superuser)
     return (
-      <p className="text-sm text-red-600" role="alert">
-        Platform administrator access required.
-      </p>
+      <Result
+        status="403"
+        title="Platform Administration unavailable"
+        subTitle="Platform administrator access required."
+      />
     );
-  if (tenantsQuery.isLoading) return <Spinner label="Loading tenants…" />;
+  if (tenantsQuery.isLoading) return <LoadingState rows={8} />;
 
   const tenants = tenantsQuery.data?.data ?? [];
   const plans = plansQuery.data?.data ?? [];
   const invoices = invoicesQuery.data?.data ?? [];
   const planRequests = requestsQuery.data?.data ?? [];
 
-  function onCreate(e: FormEvent) {
-    e.preventDefault();
-    setMessage(null);
-    createTenant.mutate();
-  }
+  const requestColumns: TableProps<PlanRequestRow>["columns"] = [
+    {
+      title: "Organization",
+      dataIndex: "organization_name",
+      render: (name: string) => <Typography.Text strong>{name}</Typography.Text>,
+    },
+    {
+      title: "Change",
+      render: (_, req) => (
+        <>
+          {req.from_plan} → <Typography.Text strong>{req.to_plan_name}</Typography.Text>
+        </>
+      ),
+    },
+    {
+      title: "Note",
+      dataIndex: "note",
+      responsive: ["lg"],
+      render: (note: string | null) => (
+        <Typography.Text type="secondary">{note ?? ""}</Typography.Text>
+      ),
+    },
+    {
+      title: "Actions",
+      render: (_, req) => (
+        <Space size="small">
+          <Popconfirm
+            title={`Approve ${req.organization_name}'s change to ${req.to_plan_name}?`}
+            description="The plan activates immediately on approval."
+            onConfirm={() => decideRequest.mutate({ id: req.id, approve: true })}
+          >
+            <Button type="primary" size="small" disabled={decideRequest.isPending}>
+              Approve
+            </Button>
+          </Popconfirm>
+          <Popconfirm
+            title={`Reject ${req.organization_name}'s plan change request?`}
+            okButtonProps={{ danger: true }}
+            onConfirm={() => decideRequest.mutate({ id: req.id, approve: false })}
+          >
+            <Button size="small" danger disabled={decideRequest.isPending}>
+              Reject
+            </Button>
+          </Popconfirm>
+        </Space>
+      ),
+    },
+  ];
+
+  const tenantColumns: TableProps<TenantRow>["columns"] = [
+    {
+      title: "Name",
+      dataIndex: "name",
+      render: (name: string) => <Typography.Text strong>{name}</Typography.Text>,
+    },
+    {
+      title: "Code",
+      dataIndex: "code",
+      responsive: ["lg"],
+      render: (code: string) => (
+        <Typography.Text code className="text-xs">
+          {code}
+        </Typography.Text>
+      ),
+    },
+    { title: "Plan", render: (_, t) => t.plan_name ?? "—" },
+    {
+      title: "Subscription",
+      render: (_, t) =>
+        t.subscription_status ? (
+          <StatusBadge status={t.subscription_status} />
+        ) : (
+          <Typography.Text type="secondary" className="text-xs">
+            none (legacy)
+          </Typography.Text>
+        ),
+    },
+    { title: "Devices", dataIndex: "devices", align: "right", responsive: ["lg"] },
+    { title: "Users", dataIndex: "users", align: "right", responsive: ["lg"] },
+    {
+      title: "Actions",
+      render: (_, t) => (
+        <Space size="small" wrap>
+          {t.subscription_status == null ? (
+            <Select
+              aria-label={`Assign plan to ${t.name}`}
+              size="small"
+              className="w-36"
+              placeholder="Assign plan…"
+              value={null}
+              onChange={(value: string | null) => {
+                if (value) assignPlan.mutate({ tenantId: t.id, plan_code: value });
+              }}
+              options={plans
+                .filter((p) => p.is_active)
+                .map((p) => ({ value: p.code, label: p.name }))}
+            />
+          ) : (
+            <Select
+              aria-label={`Set subscription status for ${t.name}`}
+              size="small"
+              className="w-36"
+              value={t.subscription_status}
+              onChange={(value: string) =>
+                transition.mutate({ tenantId: t.id, to_status: value })
+              }
+              options={SUB_STATUSES.map((s) => ({
+                value: s,
+                label: s.replace(/_/g, " "),
+              }))}
+            />
+          )}
+          <Button size="small" onClick={() => setSelected(t)}>
+            Manage
+          </Button>
+        </Space>
+      ),
+    },
+  ];
+
+  const invoiceColumns: TableProps<InvoiceRow>["columns"] = [
+    {
+      title: "Number",
+      dataIndex: "number",
+      render: (n: string) => (
+        <Typography.Text code className="text-xs">
+          {n}
+        </Typography.Text>
+      ),
+    },
+    {
+      title: "Amount",
+      align: "right",
+      render: (_, inv) => `${inv.amount} ${inv.currency}`,
+    },
+    { title: "Status", render: (_, inv) => <StatusBadge status={inv.status} /> },
+    {
+      title: "Actions",
+      render: (_, inv) =>
+        selected && (
+          <Space size="small">
+            <Button
+              size="small"
+              icon={<DownloadOutlined />}
+              onClick={() =>
+                void api.download(
+                  `/platform/tenants/${selected.id}/invoices/${inv.id}/download`,
+                )
+              }
+            >
+              Download
+            </Button>
+            {inv.status === "issued" && (
+              <Popconfirm
+                title={`Record payment for ${inv.number}?`}
+                description="The subscription reactivates immediately."
+                onConfirm={() =>
+                  recordPayment.mutate({ tenantId: selected.id, invoiceId: inv.id })
+                }
+              >
+                <Button size="small" type="primary">
+                  Record payment
+                </Button>
+              </Popconfirm>
+            )}
+          </Space>
+        ),
+    },
+  ];
 
   return (
-    <div className="max-w-5xl space-y-8">
-      <div>
-        <h1 className="text-xl font-semibold text-slate-900">Platform Administration</h1>
-        <p className="mt-1 text-sm text-slate-500">
-          Tenants, plans and subscriptions across the whole platform.
-        </p>
-      </div>
+    <div className="max-w-5xl">
+      <PageHeader
+        title="Platform Administration"
+        description="Tenants, plans and subscriptions across the whole platform."
+        actions={
+          <Button type="primary" icon={<PlusOutlined />} onClick={() => setCreateOpen(true)}>
+            New tenant
+          </Button>
+        }
+      />
 
-      {planRequests.length > 0 && (
-        <section className="rounded-lg border border-amber-200 bg-amber-50 p-4">
-          <h2 className="text-sm font-semibold uppercase tracking-wide text-amber-600">
-            Plan change requests awaiting approval
-          </h2>
-          <p className="mt-0.5 text-xs text-amber-700">
-            Verify the manual payment first, then approve — the plan activates
-            immediately on approval.
-          </p>
-          <table className="mt-2 w-full text-left text-sm">
-            <tbody>
-              {planRequests.map((req) => (
-                <tr key={req.id} className="border-t border-amber-200/60">
-                  <td className="py-1.5 pr-4 font-medium text-slate-800">
-                    {req.organization_name}
-                  </td>
-                  <td className="py-1.5 pr-4">
-                    {req.from_plan} → <strong>{req.to_plan_name}</strong>
-                  </td>
-                  <td className="py-1.5 pr-4 text-xs text-slate-500">
-                    {req.note ?? ""}
-                  </td>
-                  <td className="py-1.5">
-                    <div className="flex items-center gap-1.5">
-                      <button
-                        type="button"
-                        disabled={decideRequest.isPending}
-                        onClick={() => decideRequest.mutate({ id: req.id, approve: true })}
-                        className="rounded-md bg-emerald-600 px-2 py-1 text-xs font-medium text-white disabled:opacity-50"
-                      >
-                        Approve
-                      </button>
-                      <button
-                        type="button"
-                        disabled={decideRequest.isPending}
-                        onClick={() => decideRequest.mutate({ id: req.id, approve: false })}
-                        className="rounded-md border border-red-300 px-2 py-1 text-xs font-medium text-red-600 disabled:opacity-50"
-                      >
-                        Reject
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </section>
-      )}
+      <Space orientation="vertical" size="large" className="w-full">
+        {planRequests.length > 0 && (
+          <Card size="small" title="Plan change requests awaiting approval">
+            <Alert
+              type="warning"
+              showIcon
+              className="mb-3"
+              message="Verify the manual payment first, then approve — the plan activates immediately on approval."
+            />
+            <Table<PlanRequestRow>
+              size="middle"
+              rowKey="id"
+              columns={requestColumns}
+              dataSource={planRequests}
+              scroll={{ x: "max-content" }}
+              pagination={false}
+            />
+          </Card>
+        )}
 
-      <section className="rounded-lg border border-slate-200 bg-white p-4">
-        <h2 className="text-sm font-semibold uppercase tracking-wide text-slate-400">Tenants</h2>
-        <table className="mt-2 w-full text-left text-sm">
-          <thead>
-            <tr className="text-xs uppercase text-slate-400">
-              <th className="py-1.5 pr-4">Name</th>
-              <th className="py-1.5 pr-4">Code</th>
-              <th className="py-1.5 pr-4">Plan</th>
-              <th className="py-1.5 pr-4">Subscription</th>
-              <th className="py-1.5 pr-4">Devices</th>
-              <th className="py-1.5 pr-4">Users</th>
-              <th className="py-1.5">Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            {tenants.map((t) => (
-              <tr key={t.id} className="border-t border-slate-100 align-top">
-                <td className="py-2 pr-4 font-medium text-slate-800">{t.name}</td>
-                <td className="py-2 pr-4 font-mono text-xs">{t.code}</td>
-                <td className="py-2 pr-4">{t.plan_name ?? "—"}</td>
-                <td className="py-2 pr-4">
-                  {t.subscription_status ? (
-                    <span className="rounded-full bg-slate-100 px-2 py-0.5 text-xs">
-                      {t.subscription_status.replace(/_/g, " ")}
-                    </span>
-                  ) : (
-                    <span className="text-xs text-slate-400">none (legacy)</span>
-                  )}
-                </td>
-                <td className="py-2 pr-4">{t.devices}</td>
-                <td className="py-2 pr-4">{t.users}</td>
-                <td className="py-2">
-                  <div className="flex flex-wrap items-center gap-1.5">
-                    {t.subscription_status == null ? (
-                      <select
-                        aria-label={`Assign plan to ${t.name}`}
-                        defaultValue=""
-                        onChange={(e) => {
-                          if (e.target.value)
-                            assignPlan.mutate({ tenantId: t.id, plan_code: e.target.value });
-                          e.target.value = "";
-                        }}
-                        className="rounded-md border border-slate-300 px-1.5 py-1 text-xs"
-                      >
-                        <option value="">Assign plan…</option>
-                        {plans
-                          .filter((p) => p.is_active)
-                          .map((p) => (
-                            <option key={p.code} value={p.code}>
-                              {p.name}
-                            </option>
-                          ))}
-                      </select>
-                    ) : (
-                      <select
-                        aria-label={`Set subscription status for ${t.name}`}
-                        value={t.subscription_status}
-                        onChange={(e) =>
-                          transition.mutate({ tenantId: t.id, to_status: e.target.value })
-                        }
-                        className="rounded-md border border-slate-300 px-1.5 py-1 text-xs"
-                      >
-                        {SUB_STATUSES.map((s) => (
-                          <option key={s} value={s}>
-                            {s.replace(/_/g, " ")}
-                          </option>
-                        ))}
-                      </select>
+        <Card size="small" title="Tenants">
+          <Table<TenantRow>
+            size="middle"
+            rowKey="id"
+            columns={tenantColumns}
+            dataSource={tenants}
+            loading={tenantsQuery.isLoading}
+            scroll={{ x: "max-content" }}
+            locale={{ emptyText: <EmptyState title="No tenants yet" /> }}
+          />
+        </Card>
+
+        <Card size="small" title="Plans">
+          <Row gutter={[12, 12]}>
+            {plans.map((plan) => {
+              const ints = plan.entitlements.filter((e) => e.int_value !== null);
+              const bools = plan.entitlements.filter((e) => e.bool_value === true);
+              return (
+                <Col key={plan.code} xs={24} sm={12} lg={6}>
+                  <Card type="inner" size="small" className="h-full">
+                    <Typography.Text strong>{plan.name}</Typography.Text>
+                    {!plan.is_active && (
+                      <Tag variant="filled" className="ms-2">
+                        inactive
+                      </Tag>
                     )}
-                    <button
-                      type="button"
-                      onClick={() => setSelected(selected?.id === t.id ? null : t)}
-                      className="rounded-md border border-slate-300 px-2 py-1 text-xs text-slate-600"
-                    >
-                      {selected?.id === t.id ? "Close" : "Manage"}
-                    </button>
-                  </div>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+                    <ul className="mb-0 mt-1 list-none space-y-0.5 p-0">
+                      {ints.slice(0, 4).map((e) => (
+                        <li key={e.key}>
+                          <Typography.Text type="secondary" className="text-xs">
+                            {e.key.replace(/^max_|_month$/g, "").replace(/_/g, " ")}:{" "}
+                            {e.int_value}
+                          </Typography.Text>
+                        </li>
+                      ))}
+                      <li>
+                        <Typography.Text type="secondary" className="text-xs">
+                          {bools.length} features enabled
+                        </Typography.Text>
+                      </li>
+                    </ul>
+                  </Card>
+                </Col>
+              );
+            })}
+          </Row>
+        </Card>
 
+        <PlanEditor plans={plans} />
+      </Space>
+
+      <Drawer
+        size={640}
+        open={selected != null}
+        onClose={() => setSelected(null)}
+        title={selected ? `Tenant settings — ${selected.name}` : undefined}
+      >
         {selected && (
-          <div className="mt-4 space-y-4 rounded-md border border-slate-200 bg-slate-50 p-3">
+          <Space orientation="vertical" size="large" className="w-full">
             <div>
-              <h3 className="text-xs font-semibold uppercase text-slate-400">
-                Tenant settings — {selected.name}
-              </h3>
-              <div className="mt-2 flex flex-wrap items-end gap-3">
-                <label className="block text-sm">
-                  <span className="block text-xs text-slate-500">Organization name</span>
-                  <input
-                    value={tenantForm.name}
-                    onChange={(e) =>
-                      setTenantForm((p) => ({ ...p, name: e.target.value }))
-                    }
-                    className="mt-0.5 w-56 rounded-md border border-slate-300 px-2 py-1.5"
-                  />
-                </label>
-                <label className="block text-sm">
-                  <span className="block text-xs text-slate-500">Timezone (IANA, optional)</span>
-                  <input
-                    value={tenantForm.timezone}
-                    onChange={(e) =>
-                      setTenantForm((p) => ({ ...p, timezone: e.target.value }))
-                    }
-                    placeholder="unchanged"
-                    className="mt-0.5 w-44 rounded-md border border-slate-300 px-2 py-1.5"
-                  />
-                </label>
-                <button
-                  type="button"
-                  disabled={saveTenant.isPending}
-                  onClick={() => saveTenant.mutate()}
-                  className="rounded-md bg-slate-900 px-3 py-1.5 text-sm font-medium text-white disabled:opacity-50"
-                >
-                  Save tenant
-                </button>
-                {selected.subscription_status != null && (
-                  <label className="block text-sm">
-                    <span className="block text-xs text-slate-500">
-                      Change plan (direct — upgrade or downgrade)
-                    </span>
-                    <select
-                      defaultValue=""
+              <Typography.Title level={5}>Tenant</Typography.Title>
+              <Form layout="vertical">
+                <Row gutter={12}>
+                  <Col xs={24} sm={12}>
+                    <Form.Item label="Organization name">
+                      <Input
+                        value={tenantForm.name}
+                        onChange={(e) =>
+                          setTenantForm((p) => ({ ...p, name: e.target.value }))
+                        }
+                      />
+                    </Form.Item>
+                  </Col>
+                  <Col xs={24} sm={12}>
+                    <Form.Item label="Timezone (IANA, optional)">
+                      <Input
+                        value={tenantForm.timezone}
+                        placeholder="unchanged"
+                        onChange={(e) =>
+                          setTenantForm((p) => ({ ...p, timezone: e.target.value }))
+                        }
+                      />
+                    </Form.Item>
+                  </Col>
+                </Row>
+                <Space wrap align="end">
+                  <Button
+                    type="primary"
+                    loading={saveTenant.isPending}
+                    onClick={() => saveTenant.mutate()}
+                  >
+                    Save tenant
+                  </Button>
+                  {selected.subscription_status != null && (
+                    <Select
+                      aria-label="Change plan (direct — upgrade or downgrade)"
+                      className="w-56"
+                      placeholder="Change plan (direct)…"
+                      value={null}
                       disabled={changeTenantPlan.isPending}
-                      onChange={(e) => {
-                        if (e.target.value)
+                      onChange={(value: string | null) => {
+                        if (value)
                           changeTenantPlan.mutate({
                             tenantId: selected.id,
-                            plan_code: e.target.value,
+                            plan_code: value,
                           });
-                        e.target.value = "";
                       }}
-                      className="mt-0.5 rounded-md border border-slate-300 px-2 py-1.5"
-                    >
-                      <option value="">Select plan…</option>
-                      {plans
+                      options={plans
                         .filter((p) => p.code !== selected.plan_code)
-                        .map((p) => (
-                          <option key={p.code} value={p.code}>
-                            {p.name}
-                          </option>
-                        ))}
-                    </select>
-                  </label>
-                )}
-              </div>
+                        .map((p) => ({ value: p.code, label: p.name }))}
+                    />
+                  )}
+                </Space>
+              </Form>
             </div>
 
             <div>
-              <h3 className="text-xs font-semibold uppercase text-slate-400">
-                Quota overrides
-              </h3>
-              <p className="mt-0.5 text-xs text-slate-400">
+              <Typography.Title level={5}>Quota overrides</Typography.Title>
+              <Typography.Paragraph type="secondary" className="!mb-2 text-xs">
                 Tightens numeric limits below the plan (blank = plan limit
                 applies). Tenants cannot edit these.
-              </p>
-              <div className="mt-2 flex flex-wrap items-end gap-3">
-                {(
-                  [
-                    ["max_devices", "Devices"],
-                    ["max_users", "Users"],
-                    ["max_storage_mb", "Storage (MB)"],
-                  ] as const
-                ).map(([key, label]) => (
-                  <label key={key} className="block text-sm">
-                    <span className="block text-xs text-slate-500">{label}</span>
-                    <input
-                      type="number"
-                      min={1}
-                      value={quotaForm[key] ?? ""}
-                      onChange={(e) =>
-                        setQuotaForm((prev) => ({ ...prev, [key]: e.target.value }))
-                      }
-                      placeholder="plan limit"
-                      className="mt-0.5 w-28 rounded-md border border-slate-300 px-2 py-1.5"
-                    />
-                  </label>
-                ))}
-                <button
-                  type="button"
-                  disabled={saveQuotas.isPending}
-                  onClick={() => saveQuotas.mutate()}
-                  className="rounded-md bg-slate-900 px-3 py-1.5 text-sm font-medium text-white disabled:opacity-50"
-                >
-                  Save overrides
-                </button>
-              </div>
+              </Typography.Paragraph>
+              <Form layout="vertical">
+                <Space wrap align="end">
+                  {(
+                    [
+                      ["max_devices", "Devices"],
+                      ["max_users", "Users"],
+                      ["max_storage_mb", "Storage (MB)"],
+                    ] as const
+                  ).map(([key, label]) => (
+                    <Form.Item key={key} label={label} className="!mb-0">
+                      <InputNumber
+                        min={1}
+                        className="w-28"
+                        placeholder="plan limit"
+                        value={quotaForm[key] ? Number(quotaForm[key]) : null}
+                        onChange={(v) =>
+                          setQuotaForm((prev) => ({
+                            ...prev,
+                            [key]: v == null ? "" : String(v),
+                          }))
+                        }
+                      />
+                    </Form.Item>
+                  ))}
+                  <Button
+                    type="primary"
+                    loading={saveQuotas.isPending}
+                    onClick={() => saveQuotas.mutate()}
+                  >
+                    Save overrides
+                  </Button>
+                </Space>
+              </Form>
             </div>
 
             {selected.subscription_status != null && (
               <div>
-                <h3 className="text-xs font-semibold uppercase text-slate-400">
-                  Payment provider
-                </h3>
-                <p className="mt-0.5 text-xs text-slate-400">
+                <Typography.Title level={5}>Payment provider</Typography.Title>
+                <Typography.Paragraph type="secondary" className="!mb-2 text-xs">
                   `manual` = enterprise invoice flow (record payments here).
-                  Gateway API keys are server environment configuration —
-                  never entered or stored here; only provider references.
-                </p>
-                <div className="mt-2 flex flex-wrap items-end gap-3">
-                  <label className="block text-sm">
-                    <span className="block text-xs text-slate-500">Provider</span>
-                    <select
-                      value={providerForm.provider}
-                      onChange={(e) =>
-                        setProviderForm((p) => ({ ...p, provider: e.target.value }))
-                      }
-                      className="mt-0.5 rounded-md border border-slate-300 px-2 py-1.5"
+                  Gateway API keys are server environment configuration — never
+                  entered or stored here; only provider references.
+                </Typography.Paragraph>
+                <Form layout="vertical">
+                  <Space wrap align="end">
+                    <Form.Item label="Provider" className="!mb-0">
+                      <Select
+                        className="w-32"
+                        value={providerForm.provider}
+                        onChange={(value: string) =>
+                          setProviderForm((p) => ({ ...p, provider: value }))
+                        }
+                        options={PROVIDERS.map((p) => ({ value: p, label: p }))}
+                      />
+                    </Form.Item>
+                    <Form.Item label="Customer reference" className="!mb-0">
+                      <Input
+                        className="w-40"
+                        placeholder="e.g. cus_..."
+                        value={providerForm.customer}
+                        onChange={(e) =>
+                          setProviderForm((p) => ({ ...p, customer: e.target.value }))
+                        }
+                      />
+                    </Form.Item>
+                    <Form.Item label="Subscription reference" className="!mb-0">
+                      <Input
+                        className="w-40"
+                        placeholder="e.g. sub_..."
+                        value={providerForm.ref}
+                        onChange={(e) =>
+                          setProviderForm((p) => ({ ...p, ref: e.target.value }))
+                        }
+                      />
+                    </Form.Item>
+                    <Button
+                      type="primary"
+                      loading={saveProvider.isPending}
+                      onClick={() => saveProvider.mutate()}
                     >
-                      {PROVIDERS.map((p) => (
-                        <option key={p} value={p}>
-                          {p}
-                        </option>
-                      ))}
-                    </select>
-                  </label>
-                  <label className="block text-sm">
-                    <span className="block text-xs text-slate-500">Customer reference</span>
-                    <input
-                      value={providerForm.customer}
-                      onChange={(e) =>
-                        setProviderForm((p) => ({ ...p, customer: e.target.value }))
-                      }
-                      placeholder="e.g. cus_..."
-                      className="mt-0.5 w-40 rounded-md border border-slate-300 px-2 py-1.5"
-                    />
-                  </label>
-                  <label className="block text-sm">
-                    <span className="block text-xs text-slate-500">Subscription reference</span>
-                    <input
-                      value={providerForm.ref}
-                      onChange={(e) => setProviderForm((p) => ({ ...p, ref: e.target.value }))}
-                      placeholder="e.g. sub_..."
-                      className="mt-0.5 w-40 rounded-md border border-slate-300 px-2 py-1.5"
-                    />
-                  </label>
-                  <button
-                    type="button"
-                    disabled={saveProvider.isPending}
-                    onClick={() => saveProvider.mutate()}
-                    className="rounded-md bg-slate-900 px-3 py-1.5 text-sm font-medium text-white disabled:opacity-50"
-                  >
-                    Save provider
-                  </button>
-                </div>
+                      Save provider
+                    </Button>
+                  </Space>
+                </Form>
               </div>
             )}
 
             <div>
-              <h3 className="text-xs font-semibold uppercase text-slate-400">Invoices</h3>
-              {invoices.length === 0 ? (
-                <p className="mt-1 text-sm text-slate-500">No invoices.</p>
-              ) : (
-                <table className="mt-1 w-full text-left text-sm">
-                  <tbody>
-                    {invoices.map((inv) => (
-                      <tr key={inv.id} className="border-t border-slate-200">
-                        <td className="py-1.5 pr-4 font-mono text-xs">{inv.number}</td>
-                        <td className="py-1.5 pr-4">
-                          {inv.amount} {inv.currency}
-                        </td>
-                        <td className="py-1.5 pr-4">{inv.status}</td>
-                        <td className="py-1.5">
-                          <div className="flex items-center gap-1.5">
-                            <button
-                              type="button"
-                              onClick={() =>
-                                void api.download(
-                                  `/platform/tenants/${selected.id}/invoices/${inv.id}/download`,
-                                )
-                              }
-                              className="rounded-md border border-slate-300 px-2 py-1 text-xs text-slate-600"
-                            >
-                              Download
-                            </button>
-                            {inv.status === "issued" && (
-                              <button
-                                type="button"
-                                onClick={() =>
-                                  recordPayment.mutate({
-                                    tenantId: selected.id,
-                                    invoiceId: inv.id,
-                                  })
-                                }
-                                className="rounded-md bg-emerald-600 px-2 py-1 text-xs font-medium text-white"
-                              >
-                                Record payment
-                              </button>
-                            )}
-                          </div>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              )}
-            </div>
-          </div>
-        )}
-      </section>
-
-      <section className="rounded-lg border border-slate-200 bg-white p-4">
-        <h2 className="text-sm font-semibold uppercase tracking-wide text-slate-400">
-          Create tenant
-        </h2>
-        <form className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2" onSubmit={onCreate}>
-          {(
-            [
-              ["name", "Organization name", "text"],
-              ["code", "Code (lowercase)", "text"],
-              ["owner_email", "Owner email", "email"],
-              ["owner_full_name", "Owner full name", "text"],
-              ["owner_password", "Owner password (blank = invite)", "password"],
-            ] as const
-          ).map(([key, label, type]) => (
-            <label key={key} className="block text-sm">
-              <span className="block text-xs text-slate-500">{label}</span>
-              <input
-                type={type}
-                required={key !== "owner_password"}
-                value={form[key]}
-                onChange={(e) => setForm((prev) => ({ ...prev, [key]: e.target.value }))}
-                className="mt-0.5 w-full rounded-md border border-slate-300 px-2 py-1.5"
+              <Typography.Title level={5}>Invoices</Typography.Title>
+              <Table<InvoiceRow>
+                size="middle"
+                rowKey="id"
+                columns={invoiceColumns}
+                dataSource={invoices}
+                loading={invoicesQuery.isLoading}
+                scroll={{ x: "max-content" }}
+                pagination={false}
+                locale={{ emptyText: <EmptyState title="No invoices" /> }}
               />
-            </label>
-          ))}
-          <div className="flex items-end">
-            <button
-              type="submit"
-              disabled={createTenant.isPending}
-              className="rounded-md bg-slate-900 px-4 py-2 text-sm font-medium text-white disabled:opacity-50"
-            >
-              Create tenant
-            </button>
-          </div>
-        </form>
-      </section>
+            </div>
+          </Space>
+        )}
+      </Drawer>
 
-      <section className="rounded-lg border border-slate-200 bg-white p-4">
-        <h2 className="text-sm font-semibold uppercase tracking-wide text-slate-400">Plans</h2>
-        <div className="mt-2 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
-          {plans.map((plan) => {
-            const ints = plan.entitlements.filter((e) => e.int_value !== null);
-            const bools = plan.entitlements.filter((e) => e.bool_value === true);
-            return (
-              <div key={plan.code} className="rounded-md border border-slate-200 p-3">
-                <p className="font-semibold text-slate-800">
-                  {plan.name}
-                  {!plan.is_active && (
-                    <span className="ml-2 rounded-full bg-slate-100 px-2 py-0.5 text-xs font-normal text-slate-500">
-                      inactive
-                    </span>
-                  )}
-                </p>
-                <ul className="mt-1 space-y-0.5 text-xs text-slate-500">
-                  {ints.slice(0, 4).map((e) => (
-                    <li key={e.key}>
-                      {e.key.replace(/^max_|_month$/g, "").replace(/_/g, " ")}: {e.int_value}
-                    </li>
-                  ))}
-                  <li>{bools.length} features enabled</li>
-                </ul>
-              </div>
-            );
-          })}
-        </div>
-      </section>
-
-      <PlanEditor plans={plans} />
-
-      {message && (
-        <p
-          role={message.kind === "error" ? "alert" : undefined}
-          className={`rounded-md px-3 py-2 text-sm ${
-            message.kind === "ok"
-              ? "bg-emerald-50 text-emerald-700"
-              : "bg-red-50 text-red-700"
-          }`}
+      <Modal
+        title="Create tenant"
+        open={createOpen}
+        onCancel={() => setCreateOpen(false)}
+        okText="Create tenant"
+        confirmLoading={createTenant.isPending}
+        onOk={() => createForm.submit()}
+        destroyOnHidden
+      >
+        <Form
+          form={createForm}
+          layout="vertical"
+          onFinish={(values) => createTenant.mutate(values)}
         >
-          {message.text}
-        </p>
-      )}
+          <Form.Item
+            name="name"
+            label="Organization name"
+            rules={[{ required: true, message: "Organization name is required." }]}
+          >
+            <Input autoFocus />
+          </Form.Item>
+          <Form.Item
+            name="code"
+            label="Code (lowercase)"
+            rules={[{ required: true, message: "Code is required." }]}
+          >
+            <Input />
+          </Form.Item>
+          <Form.Item
+            name="owner_email"
+            label="Owner email"
+            rules={[
+              { required: true, message: "Owner email is required." },
+              { type: "email", message: "Enter a valid email address." },
+            ]}
+          >
+            <Input type="email" />
+          </Form.Item>
+          <Form.Item
+            name="owner_full_name"
+            label="Owner full name"
+            rules={[{ required: true, message: "Owner full name is required." }]}
+          >
+            <Input />
+          </Form.Item>
+          <Form.Item name="owner_password" label="Owner password (blank = invite)">
+            <Input.Password />
+          </Form.Item>
+        </Form>
+      </Modal>
     </div>
   );
 }

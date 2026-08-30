@@ -1,6 +1,9 @@
+import { CheckOutlined } from "@ant-design/icons";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { Badge, Button, Card, Flex, List, Tabs, Tag, Typography } from "antd";
 import { useState } from "react";
-import { Spinner } from "../../components/ui/Spinner";
+import { PageHeader } from "../../components/ui/PageHeader";
+import { EmptyState, LoadingState } from "../../components/ui/states";
 import { api } from "../../lib/api";
 import { timeAgo } from "../devices/types";
 import { NotificationRulesTab } from "./NotificationRulesTab";
@@ -15,10 +18,10 @@ interface NotificationRow {
   created_at: string;
 }
 
-const SEVERITY_STYLES: Record<string, string> = {
-  info: "bg-sky-100 text-sky-700",
-  warning: "bg-amber-100 text-amber-700",
-  critical: "bg-red-100 text-red-700",
+const SEVERITY_COLORS: Record<string, string> = {
+  info: "processing",
+  warning: "warning",
+  critical: "error",
 };
 
 /** SCR-25 Notifications inbox + P2-18 rules. */
@@ -27,25 +30,18 @@ export function NotificationsPage() {
 
   return (
     <div>
-      <h1 className="text-xl font-semibold text-slate-900">Notifications</h1>
-      <div className="mt-4 border-b border-slate-200" role="tablist">
-        {(["inbox", "rules"] as const).map((key) => (
-          <button
-            key={key}
-            role="tab"
-            aria-selected={tab === key}
-            onClick={() => setTab(key)}
-            className={`-mb-px border-b-2 px-4 py-2 text-sm font-medium capitalize ${
-              tab === key
-                ? "border-slate-900 text-slate-900"
-                : "border-transparent text-slate-500 hover:text-slate-700"
-            }`}
-          >
-            {key === "inbox" ? "Inbox" : "Rules"}
-          </button>
-        ))}
-      </div>
-      <div className="mt-4">{tab === "inbox" ? <InboxTab /> : <NotificationRulesTab />}</div>
+      <PageHeader
+        title="Notifications"
+        description="In-app alerts and the rules that route them to email, webhooks and escalations."
+      />
+      <Tabs
+        activeKey={tab}
+        onChange={(key) => setTab(key as typeof tab)}
+        items={[
+          { key: "inbox", label: "Inbox", children: <InboxTab /> },
+          { key: "rules", label: "Rules", children: <NotificationRulesTab /> },
+        ]}
+      />
     </div>
   );
 }
@@ -76,58 +72,59 @@ function InboxTab() {
 
   return (
     <div>
-      <div className="flex items-center justify-end">
-        {unread > 0 && (
-          <button
-            type="button"
+      {unread > 0 && (
+        <Flex justify="flex-end" className="mb-3">
+          <Button
+            icon={<CheckOutlined />}
+            loading={markAll.isPending}
             onClick={() => markAll.mutate()}
-            className="rounded-md border border-slate-300 px-3 py-1.5 text-sm font-medium text-slate-600"
           >
             Mark all read ({unread})
-          </button>
-        )}
-      </div>
+          </Button>
+        </Flex>
+      )}
 
       {inboxQuery.isLoading ? (
-        <Spinner label="Loading notifications…" />
+        <LoadingState rows={4} />
       ) : rows.length === 0 ? (
-        <p className="mt-6 rounded-lg border border-dashed border-slate-300 bg-white p-10 text-center text-sm text-slate-500">
-          No notifications. Device registrations, approval requests and deployment
-          failures appear here.
-        </p>
+        <Card>
+          <EmptyState
+            title="No notifications"
+            description="Device registrations, approval requests and deployment failures appear here."
+          />
+        </Card>
       ) : (
-        <ul className="mt-4 space-y-2">
-          {rows.map((row) => (
-            <li
-              key={row.id}
-              className={`flex flex-wrap items-center gap-3 rounded-lg border bg-white px-4 py-3 ${
-                row.read_at ? "border-slate-200 opacity-60" : "border-slate-300"
-              }`}
-            >
-              <span
-                className={`rounded-full px-2 py-0.5 text-xs font-medium ${
-                  SEVERITY_STYLES[row.severity] ?? "bg-slate-100 text-slate-600"
-                }`}
-              >
-                {row.severity}
-              </span>
-              <div className="min-w-0 flex-1">
-                <p className="text-sm font-medium text-slate-800">{row.title}</p>
-                {row.message && <p className="text-sm text-slate-500">{row.message}</p>}
-              </div>
-              <span className="text-xs text-slate-400">{timeAgo(row.created_at)}</span>
-              {!row.read_at && (
-                <button
-                  type="button"
-                  onClick={() => markRead.mutate(row.id)}
-                  className="text-sm font-medium text-slate-600 hover:underline"
-                >
-                  Mark read
-                </button>
-              )}
-            </li>
-          ))}
-        </ul>
+        <List
+          dataSource={rows}
+          renderItem={(row) => (
+            <Card key={row.id} size="small" className={`mb-2 ${row.read_at ? "opacity-60" : ""}`}>
+              <Flex wrap align="center" gap="small">
+                <Tag color={SEVERITY_COLORS[row.severity] ?? "default"} variant="filled">
+                  {row.severity}
+                </Tag>
+                <div className="min-w-0 flex-1">
+                  <Typography.Text strong={!row.read_at}>
+                    {!row.read_at && <Badge status="processing" className="mr-2" />}
+                    {row.title}
+                  </Typography.Text>
+                  {row.message && (
+                    <Typography.Paragraph type="secondary" className="!mb-0">
+                      {row.message}
+                    </Typography.Paragraph>
+                  )}
+                </div>
+                <Typography.Text type="secondary" className="text-xs">
+                  {timeAgo(row.created_at)}
+                </Typography.Text>
+                {!row.read_at && (
+                  <Button type="link" size="small" onClick={() => markRead.mutate(row.id)}>
+                    Mark read
+                  </Button>
+                )}
+              </Flex>
+            </Card>
+          )}
+        />
       )}
     </div>
   );

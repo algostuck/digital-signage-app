@@ -1,7 +1,22 @@
+import { CheckOutlined, CloseOutlined } from "@ant-design/icons";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import {
+  Alert,
+  Button,
+  Card,
+  Flex,
+  Input,
+  List,
+  Modal,
+  Space,
+  Tabs,
+  Tag,
+  Timeline,
+  Typography,
+} from "antd";
 import { useState } from "react";
-import { Modal } from "../../components/ui/Modal";
-import { Spinner } from "../../components/ui/Spinner";
+import { PageHeader } from "../../components/ui/PageHeader";
+import { EmptyState, ErrorState, LoadingState } from "../../components/ui/states";
 import { StatusBadge } from "../../components/ui/StatusBadge";
 import { api, ApiError } from "../../lib/api";
 import { useAuth } from "../../lib/auth";
@@ -50,9 +65,7 @@ export function ApprovalsPage() {
   const inboxQuery = useQuery({
     queryKey: ["approvals", tab],
     queryFn: () =>
-      api.get<ApprovalRequest[]>(
-        `/approvals/inbox?page_size=100${tab ? `&state=${tab}` : ""}`,
-      ),
+      api.get<ApprovalRequest[]>(`/approvals/inbox?page_size=100${tab ? `&state=${tab}` : ""}`),
     refetchInterval: 30_000,
   });
 
@@ -73,94 +86,84 @@ export function ApprovalsPage() {
 
   const rows = inboxQuery.data?.data ?? [];
 
+  const inbox = inboxQuery.isLoading ? (
+    <LoadingState rows={4} />
+  ) : inboxQuery.isError ? (
+    <ErrorState
+      title="Unable to load the approval inbox"
+      description="You may lack approval permissions."
+      onRetry={() => inboxQuery.refetch()}
+    />
+  ) : rows.length === 0 ? (
+    <Card>
+      <EmptyState title="Nothing here" description="Submitted items appear in this queue." />
+    </Card>
+  ) : (
+    <List
+      dataSource={rows}
+      renderItem={(request) => (
+        <Card size="small" className="mb-2">
+          <Flex wrap align="center" gap="small">
+            <Tag className="capitalize">{request.entity_type}</Tag>
+            <Typography.Text strong>
+              {request.entity_name ?? request.entity_id.slice(0, 8)}
+            </Typography.Text>
+            <StatusBadge status={request.state} />
+            <Typography.Text type="secondary">
+              by {request.requester_name ?? "unknown"} · {timeAgo(request.submitted_at)}
+            </Typography.Text>
+            {request.state === "pending" && canDecide && (
+              <Space className="ms-auto">
+                <Button
+                  type="primary"
+                  size="small"
+                  icon={<CheckOutlined />}
+                  onClick={() => setDecision({ request, approve: true })}
+                >
+                  Approve
+                </Button>
+                <Button
+                  danger
+                  size="small"
+                  icon={<CloseOutlined />}
+                  onClick={() => setDecision({ request, approve: false })}
+                >
+                  Reject
+                </Button>
+              </Space>
+            )}
+          </Flex>
+          {request.actions.length > 1 && (
+            <Timeline
+              className="!mt-4"
+              items={request.actions.map((action) => ({
+                children: (
+                  <Typography.Text type="secondary" className="text-xs">
+                    <span className="font-medium capitalize">{action.action}</span> by{" "}
+                    {action.actor_name ?? "system"} · {timeAgo(action.created_at)}
+                    {action.comments && <> — “{action.comments}”</>}
+                  </Typography.Text>
+                ),
+              }))}
+            />
+          )}
+        </Card>
+      )}
+    />
+  );
+
   return (
     <div>
-      <h1 className="text-xl font-semibold text-slate-900">Approvals</h1>
-      <p className="mt-1 text-sm text-slate-500">
-        Maker-checker governance for campaigns and templates. Configure policies under
-        Settings.
-      </p>
+      <PageHeader
+        title="Approvals"
+        description="Maker-checker governance for campaigns and templates. Configure policies under Settings."
+      />
 
-      <div className="mt-4 border-b border-slate-200" role="tablist">
-        {TABS.map((t) => (
-          <button
-            key={t.key}
-            role="tab"
-            aria-selected={tab === t.key}
-            onClick={() => setTab(t.key)}
-            className={`-mb-px border-b-2 px-4 py-2 text-sm font-medium ${
-              tab === t.key
-                ? "border-slate-900 text-slate-900"
-                : "border-transparent text-slate-500 hover:text-slate-700"
-            }`}
-          >
-            {t.label}
-          </button>
-        ))}
-      </div>
-
-      {inboxQuery.isLoading ? (
-        <Spinner label="Loading approvals…" />
-      ) : inboxQuery.isError ? (
-        <p className="mt-6 text-sm text-red-600" role="alert">
-          Failed to load the approval inbox (you may lack approval permissions).
-        </p>
-      ) : rows.length === 0 ? (
-        <p className="mt-6 rounded-lg border border-dashed border-slate-300 bg-white p-10 text-center text-sm text-slate-500">
-          Nothing here. Submitted items appear in this queue.
-        </p>
-      ) : (
-        <ul className="mt-4 space-y-2">
-          {rows.map((request) => (
-            <li
-              key={request.id}
-              className="rounded-lg border border-slate-200 bg-white px-4 py-3"
-            >
-              <div className="flex flex-wrap items-center gap-3">
-                <span className="rounded bg-slate-100 px-2 py-0.5 text-xs font-medium capitalize text-slate-600">
-                  {request.entity_type}
-                </span>
-                <span className="font-medium text-slate-800">
-                  {request.entity_name ?? request.entity_id.slice(0, 8)}
-                </span>
-                <StatusBadge status={request.state} />
-                <span className="text-sm text-slate-500">
-                  by {request.requester_name ?? "unknown"} · {timeAgo(request.submitted_at)}
-                </span>
-                {request.state === "pending" && canDecide && (
-                  <span className="ml-auto space-x-2">
-                    <button
-                      type="button"
-                      onClick={() => setDecision({ request, approve: true })}
-                      className="rounded-md bg-emerald-600 px-3 py-1.5 text-sm font-medium text-white"
-                    >
-                      Approve
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setDecision({ request, approve: false })}
-                      className="rounded-md border border-red-200 px-3 py-1.5 text-sm font-medium text-red-600"
-                    >
-                      Reject
-                    </button>
-                  </span>
-                )}
-              </div>
-              {request.actions.length > 1 && (
-                <ul className="mt-2 space-y-0.5 border-t border-slate-100 pt-2 text-xs text-slate-500">
-                  {request.actions.map((action, index) => (
-                    <li key={index}>
-                      <span className="font-medium capitalize">{action.action}</span> by{" "}
-                      {action.actor_name ?? "system"} · {timeAgo(action.created_at)}
-                      {action.comments && <span> — “{action.comments}”</span>}
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </li>
-          ))}
-        </ul>
-      )}
+      <Tabs
+        activeKey={tab}
+        onChange={setTab}
+        items={TABS.map((t) => ({ key: t.key, label: t.label, children: inbox }))}
+      />
 
       {decision && (
         <Modal
@@ -168,52 +171,26 @@ export function ApprovalsPage() {
             decision.request.entity_name ?? decision.request.entity_type
           }`}
           open
-          onClose={() => setDecision(null)}
+          onCancel={() => setDecision(null)}
+          okText={decision.approve ? "Approve" : "Reject"}
+          okButtonProps={{ danger: !decision.approve }}
+          confirmLoading={decide.isPending}
+          onOk={() => decide.mutate({ id: decision.request.id, approve: decision.approve })}
+          destroyOnHidden
         >
-          <div className="space-y-4">
-            <div>
-              <label htmlFor="decision-comments" className="block text-sm font-medium text-slate-700">
-                Comments {decision.approve ? "(optional)" : "(tell the requester what to fix)"}
-              </label>
-              <textarea
-                id="decision-comments"
-                value={comments}
-                onChange={(e) => setComments(e.target.value)}
-                rows={3}
-                className="mt-1 block w-full rounded-md border border-slate-300 px-3 py-2 text-sm"
-              />
-            </div>
-            {error && (
-              <p className="rounded-md bg-red-50 px-3 py-2 text-sm text-red-700" role="alert">
-                {error}
-              </p>
-            )}
-            <div className="flex justify-end gap-2">
-              <button
-                type="button"
-                onClick={() => setDecision(null)}
-                className="rounded-md border border-slate-300 px-4 py-2 text-sm font-medium text-slate-600"
-              >
-                Cancel
-              </button>
-              <button
-                type="button"
-                disabled={decide.isPending}
-                onClick={() =>
-                  decide.mutate({ id: decision.request.id, approve: decision.approve })
-                }
-                className={`rounded-md px-4 py-2 text-sm font-medium text-white disabled:opacity-50 ${
-                  decision.approve ? "bg-emerald-600" : "bg-red-600"
-                }`}
-              >
-                {decide.isPending
-                  ? "Saving…"
-                  : decision.approve
-                    ? "Approve"
-                    : "Reject"}
-              </button>
-            </div>
-          </div>
+          {error && <Alert type="error" message={error} showIcon className="mb-4" role="alert" />}
+          <label htmlFor="decision-comments">
+            <Typography.Text>
+              Comments {decision.approve ? "(optional)" : "(tell the requester what to fix)"}
+            </Typography.Text>
+          </label>
+          <Input.TextArea
+            id="decision-comments"
+            className="mt-1"
+            value={comments}
+            onChange={(e) => setComments(e.target.value)}
+            rows={3}
+          />
         </Modal>
       )}
     </div>

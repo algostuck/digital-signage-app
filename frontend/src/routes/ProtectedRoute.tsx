@@ -1,5 +1,5 @@
+import { Flex, Spin } from "antd";
 import { Navigate, Outlet, useLocation } from "react-router-dom";
-import { Spinner } from "../components/ui/Spinner";
 import { useAuth } from "../lib/auth";
 
 export function ProtectedRoute() {
@@ -8,9 +8,11 @@ export function ProtectedRoute() {
 
   if (initializing) {
     return (
-      <div className="flex min-h-screen items-center justify-center">
-        <Spinner label="Restoring session…" />
-      </div>
+      <Flex align="center" justify="center" className="min-h-screen">
+        <Spin size="large" description="Restoring session…">
+          <div className="p-12" aria-hidden />
+        </Spin>
+      </Flex>
     );
   }
   if (!user) {

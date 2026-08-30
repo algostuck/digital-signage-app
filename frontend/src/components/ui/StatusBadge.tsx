@@ -1,38 +1,83 @@
-const STYLES: Record<string, string> = {
-  active: "bg-emerald-100 text-emerald-700",
-  invited: "bg-amber-100 text-amber-700",
-  deactivated: "bg-slate-200 text-slate-600",
-  online: "bg-emerald-100 text-emerald-700",
-  offline: "bg-red-100 text-red-700",
-  warning: "bg-amber-100 text-amber-700",
-  critical: "bg-red-100 text-red-700",
-  pending: "bg-amber-100 text-amber-700",
-  rejected: "bg-red-100 text-red-700",
-  decommissioned: "bg-slate-200 text-slate-500",
-  ready: "bg-emerald-100 text-emerald-700",
-  processing: "bg-amber-100 text-amber-700",
-  failed: "bg-red-100 text-red-700",
-  published: "bg-emerald-100 text-emerald-700",
-  draft: "bg-slate-100 text-slate-600",
-  archived: "bg-slate-200 text-slate-500",
-  pending_approval: "bg-amber-100 text-amber-700",
-  approved: "bg-sky-100 text-sky-700",
-  paused: "bg-amber-100 text-amber-700",
-  expired: "bg-slate-200 text-slate-500",
-  queued: "bg-slate-100 text-slate-600",
-  publishing: "bg-amber-100 text-amber-700",
-  partial: "bg-amber-100 text-amber-700",
-  cancelled: "bg-slate-200 text-slate-500",
-  acknowledged: "bg-emerald-100 text-emerald-700",
+import {
+  CheckCircleOutlined,
+  ClockCircleOutlined,
+  CloseCircleOutlined,
+  EditOutlined,
+  ExclamationCircleOutlined,
+  InboxOutlined,
+  MinusCircleOutlined,
+  PauseCircleOutlined,
+  SyncOutlined,
+} from "@ant-design/icons";
+import { Tag } from "antd";
+import type { ReactNode } from "react";
+
+interface StatusMeta {
+  color: string;
+  icon: ReactNode;
+}
+
+/**
+ * Single source of truth for status → color+icon+text across the app.
+ * Never communicates state through color alone (brief §26/§35) — every
+ * status carries an icon and its own text label too.
+ */
+const STATUS_META: Record<string, StatusMeta> = {
+  active: { color: "success", icon: <CheckCircleOutlined /> },
+  online: { color: "success", icon: <CheckCircleOutlined /> },
+  ready: { color: "success", icon: <CheckCircleOutlined /> },
+  published: { color: "success", icon: <CheckCircleOutlined /> },
+  approved: { color: "success", icon: <CheckCircleOutlined /> },
+  acknowledged: { color: "success", icon: <CheckCircleOutlined /> },
+  confirmed: { color: "success", icon: <CheckCircleOutlined /> },
+  completed: { color: "success", icon: <CheckCircleOutlined /> },
+
+  invited: { color: "warning", icon: <ClockCircleOutlined /> },
+  warning: { color: "warning", icon: <ExclamationCircleOutlined /> },
+  pending: { color: "warning", icon: <ClockCircleOutlined /> },
+  pending_approval: { color: "warning", icon: <ClockCircleOutlined /> },
+  paused: { color: "warning", icon: <PauseCircleOutlined /> },
+  partial: { color: "warning", icon: <ExclamationCircleOutlined /> },
+  stale: { color: "warning", icon: <ExclamationCircleOutlined /> },
+  degraded: { color: "warning", icon: <ExclamationCircleOutlined /> },
+  flagged: { color: "warning", icon: <ExclamationCircleOutlined /> },
+
+  publishing: { color: "processing", icon: <SyncOutlined spin /> },
+  processing: { color: "processing", icon: <SyncOutlined spin /> },
+  syncing: { color: "processing", icon: <SyncOutlined spin /> },
+  updating: { color: "processing", icon: <SyncOutlined spin /> },
+  running: { color: "processing", icon: <SyncOutlined spin /> },
+
+  offline: { color: "error", icon: <CloseCircleOutlined /> },
+  critical: { color: "error", icon: <CloseCircleOutlined /> },
+  rejected: { color: "error", icon: <CloseCircleOutlined /> },
+  failed: { color: "error", icon: <CloseCircleOutlined /> },
+  error: { color: "error", icon: <CloseCircleOutlined /> },
+  suspended: { color: "error", icon: <CloseCircleOutlined /> },
+
+  deactivated: { color: "default", icon: <MinusCircleOutlined /> },
+  disabled: { color: "default", icon: <MinusCircleOutlined /> },
+  decommissioned: { color: "default", icon: <MinusCircleOutlined /> },
+  draft: { color: "default", icon: <EditOutlined /> },
+  archived: { color: "default", icon: <InboxOutlined /> },
+  expired: { color: "default", icon: <MinusCircleOutlined /> },
+  queued: { color: "default", icon: <ClockCircleOutlined /> },
+  cancelled: { color: "default", icon: <MinusCircleOutlined /> },
+  resolved: { color: "default", icon: <CheckCircleOutlined /> },
 };
 
+function toLabel(status: string): string {
+  return status
+    .split("_")
+    .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
+    .join(" ");
+}
+
 export function StatusBadge({ status }: { status: string }) {
-  const cls = STYLES[status] ?? "bg-slate-100 text-slate-600";
+  const meta = STATUS_META[status] ?? { color: "default", icon: <MinusCircleOutlined /> };
   return (
-    <span
-      className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium capitalize ${cls}`}
-    >
-      {status}
-    </span>
+    <Tag color={meta.color} icon={meta.icon} variant="filled">
+      {toLabel(status)}
+    </Tag>
   );
 }

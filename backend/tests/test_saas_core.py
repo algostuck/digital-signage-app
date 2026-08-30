@@ -93,6 +93,30 @@ async def test_billing_subscription_shows_entitlements_and_usage(client, admin_t
     assert data["usage"]["devices"]["limit"] == 5000
 
 
+async def test_entitlements_endpoint_needs_no_billing_permission(client, admin_tokens):
+    # UI_UX_API_CHANGES.md: /entitlements is permission-free (any org
+    # member) so the frontend can gate locked features without billing.view.
+    resp = await client.get("/api/v1/roles", headers=bearer(admin_tokens))
+    viewer_id = next(r["id"] for r in resp.json()["data"] if r["name"] == "Viewer")
+    resp = await client.post(
+        "/api/v1/users",
+        headers=bearer(admin_tokens),
+        json={
+            "email": "ent-viewer@demo-org.com",
+            "full_name": "Entitlement Viewer",
+            "password": "Viewer@12345",
+            "role_ids": [viewer_id],
+        },
+    )
+    assert resp.status_code == 201, resp.text
+    viewer = await login(client, "ent-viewer@demo-org.com", "Viewer@12345")
+    resp = await client.get("/api/v1/entitlements", headers=bearer(viewer))
+    assert resp.status_code == 200
+    data = resp.json()["data"]
+    assert data["plan_code"] == "enterprise"
+    assert data["values"]["sso"] is True
+
+
 async def test_subscribe_conflicts_then_plan_change_needs_approval(client, admin_tokens):
     resp = await client.post(
         "/api/v1/billing/subscribe",

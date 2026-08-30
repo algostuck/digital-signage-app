@@ -1,6 +1,26 @@
+import {
+  DownloadOutlined,
+  InboxOutlined,
+  RedoOutlined,
+  SendOutlined,
+  UploadOutlined,
+} from "@ant-design/icons";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import {
+  Alert,
+  Button,
+  Descriptions,
+  Drawer,
+  Flex,
+  Image,
+  List,
+  Popconfirm,
+  Space,
+  Tag,
+  Typography,
+} from "antd";
 import { useState } from "react";
-import { Modal } from "../../components/ui/Modal";
+import { LoadingState } from "../../components/ui/states";
 import { StatusBadge } from "../../components/ui/StatusBadge";
 import { api, ApiError } from "../../lib/api";
 import { useAuth } from "../../lib/auth";
@@ -56,140 +76,129 @@ export function AssetDetailModal({ assetId, onClose, onChanged }: Props) {
   const asset = assetQuery.data?.data ?? null;
   if (!asset) {
     return (
-      <Modal title="Content details" open onClose={onClose}>
-        <p className="text-sm text-slate-500">Loading…</p>
-      </Modal>
+      <Drawer title="Content details" open onClose={onClose} size={600} placement="right">
+        <LoadingState rows={6} />
+      </Drawer>
     );
   }
 
   const version = asset.current_version;
 
   return (
-    <Modal title={asset.name} open onClose={onClose}>
-      <div className="space-y-4">
-        <div className="flex items-center gap-2">
+    <Drawer
+      title={asset.name}
+      open
+      onClose={onClose}
+      width={600}
+      placement="right"
+      footer={
+        <Flex wrap justify="flex-end" gap="small">
+          <Button icon={<DownloadOutlined />} onClick={download}>
+            Download
+          </Button>
+          {canEdit && (
+            <Button icon={<UploadOutlined />} onClick={() => setUploadVersion(true)}>
+              New version
+            </Button>
+          )}
+          {canEdit && asset.status === "draft" && (
+            <Button type="primary" icon={<SendOutlined />} onClick={() => action.mutate("publish")}>
+              Publish
+            </Button>
+          )}
+          {canDelete && asset.status !== "archived" && (
+            <Popconfirm
+              title={`Archive "${asset.name}"?`}
+              onConfirm={() => action.mutate("archive")}
+              okButtonProps={{ danger: true }}
+            >
+              <Button danger icon={<InboxOutlined />}>
+                Archive
+              </Button>
+            </Popconfirm>
+          )}
+          {canDelete && asset.status === "archived" && (
+            <Button icon={<RedoOutlined />} onClick={() => action.mutate("restore")}>
+              Restore
+            </Button>
+          )}
+        </Flex>
+      }
+    >
+      <Space orientation="vertical" size="middle" className="w-full">
+        <Space size="small" wrap>
           <StatusBadge status={asset.status} />
-          <span className="rounded bg-slate-100 px-2 py-0.5 text-xs font-medium capitalize text-slate-600">
+          <Tag variant="filled" className="capitalize">
             {asset.type}
-          </span>
+          </Tag>
           {version && <StatusBadge status={version.processing_status} />}
-        </div>
+        </Space>
 
         {asset.thumbnail_url && (
-          <img
+          <Image
             src={asset.thumbnail_url}
             alt={`Preview of ${asset.name}`}
-            className="max-h-48 rounded-md border border-slate-200 object-contain"
+            height={192}
+            className="rounded-md border border-slate-200 object-contain"
           />
         )}
 
         {version && (
-          <dl className="grid grid-cols-2 gap-x-4 gap-y-2 text-sm">
-            <div>
-              <dt className="text-xs uppercase tracking-wide text-slate-400">File</dt>
-              <dd className="text-slate-700">{version.original_filename}</dd>
-            </div>
-            <div>
-              <dt className="text-xs uppercase tracking-wide text-slate-400">Size</dt>
-              <dd className="text-slate-700">{formatBytes(version.size_bytes)}</dd>
-            </div>
-            <div>
-              <dt className="text-xs uppercase tracking-wide text-slate-400">Dimensions</dt>
-              <dd className="text-slate-700">
-                {version.width && version.height ? `${version.width}×${version.height}` : "—"}
-              </dd>
-            </div>
-            <div>
-              <dt className="text-xs uppercase tracking-wide text-slate-400">Version</dt>
-              <dd className="text-slate-700">v{version.version_no}</dd>
-            </div>
-          </dl>
+          <Descriptions
+            size="small"
+            column={{ xs: 1, sm: 2 }}
+            items={[
+              { label: "File", children: version.original_filename },
+              { label: "Size", children: formatBytes(version.size_bytes) },
+              {
+                label: "Dimensions",
+                children:
+                  version.width && version.height ? `${version.width}×${version.height}` : "—",
+              },
+              { label: "Version", children: `v${version.version_no}` },
+            ]}
+          />
         )}
         {version?.processing_error && (
-          <p className="rounded-md bg-red-50 px-3 py-2 text-sm text-red-700">
-            Processing failed: {version.processing_error}
-          </p>
+          <Alert
+            type="error"
+            showIcon
+            message={`Processing failed: ${version.processing_error}`}
+          />
         )}
 
         {asset.tags.length > 0 && (
-          <div className="flex flex-wrap gap-1">
+          <Space size={[4, 8]} wrap>
             {asset.tags.map((t) => (
-              <span
-                key={t.id}
-                className="rounded-full bg-slate-100 px-2 py-0.5 text-xs text-slate-600"
-              >
+              <Tag key={t.id} variant="filled">
                 {t.key}={t.value}
-              </span>
+              </Tag>
             ))}
-          </div>
+          </Space>
         )}
 
         <div>
-          <h3 className="text-xs font-medium uppercase tracking-wide text-slate-400">Versions</h3>
-          <ul className="mt-1 space-y-1 text-sm text-slate-600">
-            {(versionsQuery.data?.data ?? []).map((v) => (
-              <li key={v.id} className="flex items-center gap-2">
-                v{v.version_no} · {v.original_filename} · {formatBytes(v.size_bytes)}
-                <StatusBadge status={v.processing_status} />
-              </li>
-            ))}
-          </ul>
+          <Typography.Text type="secondary" className="text-xs font-medium uppercase tracking-wide">
+            Versions
+          </Typography.Text>
+          <List
+            size="small"
+            dataSource={versionsQuery.data?.data ?? []}
+            renderItem={(v) => (
+              <List.Item className="!px-0 !py-1">
+                <Space size="small" wrap>
+                  <Typography.Text>
+                    v{v.version_no} · {v.original_filename} · {formatBytes(v.size_bytes)}
+                  </Typography.Text>
+                  <StatusBadge status={v.processing_status} />
+                </Space>
+              </List.Item>
+            )}
+          />
         </div>
 
-        {error && (
-          <p className="rounded-md bg-red-50 px-3 py-2 text-sm text-red-700" role="alert">
-            {error}
-          </p>
-        )}
-
-        <div className="flex flex-wrap justify-end gap-2 border-t border-slate-200 pt-4">
-          <button
-            type="button"
-            onClick={download}
-            className="rounded-md border border-slate-300 px-3 py-1.5 text-sm font-medium text-slate-600"
-          >
-            Download
-          </button>
-          {canEdit && (
-            <button
-              type="button"
-              onClick={() => setUploadVersion(true)}
-              className="rounded-md border border-slate-300 px-3 py-1.5 text-sm font-medium text-slate-600"
-            >
-              New version
-            </button>
-          )}
-          {canEdit && asset.status === "draft" && (
-            <button
-              type="button"
-              onClick={() => action.mutate("publish")}
-              className="rounded-md bg-emerald-600 px-3 py-1.5 text-sm font-medium text-white"
-            >
-              Publish
-            </button>
-          )}
-          {canDelete && asset.status !== "archived" && (
-            <button
-              type="button"
-              onClick={() => {
-                if (window.confirm(`Archive "${asset.name}"?`)) action.mutate("archive");
-              }}
-              className="rounded-md border border-red-200 px-3 py-1.5 text-sm font-medium text-red-600"
-            >
-              Archive
-            </button>
-          )}
-          {canDelete && asset.status === "archived" && (
-            <button
-              type="button"
-              onClick={() => action.mutate("restore")}
-              className="rounded-md border border-slate-300 px-3 py-1.5 text-sm font-medium text-slate-600"
-            >
-              Restore
-            </button>
-          )}
-        </div>
-      </div>
+        {error && <Alert type="error" message={error} showIcon role="alert" />}
+      </Space>
 
       {uploadVersion && (
         <UploadModal
@@ -199,6 +208,6 @@ export function AssetDetailModal({ assetId, onClose, onChanged }: Props) {
           onUploaded={refresh}
         />
       )}
-    </Modal>
+    </Drawer>
   );
 }

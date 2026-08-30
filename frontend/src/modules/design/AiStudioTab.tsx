@@ -1,5 +1,23 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useState, type FormEvent } from "react";
+import {
+  Alert,
+  Button,
+  Card,
+  Col,
+  Form,
+  Input,
+  InputNumber,
+  Row,
+  Select,
+  Space,
+  Table,
+  Tag,
+  Tooltip,
+  Typography,
+  type TableProps,
+} from "antd";
+import { useState } from "react";
+import { EmptyState } from "../../components/ui/states";
 import { api, ApiError } from "../../lib/api";
 import { useAuth } from "../../lib/auth";
 
@@ -24,11 +42,11 @@ interface AiRequestRow {
   outputs: AiOutputRow[];
 }
 
-const SAFETY_STYLE: Record<string, string> = {
-  passed: "bg-emerald-100 text-emerald-700",
-  pending: "bg-sky-100 text-sky-700",
-  flagged: "bg-amber-100 text-amber-800",
-  rejected: "bg-red-100 text-red-700",
+const SAFETY_COLOR: Record<string, string> = {
+  passed: "success",
+  pending: "processing",
+  flagged: "warning",
+  rejected: "error",
 };
 
 const TEXT_TEMPLATES = [
@@ -51,28 +69,17 @@ const DIMENSIONS = [
 function ConfidenceBadge({ output }: { output: AiOutputRow }) {
   const pct = Math.round(output.confidence * 100);
   return (
-    <span className="flex flex-wrap items-center gap-1.5 text-xs">
-      <span
-        className={`rounded-full px-2 py-0.5 font-medium ${
-          SAFETY_STYLE[output.safety_status] ?? "bg-slate-100 text-slate-600"
-        }`}
-      >
+    <Space size={4} wrap>
+      <Tag color={SAFETY_COLOR[output.safety_status] ?? "default"} variant="filled">
         {output.safety_status}
-      </span>
-      <span
-        className={`rounded-full px-2 py-0.5 font-medium ${
-          pct >= 80 ? "bg-emerald-50 text-emerald-700" : "bg-amber-50 text-amber-700"
-        }`}
-        title="Recommendation confidence (deterministic provider)"
-      >
-        {pct}% confidence
-      </span>
-      {output.fallback && (
-        <span className="rounded-full bg-slate-100 px-2 py-0.5 text-slate-500">
-          fallback result
-        </span>
-      )}
-    </span>
+      </Tag>
+      <Tooltip title="Recommendation confidence (deterministic provider)">
+        <Tag color={pct >= 80 ? "success" : "warning"} variant="filled">
+          {pct}% confidence
+        </Tag>
+      </Tooltip>
+      {output.fallback && <Tag variant="filled">fallback result</Tag>}
+    </Space>
   );
 }
 
@@ -100,37 +107,34 @@ export function AiStudioTab() {
     queryClient.invalidateQueries({ queryKey: ["ai-requests"] });
   };
 
-  const [textForm, setTextForm] = useState({ template: "headline", text: "", max_chars: "" });
   const generateText = useMutation({
-    mutationFn: () =>
+    mutationFn: (values: { template: string; text: string; max_chars?: number | null }) =>
       api.post<AiRequestRow>("/ai/generate/text", {
-        template: textForm.template,
-        text: textForm.text,
-        max_chars: textForm.max_chars ? Number(textForm.max_chars) : null,
+        template: values.template,
+        text: values.text,
+        max_chars: values.max_chars ?? null,
       }),
     onSuccess: onDone,
     onError,
   });
 
-  const [localizeForm, setLocalizeForm] = useState({ text: "", locale: "es" });
   const localize = useMutation({
-    mutationFn: () =>
+    mutationFn: (values: { text: string; locale: string }) =>
       api.post<AiRequestRow>("/ai/localize", {
-        text: localizeForm.text,
-        target_locale: localizeForm.locale,
+        text: values.text,
+        target_locale: values.locale,
       }),
     onSuccess: onDone,
     onError,
   });
 
-  const [creativeForm, setCreativeForm] = useState({ headline: "", body: "", dim: 0 });
   const generateCreative = useMutation({
-    mutationFn: () =>
+    mutationFn: (values: { headline: string; body?: string; dim: number }) =>
       api.post<AiRequestRow>("/ai/generate/creative", {
-        headline: creativeForm.headline,
-        body: creativeForm.body || null,
-        width: DIMENSIONS[creativeForm.dim].width,
-        height: DIMENSIONS[creativeForm.dim].height,
+        headline: values.headline,
+        body: values.body || null,
+        width: DIMENSIONS[values.dim].width,
+        height: DIMENSIONS[values.dim].height,
       }),
     onSuccess: onDone,
     onError,
@@ -138,241 +142,208 @@ export function AiStudioTab() {
 
   if (requestsQuery.isError)
     return (
-      <p className="rounded-md bg-amber-50 px-3 py-2 text-sm text-amber-800" role="alert">
-        {requestsQuery.error instanceof ApiError
-          ? requestsQuery.error.message
-          : "AI studio unavailable."}
-      </p>
+      <Alert
+        type="warning"
+        showIcon
+        role="alert"
+        message={
+          requestsQuery.error instanceof ApiError
+            ? requestsQuery.error.message
+            : "AI studio unavailable."
+        }
+      />
     );
 
   const canCreate = hasPermission("content.create");
   const canCreative = hasPermission("layouts.manage");
   const requests = requestsQuery.data?.data ?? [];
 
-  function submit(e: FormEvent, mutate: () => void) {
-    e.preventDefault();
-    setError(null);
-    mutate();
-  }
+  const activityColumns: TableProps<AiRequestRow>["columns"] = [
+    { title: "Operation", dataIndex: "operation" },
+    {
+      title: "Template",
+      dataIndex: "template_version",
+      render: (template_version: string | null) => (
+        <Typography.Text code className="text-xs">
+          {template_version}
+        </Typography.Text>
+      ),
+    },
+    {
+      title: "Result",
+      render: (_, r) => (
+        <Typography.Text type="secondary" ellipsis className="max-w-md font-mono text-xs">
+          {r.outputs[0]
+            ? String(r.outputs[0].content.text ?? r.outputs[0].content.headline ?? "")
+            : "—"}
+        </Typography.Text>
+      ),
+    },
+    {
+      title: "Safety / confidence",
+      render: (_, r) => (r.outputs[0] ? <ConfidenceBadge output={r.outputs[0]} /> : null),
+    },
+    {
+      title: "When",
+      dataIndex: "created_at",
+      render: (created_at: string | null) =>
+        created_at ? new Date(created_at).toLocaleString() : "—",
+    },
+  ];
 
   return (
-    <div className="space-y-6">
-      <p className="text-xs text-slate-400">
+    <Space orientation="vertical" size="middle" className="w-full">
+      <Typography.Text type="secondary" className="text-xs">
         Results are <strong>recommendations</strong> from the configured AI
         provider (currently deterministic rules — no external model). Each
         output records provider, template version and confidence; your
         organization's guardrails and approval policy apply.
-      </p>
+      </Typography.Text>
 
-      <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
+      <Row gutter={[16, 16]}>
         {canCreate && (
-          <form
-            className="rounded-lg border border-slate-200 bg-white p-4"
-            onSubmit={(e) => submit(e, () => generateText.mutate())}
-          >
-            <h2 className="text-sm font-semibold uppercase tracking-wide text-slate-400">
-              Copy assistant
-            </h2>
-            <select
-              aria-label="Text template"
-              value={textForm.template}
-              onChange={(e) => setTextForm((p) => ({ ...p, template: e.target.value }))}
-              className="mt-2 w-full rounded-md border border-slate-300 px-2 py-1.5 text-sm"
-            >
-              {TEXT_TEMPLATES.map((t) => (
-                <option key={t.value} value={t.value}>
-                  {t.label}
-                </option>
-              ))}
-            </select>
-            <textarea
-              required
-              value={textForm.text}
-              onChange={(e) => setTextForm((p) => ({ ...p, text: e.target.value }))}
-              placeholder="Your copy…"
-              rows={3}
-              className="mt-2 w-full rounded-md border border-slate-300 px-2 py-1.5 text-sm"
-            />
-            <input
-              type="number"
-              min={8}
-              value={textForm.max_chars}
-              onChange={(e) => setTextForm((p) => ({ ...p, max_chars: e.target.value }))}
-              placeholder="Max characters (optional)"
-              className="mt-2 w-full rounded-md border border-slate-300 px-2 py-1.5 text-sm"
-            />
-            <button
-              type="submit"
-              disabled={generateText.isPending}
-              className="mt-3 rounded-md bg-slate-900 px-3 py-1.5 text-sm font-medium text-white disabled:opacity-50"
-            >
-              Generate
-            </button>
-          </form>
+          <Col xs={24} lg={8}>
+            <Card size="small" title="Copy assistant" className="h-full">
+              <Form
+                layout="vertical"
+                initialValues={{ template: "headline" }}
+                onFinish={(values) => {
+                  setError(null);
+                  generateText.mutate(values);
+                }}
+              >
+                <Form.Item name="template" label="Template">
+                  <Select aria-label="Text template" options={TEXT_TEMPLATES} />
+                </Form.Item>
+                <Form.Item
+                  name="text"
+                  label="Copy"
+                  rules={[{ required: true, message: "Enter the copy to work on." }]}
+                >
+                  <Input.TextArea rows={3} placeholder="Your copy…" />
+                </Form.Item>
+                <Form.Item name="max_chars" label="Max characters (optional)">
+                  <InputNumber min={8} className="w-full" />
+                </Form.Item>
+                <Button type="primary" htmlType="submit" loading={generateText.isPending}>
+                  Generate
+                </Button>
+              </Form>
+            </Card>
+          </Col>
         )}
 
         {canCreate && (
-          <form
-            className="rounded-lg border border-slate-200 bg-white p-4"
-            onSubmit={(e) => submit(e, () => localize.mutate())}
-          >
-            <h2 className="text-sm font-semibold uppercase tracking-wide text-slate-400">
-              Localize
-            </h2>
-            <textarea
-              required
-              value={localizeForm.text}
-              onChange={(e) => setLocalizeForm((p) => ({ ...p, text: e.target.value }))}
-              placeholder="Text with {{placeholders}} preserved…"
-              rows={3}
-              className="mt-2 w-full rounded-md border border-slate-300 px-2 py-1.5 text-sm"
-            />
-            <select
-              aria-label="Target locale"
-              value={localizeForm.locale}
-              onChange={(e) => setLocalizeForm((p) => ({ ...p, locale: e.target.value }))}
-              className="mt-2 w-full rounded-md border border-slate-300 px-2 py-1.5 text-sm"
-            >
-              {LOCALES.map((l) => (
-                <option key={l} value={l}>
-                  {l}
-                </option>
-              ))}
-            </select>
-            <button
-              type="submit"
-              disabled={localize.isPending}
-              className="mt-3 rounded-md bg-slate-900 px-3 py-1.5 text-sm font-medium text-white disabled:opacity-50"
-            >
-              Localize
-            </button>
-          </form>
+          <Col xs={24} lg={8}>
+            <Card size="small" title="Localize" className="h-full">
+              <Form
+                layout="vertical"
+                initialValues={{ locale: "es" }}
+                onFinish={(values) => {
+                  setError(null);
+                  localize.mutate(values);
+                }}
+              >
+                <Form.Item
+                  name="text"
+                  label="Text"
+                  rules={[{ required: true, message: "Enter the text to localize." }]}
+                >
+                  <Input.TextArea rows={3} placeholder="Text with {{placeholders}} preserved…" />
+                </Form.Item>
+                <Form.Item name="locale" label="Target locale">
+                  <Select
+                    aria-label="Target locale"
+                    options={LOCALES.map((l) => ({ value: l, label: l }))}
+                  />
+                </Form.Item>
+                <Button type="primary" htmlType="submit" loading={localize.isPending}>
+                  Localize
+                </Button>
+              </Form>
+            </Card>
+          </Col>
         )}
 
         {canCreative && (
-          <form
-            className="rounded-lg border border-slate-200 bg-white p-4"
-            onSubmit={(e) => submit(e, () => generateCreative.mutate())}
-          >
-            <h2 className="text-sm font-semibold uppercase tracking-wide text-slate-400">
-              Creative variant
-            </h2>
-            <input
-              required
-              value={creativeForm.headline}
-              onChange={(e) => setCreativeForm((p) => ({ ...p, headline: e.target.value }))}
-              placeholder="Headline"
-              className="mt-2 w-full rounded-md border border-slate-300 px-2 py-1.5 text-sm"
-            />
-            <input
-              value={creativeForm.body}
-              onChange={(e) => setCreativeForm((p) => ({ ...p, body: e.target.value }))}
-              placeholder="Body (optional)"
-              className="mt-2 w-full rounded-md border border-slate-300 px-2 py-1.5 text-sm"
-            />
-            <select
-              aria-label="Dimensions"
-              value={creativeForm.dim}
-              onChange={(e) =>
-                setCreativeForm((p) => ({ ...p, dim: Number(e.target.value) }))
-              }
-              className="mt-2 w-full rounded-md border border-slate-300 px-2 py-1.5 text-sm"
-            >
-              {DIMENSIONS.map((d, i) => (
-                <option key={d.label} value={i}>
-                  {d.label}
-                </option>
-              ))}
-            </select>
-            <button
-              type="submit"
-              disabled={generateCreative.isPending}
-              className="mt-3 rounded-md bg-slate-900 px-3 py-1.5 text-sm font-medium text-white disabled:opacity-50"
-            >
-              Generate variant
-            </button>
-          </form>
+          <Col xs={24} lg={8}>
+            <Card size="small" title="Creative variant" className="h-full">
+              <Form
+                layout="vertical"
+                initialValues={{ dim: 0 }}
+                onFinish={(values) => {
+                  setError(null);
+                  generateCreative.mutate(values);
+                }}
+              >
+                <Form.Item
+                  name="headline"
+                  label="Headline"
+                  rules={[{ required: true, message: "Enter a headline." }]}
+                >
+                  <Input placeholder="Headline" />
+                </Form.Item>
+                <Form.Item name="body" label="Body (optional)">
+                  <Input placeholder="Body (optional)" />
+                </Form.Item>
+                <Form.Item name="dim" label="Dimensions">
+                  <Select
+                    aria-label="Dimensions"
+                    options={DIMENSIONS.map((d, i) => ({ value: i, label: d.label }))}
+                  />
+                </Form.Item>
+                <Button type="primary" htmlType="submit" loading={generateCreative.isPending}>
+                  Generate variant
+                </Button>
+              </Form>
+            </Card>
+          </Col>
         )}
-      </div>
+      </Row>
 
-      {error && (
-        <p role="alert" className="rounded-md bg-red-50 px-3 py-2 text-sm text-red-700">
-          {error}
-        </p>
-      )}
+      {error && <Alert type="error" message={error} showIcon role="alert" />}
 
       {lastResult && (
-        <section className="rounded-lg border border-slate-200 bg-white p-4">
-          <h2 className="text-sm font-semibold uppercase tracking-wide text-slate-400">
-            Latest result
-          </h2>
+        <Card size="small" title="Latest result">
           {lastResult.outputs.map((output) => (
-            <div key={output.id} className="mt-2 space-y-2">
+            <Space key={output.id} orientation="vertical" size="small" className="w-full">
               <ConfidenceBadge output={output} />
-              <pre className="max-h-48 overflow-auto rounded bg-slate-50 p-3 font-mono text-xs">
-                {JSON.stringify(output.content, null, 2)}
-              </pre>
+              <Typography.Paragraph className="!mb-0">
+                <pre className="max-h-48 overflow-auto text-xs">
+                  {JSON.stringify(output.content, null, 2)}
+                </pre>
+              </Typography.Paragraph>
               {output.safety_status === "pending" && (
-                <p className="text-xs text-sky-700">
-                  Awaiting approval — see the Approvals inbox.
-                </p>
+                <Alert
+                  type="info"
+                  showIcon
+                  message="Awaiting approval — see the Approvals inbox."
+                />
               )}
               {output.safety_notes && output.safety_status === "flagged" && (
-                <p className="text-xs text-amber-700">Guardrail: {output.safety_notes}</p>
+                <Alert type="warning" showIcon message={`Guardrail: ${output.safety_notes}`} />
               )}
-            </div>
+            </Space>
           ))}
-          <p className="mt-2 text-xs text-slate-400">
+          <Typography.Paragraph type="secondary" className="!mb-0 mt-2 text-xs">
             {lastResult.provider} · {lastResult.model_ref} ·{" "}
             {lastResult.template_version}
-          </p>
-        </section>
+          </Typography.Paragraph>
+        </Card>
       )}
 
-      <section className="rounded-lg border border-slate-200 bg-white p-4">
-        <h2 className="text-sm font-semibold uppercase tracking-wide text-slate-400">
-          Recent AI activity (explainability trail)
-        </h2>
-        <table className="mt-2 w-full text-left text-sm">
-          <thead>
-            <tr className="text-xs uppercase text-slate-400">
-              <th className="py-1.5 pr-4">Operation</th>
-              <th className="py-1.5 pr-4">Template</th>
-              <th className="py-1.5 pr-4">Result</th>
-              <th className="py-1.5 pr-4">Safety / confidence</th>
-              <th className="py-1.5">When</th>
-            </tr>
-          </thead>
-          <tbody>
-            {requests.length === 0 && (
-              <tr>
-                <td colSpan={5} className="py-3 text-sm text-slate-400">
-                  No AI activity yet.
-                </td>
-              </tr>
-            )}
-            {requests.map((r) => (
-              <tr key={r.id} className="border-t border-slate-100 align-top">
-                <td className="py-1.5 pr-4">{r.operation}</td>
-                <td className="py-1.5 pr-4 font-mono text-xs">{r.template_version}</td>
-                <td className="max-w-md truncate py-1.5 pr-4 font-mono text-xs text-slate-500">
-                  {r.outputs[0]
-                    ? String(
-                        r.outputs[0].content.text ?? r.outputs[0].content.headline ?? "",
-                      )
-                    : "—"}
-                </td>
-                <td className="py-1.5 pr-4">
-                  {r.outputs[0] && <ConfidenceBadge output={r.outputs[0]} />}
-                </td>
-                <td className="py-1.5 text-xs text-slate-500">
-                  {r.created_at ? new Date(r.created_at).toLocaleString() : "—"}
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </section>
-    </div>
+      <Card size="small" title="Recent AI activity (explainability trail)">
+        <Table<AiRequestRow>
+          size="middle"
+          rowKey="id"
+          columns={activityColumns}
+          dataSource={requests}
+          loading={requestsQuery.isLoading}
+          pagination={false}
+          scroll={{ x: "max-content" }}
+          locale={{ emptyText: <EmptyState title="No AI activity yet." /> }}
+        />
+      </Card>
+    </Space>
   );
 }

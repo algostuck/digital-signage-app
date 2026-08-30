@@ -1,6 +1,22 @@
+import { SendOutlined } from "@ant-design/icons";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import {
+  Alert,
+  Button,
+  Descriptions,
+  Drawer,
+  Flex,
+  Image,
+  List,
+  Popconfirm,
+  Select,
+  Space,
+  Tag,
+  Timeline,
+  Typography,
+} from "antd";
 import { useState } from "react";
-import { Modal } from "../../components/ui/Modal";
+import { LoadingState } from "../../components/ui/states";
 import { StatusBadge } from "../../components/ui/StatusBadge";
 import { api, ApiError } from "../../lib/api";
 import { useAuth } from "../../lib/auth";
@@ -20,6 +36,14 @@ interface Props {
   deviceId: string;
   onClose: () => void;
   onChanged: () => void;
+}
+
+function SectionLabel({ children }: { children: string }) {
+  return (
+    <Typography.Text type="secondary" className="text-xs font-medium uppercase tracking-wide">
+      {children}
+    </Typography.Text>
+  );
 }
 
 /** SCR-09 Device Details: health, capabilities, assignment, commands. */
@@ -99,248 +123,246 @@ export function DeviceDetailModal({ deviceId, onClose, onChanged }: Props) {
   const device = deviceQuery.data?.data ?? null;
   if (!device) {
     return (
-      <Modal title="Device details" open onClose={onClose}>
-        <p className="text-sm text-slate-500">Loading…</p>
-      </Modal>
+      <Drawer title="Device details" open onClose={onClose} size={640} placement="right">
+        <LoadingState rows={8} />
+      </Drawer>
     );
   }
 
+  const screenshots = screenshotsQuery.data?.data ?? [];
+  const events = eventsQuery.data?.data ?? [];
+  const commands = commandsQuery.data?.data ?? [];
+
   return (
-    <Modal title={device.name} open onClose={onClose}>
-      <div className="space-y-4">
-        <div className="flex flex-wrap items-center gap-2">
+    <Drawer
+      title={device.name}
+      open
+      onClose={onClose}
+      width={640}
+      placement="right"
+      footer={
+        canManage ? (
+          <Flex wrap justify="flex-end" gap="small">
+            {device.status === "active" && (
+              <Popconfirm
+                title="Reset this device's credential?"
+                description="It will re-enroll on next poll."
+                onConfirm={() => lifecycle.mutate("reset-token")}
+              >
+                <Button loading={lifecycle.isPending}>Reset credential</Button>
+              </Popconfirm>
+            )}
+            {device.status !== "decommissioned" && (
+              <Popconfirm
+                title={`Decommission "${device.name}"?`}
+                description="This revokes its credential."
+                onConfirm={() => lifecycle.mutate("decommission")}
+                okButtonProps={{ danger: true }}
+              >
+                <Button danger>Decommission</Button>
+              </Popconfirm>
+            )}
+          </Flex>
+        ) : undefined
+      }
+    >
+      <Space orientation="vertical" size="middle" className="w-full">
+        <Space size="small" wrap align="center">
           <StatusBadge status={device.status} />
           <StatusBadge status={device.connection_status} />
-          <span className="text-xs text-slate-500">
+          <Typography.Text type="secondary" className="text-xs">
             Heartbeat {timeAgo(device.last_heartbeat_at)}
-          </span>
-          {device.has_credential && (
-            <span className="rounded bg-slate-100 px-2 py-0.5 text-xs text-slate-600">
-              credential issued
-            </span>
-          )}
-        </div>
+          </Typography.Text>
+          {device.has_credential && <Tag variant="filled">credential issued</Tag>}
+        </Space>
 
-        <dl className="grid grid-cols-2 gap-x-4 gap-y-2 text-sm">
-          <Info label="Serial" value={device.serial_no} mono />
-          <Info label="Platform" value={device.platform ?? "—"} />
-          <Info
-            label="Hardware"
-            value={[device.manufacturer, device.model].filter(Boolean).join(" ") || "—"}
-          />
-          <Info label="Player" value={device.player_version ?? "—"} />
-          <Info label="OS" value={device.os_version ?? "—"} />
-          <Info label="IP" value={device.ip_address ?? "—"} mono />
-          <Info
-            label="Resolution"
-            value={
-              device.screen_width && device.screen_height
-                ? `${device.screen_width}×${device.screen_height}`
-                : "—"
-            }
-          />
-          <Info label="Timezone" value={device.timezone ?? "inherited"} />
-        </dl>
+        <Descriptions
+          size="small"
+          column={{ xs: 1, sm: 2 }}
+          items={[
+            {
+              label: "Serial",
+              children: (
+                <Typography.Text code className="text-xs">
+                  {device.serial_no}
+                </Typography.Text>
+              ),
+            },
+            { label: "Platform", children: device.platform ?? "—" },
+            {
+              label: "Hardware",
+              children: [device.manufacturer, device.model].filter(Boolean).join(" ") || "—",
+            },
+            { label: "Player", children: device.player_version ?? "—" },
+            { label: "OS", children: device.os_version ?? "—" },
+            {
+              label: "IP",
+              children: device.ip_address ? (
+                <Typography.Text code className="text-xs">
+                  {device.ip_address}
+                </Typography.Text>
+              ) : (
+                "—"
+              ),
+            },
+            {
+              label: "Resolution",
+              children:
+                device.screen_width && device.screen_height
+                  ? `${device.screen_width}×${device.screen_height}`
+                  : "—",
+            },
+            { label: "Timezone", children: device.timezone ?? "inherited" },
+          ]}
+        />
 
         {canManage && device.status === "active" && (
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-            <div>
-              <label htmlFor="device-location" className="block text-xs font-medium uppercase tracking-wide text-slate-400">
-                Location
-              </label>
-              <select
-                id="device-location"
+          <Flex gap="middle" wrap>
+            <div className="min-w-0 flex-1">
+              <SectionLabel>Location</SectionLabel>
+              <Select
+                className="mt-1 w-full"
+                aria-label="Location"
                 value={device.location_id ?? ""}
-                onChange={(e) => assignLocation.mutate(e.target.value || null)}
-                className="mt-1 block w-full rounded-md border border-slate-300 px-2 py-1.5 text-sm"
-              >
-                <option value="">— unassigned —</option>
-                {(locationsQuery.data?.data ?? []).map((loc) => (
-                  <option key={loc.id} value={loc.id}>
-                    {loc.name}
-                  </option>
-                ))}
-              </select>
+                onChange={(value) => assignLocation.mutate(value || null)}
+                options={[
+                  { value: "", label: "— unassigned —" },
+                  ...(locationsQuery.data?.data ?? []).map((loc) => ({
+                    value: loc.id,
+                    label: loc.name,
+                  })),
+                ]}
+              />
             </div>
-            <div>
-              <label htmlFor="device-group" className="block text-xs font-medium uppercase tracking-wide text-slate-400">
-                Group
-              </label>
-              <select
-                id="device-group"
+            <div className="min-w-0 flex-1">
+              <SectionLabel>Group</SectionLabel>
+              <Select
+                className="mt-1 w-full"
+                aria-label="Group"
                 value={device.group?.id ?? ""}
-                onChange={(e) => assignGroup.mutate(e.target.value || null)}
-                className="mt-1 block w-full rounded-md border border-slate-300 px-2 py-1.5 text-sm"
-              >
-                <option value="">— no group —</option>
-                {(groupsQuery.data?.data ?? []).map((g) => (
-                  <option key={g.id} value={g.id}>
-                    {g.name}
-                  </option>
-                ))}
-              </select>
+                onChange={(value) => assignGroup.mutate(value || null)}
+                options={[
+                  { value: "", label: "— no group —" },
+                  ...(groupsQuery.data?.data ?? []).map((g) => ({
+                    value: g.id,
+                    label: g.name,
+                  })),
+                ]}
+              />
             </div>
-          </div>
+          </Flex>
         )}
 
-        {(screenshotsQuery.data?.data ?? []).length > 0 && (
+        {screenshots.length > 0 && (
           <div>
-            <h3 className="text-xs font-medium uppercase tracking-wide text-slate-400">
-              Latest screenshot evidence
-            </h3>
-            <img
-              src={screenshotsQuery.data!.data![0].url}
-              alt={`Screen of ${device.name}`}
-              className="mt-1 max-h-40 rounded-md border border-slate-200 object-contain"
-            />
-            <p className="mt-1 text-xs text-slate-400">
-              captured {timeAgo(screenshotsQuery.data!.data![0].captured_at)} ·{" "}
-              {screenshotsQuery.data!.data!.length} on record
-            </p>
+            <SectionLabel>Latest screenshot evidence</SectionLabel>
+            <div className="mt-1">
+              <Image
+                src={screenshots[0].url}
+                alt={`Screen of ${device.name}`}
+                height={160}
+                className="rounded-md border border-slate-200 object-contain"
+              />
+            </div>
+            <Typography.Paragraph type="secondary" className="!mb-0 mt-1 text-xs">
+              captured {timeAgo(screenshots[0].captured_at)} · {screenshots.length} on record
+            </Typography.Paragraph>
           </div>
         )}
 
         {device.capabilities.length > 0 && (
           <div>
-            <h3 className="text-xs font-medium uppercase tracking-wide text-slate-400">
-              Capabilities
-            </h3>
-            <div className="mt-1 flex flex-wrap gap-1">
-              {device.capabilities.map((c) => (
-                <span
-                  key={c.capability_code}
-                  className={`rounded px-2 py-0.5 text-xs font-medium ${
-                    c.supported ? "bg-emerald-50 text-emerald-700" : "bg-slate-100 text-slate-400 line-through"
-                  }`}
-                >
-                  {c.capability_code}
-                </span>
-              ))}
+            <SectionLabel>Capabilities</SectionLabel>
+            <div className="mt-1">
+              <Space size={[4, 8]} wrap>
+                {device.capabilities.map((c) => (
+                  <Tag
+                    key={c.capability_code}
+                    variant="filled"
+                    color={c.supported ? "success" : "default"}
+                    className={c.supported ? undefined : "line-through"}
+                  >
+                    {c.capability_code}
+                  </Tag>
+                ))}
+              </Space>
             </div>
           </div>
         )}
 
         {canControl && device.status === "active" && (
-          <div className="flex items-end gap-2">
-            <div className="flex-1">
-              <label htmlFor="command-type" className="block text-xs font-medium uppercase tracking-wide text-slate-400">
-                Remote command
-              </label>
-              <select
-                id="command-type"
+          <div>
+            <SectionLabel>Remote command</SectionLabel>
+            <Space.Compact className="mt-1 w-full">
+              <Select
+                className="flex-1"
+                aria-label="Remote command"
                 value={commandType}
-                onChange={(e) => setCommandType(e.target.value)}
-                className="mt-1 block w-full rounded-md border border-slate-300 px-2 py-1.5 text-sm"
+                onChange={setCommandType}
+                options={COMMAND_TYPES.map((c) => ({ value: c, label: c }))}
+              />
+              <Button
+                type="primary"
+                icon={<SendOutlined />}
+                onClick={() => sendCommand.mutate()}
+                loading={sendCommand.isPending}
               >
-                {COMMAND_TYPES.map((c) => (
-                  <option key={c} value={c}>
-                    {c}
-                  </option>
-                ))}
-              </select>
+                Queue
+              </Button>
+            </Space.Compact>
+          </div>
+        )}
+
+        {events.length > 0 && (
+          <div>
+            <SectionLabel>Event timeline</SectionLabel>
+            <div className="mt-2 max-h-48 overflow-y-auto">
+              <Timeline
+                items={events.map((row) => ({
+                  color:
+                    row.kind === "incident" ? "red" : row.kind === "recovery" ? "green" : "gray",
+                  children: (
+                    <Space size="small" wrap>
+                      <Typography.Text code className="text-xs">
+                        {row.type}
+                      </Typography.Text>
+                      <Typography.Text>{row.title}</Typography.Text>
+                      <Typography.Text type="secondary" className="text-xs">
+                        {timeAgo(row.at)}
+                      </Typography.Text>
+                    </Space>
+                  ),
+                }))}
+              />
             </div>
-            <button
-              type="button"
-              onClick={() => sendCommand.mutate()}
-              disabled={sendCommand.isPending}
-              className="rounded-md bg-slate-900 px-3 py-1.5 text-sm font-medium text-white disabled:opacity-50"
-            >
-              Queue
-            </button>
           </div>
         )}
 
-        {(eventsQuery.data?.data ?? []).length > 0 && (
+        {commands.length > 0 && (
           <div>
-            <h3 className="text-xs font-medium uppercase tracking-wide text-slate-400">
-              Event timeline
-            </h3>
-            <ul className="mt-1 max-h-40 space-y-1 overflow-y-auto text-sm text-slate-600">
-              {(eventsQuery.data?.data ?? []).map((row, index) => (
-                <li key={index} className="flex items-center gap-2">
-                  <span
-                    className={`h-2 w-2 shrink-0 rounded-full ${
-                      row.kind === "incident"
-                        ? "bg-red-500"
-                        : row.kind === "recovery"
-                          ? "bg-emerald-500"
-                          : "bg-slate-300"
-                    }`}
-                  />
-                  <span className="font-mono text-xs text-slate-400">{row.type}</span>
-                  <span className="truncate">{row.title}</span>
-                  <span className="ml-auto shrink-0 text-xs text-slate-400">
-                    {timeAgo(row.at)}
-                  </span>
-                </li>
-              ))}
-            </ul>
+            <SectionLabel>Recent commands</SectionLabel>
+            <List
+              size="small"
+              dataSource={commands.slice(0, 5)}
+              renderItem={(c) => (
+                <List.Item className="!px-0 !py-1">
+                  <Space size="small">
+                    <Typography.Text code className="text-xs">
+                      {c.command_type}
+                    </Typography.Text>
+                    <StatusBadge status={c.status} />
+                    <Typography.Text type="secondary" className="text-xs">
+                      {timeAgo(c.created_at)}
+                    </Typography.Text>
+                  </Space>
+                </List.Item>
+              )}
+            />
           </div>
         )}
 
-        {(commandsQuery.data?.data ?? []).length > 0 && (
-          <div>
-            <h3 className="text-xs font-medium uppercase tracking-wide text-slate-400">
-              Recent commands
-            </h3>
-            <ul className="mt-1 space-y-1 text-sm text-slate-600">
-              {(commandsQuery.data?.data ?? []).slice(0, 5).map((c) => (
-                <li key={c.id} className="flex items-center gap-2">
-                  <span className="font-mono text-xs">{c.command_type}</span>
-                  <StatusBadge status={c.status} />
-                  <span className="text-xs text-slate-400">{timeAgo(c.created_at)}</span>
-                </li>
-              ))}
-            </ul>
-          </div>
-        )}
-
-        {error && (
-          <p className="rounded-md bg-red-50 px-3 py-2 text-sm text-red-700" role="alert">
-            {error}
-          </p>
-        )}
-
-        {canManage && (
-          <div className="flex flex-wrap justify-end gap-2 border-t border-slate-200 pt-4">
-            {device.status === "active" && (
-              <button
-                type="button"
-                onClick={() => {
-                  if (window.confirm("Reset this device's credential? It will re-enroll on next poll.")) {
-                    lifecycle.mutate("reset-token");
-                  }
-                }}
-                className="rounded-md border border-slate-300 px-3 py-1.5 text-sm font-medium text-slate-600"
-              >
-                Reset credential
-              </button>
-            )}
-            {device.status !== "decommissioned" && (
-              <button
-                type="button"
-                onClick={() => {
-                  if (window.confirm(`Decommission "${device.name}"? This revokes its credential.`)) {
-                    lifecycle.mutate("decommission");
-                  }
-                }}
-                className="rounded-md border border-red-200 px-3 py-1.5 text-sm font-medium text-red-600"
-              >
-                Decommission
-              </button>
-            )}
-          </div>
-        )}
-      </div>
-    </Modal>
-  );
-}
-
-function Info({ label, value, mono = false }: { label: string; value: string; mono?: boolean }) {
-  return (
-    <div>
-      <dt className="text-xs font-medium uppercase tracking-wide text-slate-400">{label}</dt>
-      <dd className={`mt-0.5 text-slate-700 ${mono ? "font-mono text-xs" : ""}`}>{value}</dd>
-    </div>
+        {error && <Alert type="error" message={error} showIcon role="alert" />}
+      </Space>
+    </Drawer>
   );
 }

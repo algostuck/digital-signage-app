@@ -1,4 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { Alert, Button, Card, Col, Form, InputNumber, Progress, Row, Space, Typography } from "antd";
 import { useEffect, useState } from "react";
 import { api, ApiError } from "../../lib/api";
 import { useAuth } from "../../lib/auth";
@@ -80,17 +81,14 @@ export function QuotasRetentionSection() {
   ];
 
   return (
-    <div className="mt-8 space-y-6">
-      <section className="rounded-lg border border-slate-200 bg-white p-4">
-        <h2 className="text-sm font-semibold uppercase tracking-wide text-slate-400">
-          Usage &amp; limits
-        </h2>
-        <p className="mt-1 text-xs text-slate-400">
+    <Space orientation="vertical" size="middle" className="w-full">
+      <Card size="small" title="Usage & limits">
+        <Typography.Paragraph type="secondary" className="!mb-3">
           Limits come from your subscription plan (and any platform override).
           To change them, upgrade your plan or contact the platform
           administrator.
-        </p>
-        <div className="mt-3 grid grid-cols-1 gap-4 sm:grid-cols-3">
+        </Typography.Paragraph>
+        <Row gutter={[16, 16]}>
           {bars.map(({ key, label, unit }) => {
             const entry = usage[key];
             const pct =
@@ -98,72 +96,69 @@ export function QuotasRetentionSection() {
                 ? Math.min(Math.round((entry.used / entry.limit) * 100), 100)
                 : null;
             return (
-              <div key={key}>
-                <p className="text-sm text-slate-600">
-                  <span className="font-medium text-slate-800">{label}</span>:{" "}
-                  {entry.used}
+              <Col key={key} xs={24} sm={8}>
+                <Typography.Text>
+                  <Typography.Text strong>{label}</Typography.Text>: {entry.used}
                   {unit && ` ${unit}`}
-                  {entry.limit != null ? ` of ${entry.limit}${unit ? ` ${unit}` : ""}` : " (no limit)"}
-                </p>
-                <div className="mt-1 h-2 overflow-hidden rounded bg-slate-100">
-                  <div
-                    className={`h-full ${
-                      pct != null && pct >= 90 ? "bg-red-500" : "bg-emerald-500"
-                    }`}
-                    style={{ width: `${pct ?? 4}%` }}
-                  />
-                </div>
-              </div>
+                  {entry.limit != null
+                    ? ` of ${entry.limit}${unit ? ` ${unit}` : ""}`
+                    : " (no limit)"}
+                </Typography.Text>
+                <Progress
+                  percent={pct ?? 4}
+                  showInfo={false}
+                  size="small"
+                  strokeColor={pct != null && pct >= 90 ? "#EF4444" : "#10B981"}
+                />
+              </Col>
             );
           })}
-        </div>
-      </section>
+        </Row>
+      </Card>
 
       {canSettings && retention && (
-        <section className="rounded-lg border border-slate-200 bg-white p-4">
-          <h2 className="text-sm font-semibold uppercase tracking-wide text-slate-400">
-            Data retention (days)
-          </h2>
-          <p className="mt-1 text-xs text-slate-400">
+        <Card size="small" title="Data retention (days)">
+          <Typography.Paragraph type="secondary" className="!mb-3">
             Pruned by the maintenance sweep. Platform floors apply — audit logs
             cannot go below {retention.audit_logs?.floor ?? 90} days.
-          </p>
-          <div className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-3">
-            {Object.entries(retention).map(([key, entry]) => (
-              <label key={key} className="block text-sm">
-                <span className="block text-xs text-slate-500">
-                  {key.replace(/_/g, " ")} ({entry.floor}–{entry.ceiling})
-                </span>
-                <input
-                  type="number"
-                  min={entry.floor}
-                  max={entry.ceiling}
-                  value={days[key] ?? ""}
-                  onChange={(e) =>
-                    setDays((prev) => ({ ...prev, [key]: e.target.value }))
-                  }
-                  className="mt-0.5 w-24 rounded-md border border-slate-300 px-2 py-1.5"
-                />
-              </label>
-            ))}
-          </div>
-          <button
-            type="button"
-            disabled={saveRetention.isPending}
-            onClick={() => saveRetention.mutate()}
-            className="mt-3 rounded-md bg-slate-900 px-4 py-2 text-sm font-medium text-white disabled:opacity-50"
-          >
-            Save retention policy
-          </button>
-        </section>
+          </Typography.Paragraph>
+          <Form layout="vertical">
+            <Row gutter={[12, 0]}>
+              {Object.entries(retention).map(([key, entry]) => (
+                <Col key={key} xs={12} sm={8}>
+                  <Form.Item
+                    label={`${key.replace(/_/g, " ")} (${entry.floor}–${entry.ceiling})`}
+                    className="!mb-3"
+                  >
+                    <InputNumber
+                      min={entry.floor}
+                      max={entry.ceiling}
+                      value={days[key] === "" || days[key] == null ? null : Number(days[key])}
+                      onChange={(value) =>
+                        setDays((prev) => ({
+                          ...prev,
+                          [key]: value == null ? "" : String(value),
+                        }))
+                      }
+                      className="w-24"
+                    />
+                  </Form.Item>
+                </Col>
+              ))}
+            </Row>
+            <Button
+              type="primary"
+              loading={saveRetention.isPending}
+              onClick={() => saveRetention.mutate()}
+            >
+              Save retention policy
+            </Button>
+          </Form>
+        </Card>
       )}
 
-      {ok && <p className="rounded-md bg-emerald-50 px-3 py-2 text-sm text-emerald-700">{ok}</p>}
-      {error && (
-        <p className="rounded-md bg-red-50 px-3 py-2 text-sm text-red-700" role="alert">
-          {error}
-        </p>
-      )}
-    </div>
+      {ok && <Alert type="success" message={ok} showIcon />}
+      {error && <Alert type="error" message={error} showIcon role="alert" />}
+    </Space>
   );
 }

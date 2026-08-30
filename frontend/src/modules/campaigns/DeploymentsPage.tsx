@@ -1,6 +1,21 @@
+import { CloseOutlined, RedoOutlined } from "@ant-design/icons";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import {
+  App,
+  Button,
+  Card,
+  Col,
+  Flex,
+  Popconfirm,
+  Progress,
+  Row,
+  Space,
+  Tag,
+  Typography,
+} from "antd";
 import { useState } from "react";
-import { Spinner } from "../../components/ui/Spinner";
+import { PageHeader } from "../../components/ui/PageHeader";
+import { EmptyState, LoadingState } from "../../components/ui/states";
 import { StatusBadge } from "../../components/ui/StatusBadge";
 import { api, ApiError } from "../../lib/api";
 import { useAuth } from "../../lib/auth";
@@ -10,6 +25,7 @@ import type { DeploymentDeviceRow, DeploymentSummary } from "./types";
 /** SCR-22 Publishing / Deployments: jobs, progress, retry, target status. */
 export function DeploymentsPage() {
   const { hasPermission } = useAuth();
+  const { message } = App.useApp();
   const canManage = hasPermission("deployments.manage");
   const queryClient = useQueryClient();
   const [expanded, setExpanded] = useState<string | null>(null);
@@ -34,121 +50,128 @@ export function DeploymentsPage() {
     mutationFn: ({ id, verb }: { id: string; verb: string }) =>
       api.post(`/deployments/${id}/${verb}`),
     onSuccess: refresh,
-    onError: (err) => window.alert(err instanceof ApiError ? err.message : "Action failed"),
+    onError: (err) => message.error(err instanceof ApiError ? err.message : "Action failed"),
   });
 
   const deployments = deploymentsQuery.data?.data ?? [];
 
   return (
     <div>
-      <h1 className="text-xl font-semibold text-slate-900">Publishing</h1>
-      <p className="mt-1 text-sm text-slate-500">
-        Deployment jobs with per-device delivery status. Players acknowledge after syncing.
-      </p>
+      <PageHeader
+        title="Publishing"
+        description="Deployment jobs with per-device delivery status. Players acknowledge after syncing."
+      />
 
       {deploymentsQuery.isLoading ? (
-        <Spinner label="Loading deployments…" />
+        <LoadingState rows={5} />
       ) : deployments.length === 0 ? (
-        <p className="mt-6 rounded-lg border border-dashed border-slate-300 bg-white p-10 text-center text-sm text-slate-500">
-          No deployments yet. Publish an approved campaign to create one.
-        </p>
+        <Card>
+          <EmptyState
+            title="No deployments yet"
+            description="Publish an approved campaign to create one."
+          />
+        </Card>
       ) : (
-        <ul className="mt-4 space-y-2">
+        <Space orientation="vertical" size="small" className="w-full">
           {deployments.map((deployment) => {
             const done = deployment.acknowledged;
             const total = deployment.total_devices || 1;
             const percent = Math.round((done / total) * 100);
             return (
-              <li key={deployment.id} className="rounded-lg border border-slate-200 bg-white p-4">
-                <div className="flex flex-wrap items-center gap-3">
+              <Card key={deployment.id} size="small">
+                <Flex wrap align="center" gap="middle">
                   <div className="min-w-0 flex-1">
-                    <p className="font-medium text-slate-800">
-                      {deployment.campaign_name}
-                      <span className="ml-2 text-sm font-normal text-slate-400">
+                    <Space size="small">
+                      <Typography.Text strong>{deployment.campaign_name}</Typography.Text>
+                      <Typography.Text type="secondary">
                         v{deployment.version} · {timeAgo(deployment.created_at)}
-                      </span>
-                    </p>
-                    <div className="mt-2 flex items-center gap-3">
-                      <div className="h-2 w-48 overflow-hidden rounded-full bg-slate-100">
-                        <div
-                          className={`h-full ${
-                            deployment.failed > 0 ? "bg-amber-500" : "bg-emerald-500"
-                          }`}
-                          style={{ width: `${percent}%` }}
-                        />
-                      </div>
-                      <span className="text-xs text-slate-500">
+                      </Typography.Text>
+                    </Space>
+                    <Flex align="center" gap="middle" className="mt-1">
+                      <Progress
+                        percent={percent}
+                        size="small"
+                        className="max-w-56"
+                        status={
+                          deployment.failed > 0
+                            ? "exception"
+                            : percent === 100
+                              ? "success"
+                              : "active"
+                        }
+                      />
+                      <Typography.Text type="secondary" className="text-xs">
                         {deployment.acknowledged}/{deployment.total_devices} acknowledged
-                        {deployment.failed > 0 && (
-                          <span className="text-red-600"> · {deployment.failed} failed</span>
-                        )}
                         {deployment.pending > 0 && ` · ${deployment.pending} pending`}
-                      </span>
-                    </div>
+                      </Typography.Text>
+                      {deployment.failed > 0 && (
+                        <Tag color="error" variant="filled">
+                          {deployment.failed} failed
+                        </Tag>
+                      )}
+                    </Flex>
                   </div>
                   <StatusBadge status={deployment.status} />
-                  <button
-                    type="button"
-                    onClick={() =>
-                      setExpanded(expanded === deployment.id ? null : deployment.id)
-                    }
-                    className="text-sm font-medium text-slate-600 hover:underline"
+                  <Button
+                    type="link"
+                    size="small"
+                    onClick={() => setExpanded(expanded === deployment.id ? null : deployment.id)}
                   >
                     {expanded === deployment.id ? "Hide devices" : "Devices"}
-                  </button>
+                  </Button>
                   {canManage && deployment.failed > 0 && deployment.status !== "cancelled" && (
-                    <button
-                      type="button"
+                    <Button
+                      size="small"
+                      icon={<RedoOutlined />}
                       onClick={() => action.mutate({ id: deployment.id, verb: "retry" })}
-                      className="rounded-md border border-slate-300 px-3 py-1.5 text-sm font-medium text-slate-600"
                     >
                       Retry failed
-                    </button>
+                    </Button>
                   )}
-                  {canManage &&
-                    !["published", "cancelled"].includes(deployment.status) && (
-                      <button
-                        type="button"
-                        onClick={() => {
-                          if (window.confirm("Cancel this deployment?")) {
-                            action.mutate({ id: deployment.id, verb: "cancel" });
-                          }
-                        }}
-                        className="rounded-md border border-red-200 px-3 py-1.5 text-sm font-medium text-red-600"
-                      >
+                  {canManage && !["published", "cancelled"].includes(deployment.status) && (
+                    <Popconfirm
+                      title="Cancel this deployment?"
+                      onConfirm={() => action.mutate({ id: deployment.id, verb: "cancel" })}
+                      okButtonProps={{ danger: true }}
+                    >
+                      <Button size="small" danger icon={<CloseOutlined />}>
                         Cancel
-                      </button>
-                    )}
-                </div>
+                      </Button>
+                    </Popconfirm>
+                  )}
+                </Flex>
 
-                {expanded === deployment.id && (
-                  <div className="mt-3 border-t border-slate-100 pt-3">
-                    {devicesQuery.isLoading ? (
-                      <Spinner label="Loading device status…" />
-                    ) : (
-                      <ul className="grid grid-cols-1 gap-1 sm:grid-cols-2 lg:grid-cols-3">
-                        {(devicesQuery.data?.data ?? []).map((row) => (
-                          <li
-                            key={row.device_id}
-                            className="flex items-center gap-2 rounded bg-slate-50 px-2 py-1.5 text-sm"
-                          >
-                            <StatusBadge status={row.status} />
-                            <span className="truncate text-slate-700">{row.device_name}</span>
-                            {row.last_error && (
-                              <span className="truncate text-xs text-red-600" title={row.last_error}>
-                                {row.last_error}
-                              </span>
-                            )}
-                          </li>
-                        ))}
-                      </ul>
-                    )}
-                  </div>
-                )}
-              </li>
+                {expanded === deployment.id &&
+                  (devicesQuery.isLoading ? (
+                    <LoadingState rows={2} />
+                  ) : (
+                    <Row gutter={[8, 8]} className="mt-3">
+                      {(devicesQuery.data?.data ?? []).map((row) => (
+                        <Col key={row.device_id} xs={24} sm={12} lg={8}>
+                          <Card size="small" styles={{ body: { padding: "6px 10px" } }}>
+                            <Space size="small" className="w-full">
+                              <StatusBadge status={row.status} />
+                              <Typography.Text ellipsis>{row.device_name}</Typography.Text>
+                              {row.last_error && (
+                                <Typography.Text
+                                  type="danger"
+                                  ellipsis
+                                  className="text-xs"
+                                  title={row.last_error}
+                                >
+                                  {row.last_error}
+                                </Typography.Text>
+                              )}
+                            </Space>
+                          </Card>
+                        </Col>
+                      ))}
+                    </Row>
+                  ))}
+              </Card>
             );
           })}
-        </ul>
+        </Space>
       )}
     </div>
   );

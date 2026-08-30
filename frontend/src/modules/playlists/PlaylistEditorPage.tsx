@@ -1,8 +1,32 @@
+import {
+  ArrowDownOutlined,
+  ArrowUpOutlined,
+  CloudUploadOutlined,
+  PlusOutlined,
+} from "@ant-design/icons";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useState, type FormEvent } from "react";
-import { Link, useParams } from "react-router-dom";
-import { Modal } from "../../components/ui/Modal";
-import { Spinner } from "../../components/ui/Spinner";
+import {
+  Alert,
+  Avatar,
+  Button,
+  Card,
+  Checkbox,
+  Flex,
+  Form,
+  InputNumber,
+  List,
+  Modal,
+  Popconfirm,
+  Radio,
+  Select,
+  Space,
+  Tag,
+  Typography,
+} from "antd";
+import { useState } from "react";
+import { useParams } from "react-router-dom";
+import { PageHeader } from "../../components/ui/PageHeader";
+import { EmptyState, LoadingState } from "../../components/ui/states";
 import { StatusBadge } from "../../components/ui/StatusBadge";
 import { api, ApiError } from "../../lib/api";
 import { useAuth } from "../../lib/auth";
@@ -64,7 +88,7 @@ export function PlaylistEditorPage() {
   });
 
   const playlist = playlistQuery.data?.data ?? null;
-  if (!playlist) return <Spinner label="Loading playlist…" />;
+  if (!playlist) return <LoadingState rows={6} />;
 
   const fallbackOptions = (fallbackOptionsQuery.data?.data ?? []).filter(
     (p) => p.id !== playlist.id,
@@ -72,99 +96,88 @@ export function PlaylistEditorPage() {
 
   return (
     <div>
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <Link to="/playlists" className="text-sm text-slate-500 hover:underline">
-            ← Playlists
-          </Link>
-          <h1 className="text-xl font-semibold text-slate-900">
-            {playlist.name}
-            <span className="ml-3 align-middle">
-              <StatusBadge status={playlist.status} />
-            </span>
-            {playlist.current_version_no && (
-              <span className="ml-2 text-sm font-normal text-slate-400">
-                v{playlist.current_version_no}
-              </span>
-            )}
-          </h1>
-          <p className="mt-0.5 text-sm text-slate-500">
-            {playlist.items.length} items · {formatDuration(playlist.total_duration_ms)} total
-          </p>
-        </div>
-        {canManage && (
-          <div className="flex gap-2">
-            <button
-              type="button"
-              onClick={() => setAddOpen(true)}
-              className="rounded-md border border-slate-300 px-3 py-1.5 text-sm font-medium text-slate-600"
-            >
-              Add item
-            </button>
-            <button
-              type="button"
-              onClick={() => publish.mutate()}
-              disabled={publish.isPending}
-              className="rounded-md bg-emerald-600 px-3 py-1.5 text-sm font-medium text-white disabled:opacity-50"
-            >
-              {publish.isPending ? "Publishing…" : "Publish"}
-            </button>
-          </div>
-        )}
-      </div>
+      <PageHeader
+        title={playlist.name}
+        breadcrumbs={[{ label: "Playlists", to: "/playlists" }, { label: playlist.name }]}
+        description={`${playlist.items.length} items · ${formatDuration(
+          playlist.total_duration_ms,
+        )} total`}
+        actions={
+          canManage && (
+            <>
+              <Button icon={<PlusOutlined />} onClick={() => setAddOpen(true)}>
+                Add item
+              </Button>
+              <Button
+                type="primary"
+                icon={<CloudUploadOutlined />}
+                onClick={() => publish.mutate()}
+                loading={publish.isPending}
+              >
+                Publish
+              </Button>
+            </>
+          )
+        }
+      />
+
+      <Space size="small" wrap>
+        <StatusBadge status={playlist.status} />
+        {playlist.current_version_no && <Tag>v{playlist.current_version_no}</Tag>}
+      </Space>
 
       {message && (
-        <p
+        <Alert
+          className="mt-2"
+          type={message.kind === "ok" ? "success" : "error"}
+          message={message.text}
+          showIcon
           role="alert"
-          className={`mt-2 rounded-md px-3 py-2 text-sm ${
-            message.kind === "ok" ? "bg-emerald-50 text-emerald-700" : "bg-red-50 text-red-700"
-          }`}
-        >
-          {message.text}
-        </p>
+        />
       )}
 
       {canManage && (
-        <div className="mt-3 flex flex-wrap items-center gap-4 rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm">
-          <label className="flex items-center gap-2 text-slate-600">
-            <input
-              type="checkbox"
+        <Card size="small" className="mt-3">
+          <Space size="large" wrap>
+            <Checkbox
               checked={playlist.loop_enabled}
               onChange={(e) => patchPlaylist.mutate({ loop_enabled: e.target.checked })}
-            />
-            Loop playback
-          </label>
-          <label className="flex items-center gap-2 text-slate-600">
-            Fallback:
-            <select
-              value={playlist.fallback_playlist_id ?? ""}
-              onChange={(e) =>
-                patchPlaylist.mutate(
-                  e.target.value
-                    ? { fallback_playlist_id: e.target.value }
-                    : { clear_fallback: true },
-                )
-              }
-              className="rounded-md border border-slate-300 px-2 py-1"
             >
-              <option value="">none</option>
-              {fallbackOptions.map((p) => (
-                <option key={p.id} value={p.id}>
-                  {p.name}
-                </option>
-              ))}
-            </select>
-          </label>
-        </div>
+              Loop playback
+            </Checkbox>
+            <Space size="small">
+              <Typography.Text type="secondary">Fallback:</Typography.Text>
+              <Select
+                value={playlist.fallback_playlist_id ?? ""}
+                aria-label="Fallback playlist"
+                onChange={(value) =>
+                  patchPlaylist.mutate(
+                    value ? { fallback_playlist_id: value } : { clear_fallback: true },
+                  )
+                }
+                options={[
+                  { value: "", label: "none" },
+                  ...fallbackOptions.map((p) => ({ value: p.id, label: p.name })),
+                ]}
+                className="min-w-44"
+              />
+            </Space>
+          </Space>
+        </Card>
       )}
 
       {playlist.items.length === 0 ? (
-        <p className="mt-4 rounded-lg border border-dashed border-slate-300 bg-white p-10 text-center text-sm text-slate-500">
-          No items yet. Add published content or layouts to build the sequence.
-        </p>
+        <Card className="mt-4">
+          <EmptyState
+            title="No items yet"
+            description="Add published content or layouts to build the sequence."
+          />
+        </Card>
       ) : (
-        <ol className="mt-4 space-y-2">
-          {playlist.items.map((item, index) => (
+        <List
+          className="mt-4"
+          dataSource={playlist.items}
+          renderItem={(item, index) => (
             <ItemRow
               key={item.id}
               item={item}
@@ -184,8 +197,8 @@ export function PlaylistEditorPage() {
               onToggle={(enabled) => patchItem.mutate({ itemId: item.id, body: { enabled } })}
               onRemove={() => removeItem.mutate(item.id)}
             />
-          ))}
-        </ol>
+          )}
+        />
       )}
 
       {addOpen && (
@@ -223,107 +236,97 @@ function ItemRow({
   onToggle: (enabled: boolean) => void;
   onRemove: () => void;
 }) {
-  const [duration, setDuration] = useState(
-    item.duration_ms != null ? String(item.duration_ms / 1000) : "",
+  const [duration, setDuration] = useState<number | null>(
+    item.duration_ms != null ? item.duration_ms / 1000 : null,
   );
 
   return (
-    <li
-      className={`flex flex-wrap items-center gap-3 rounded-lg border bg-white px-4 py-3 ${
-        item.enabled ? "border-slate-200" : "border-slate-200 opacity-50"
-      }`}
-    >
-      <span className="w-6 text-center text-sm font-semibold text-slate-400">
-        {item.position}
-      </span>
-      <div className="flex h-12 w-16 items-center justify-center overflow-hidden rounded bg-slate-100">
-        {item.thumbnail_url ? (
-          <img src={item.thumbnail_url} alt="" className="h-full w-full object-cover" />
-        ) : (
-          <span className="text-xs uppercase text-slate-400">
-            {item.item_type === "layout" ? "layout" : item.asset_type ?? "?"}
-          </span>
-        )}
-      </div>
-      <div className="min-w-0 flex-1">
-        <p className="truncate text-sm font-medium text-slate-800">{item.name}</p>
-        <p className="text-xs text-slate-500">
-          {item.item_type}
-          {!item.ready && <span className="ml-2 text-red-600">not ready</span>}
-        </p>
-      </div>
-      {canManage ? (
-        <>
-          <label className="flex items-center gap-1 text-xs text-slate-500">
-            sec
-            <input
-              type="number"
+    <List.Item className={item.enabled ? undefined : "opacity-50"}>
+      <Flex align="center" gap="middle" wrap className="w-full">
+        <Typography.Text strong type="secondary" className="w-6 text-center">
+          {item.position}
+        </Typography.Text>
+        <Avatar
+          shape="square"
+          size={48}
+          src={item.thumbnail_url ?? undefined}
+          alt=""
+          className="shrink-0"
+        >
+          {item.item_type === "layout" ? "layout" : item.asset_type ?? "?"}
+        </Avatar>
+        <div className="min-w-0 flex-1">
+          <Typography.Text strong ellipsis className="block">
+            {item.name}
+          </Typography.Text>
+          <Space size="small">
+            <Typography.Text type="secondary" className="text-xs">
+              {item.item_type}
+            </Typography.Text>
+            {!item.ready && (
+              <Typography.Text type="danger" className="text-xs">
+                not ready
+              </Typography.Text>
+            )}
+          </Space>
+        </div>
+        {canManage ? (
+          <Space size="small" wrap>
+            <InputNumber
               min={1}
               value={duration}
-              onChange={(e) => setDuration(e.target.value)}
+              onChange={(value) => setDuration(value)}
               onBlur={() => {
                 const seconds = Number(duration);
                 if (seconds > 0 && seconds * 1000 !== item.duration_ms) {
                   onDuration(Math.round(seconds * 1000));
                 }
               }}
-              className="w-16 rounded-md border border-slate-300 px-2 py-1 text-sm"
+              addonAfter="sec"
               aria-label={`Duration for ${item.name}`}
+              className="w-28"
             />
-          </label>
-          <select
-            value={item.transition_json?.type ?? "none"}
-            onChange={(e) => onTransition(e.target.value)}
-            className="rounded-md border border-slate-300 px-2 py-1 text-sm"
-            aria-label={`Transition for ${item.name}`}
-          >
-            {TRANSITIONS.map((t) => (
-              <option key={t} value={t}>
-                {t}
-              </option>
-            ))}
-          </select>
-          <div className="flex items-center gap-1">
-            <button
-              type="button"
+            <Select
+              value={item.transition_json?.type ?? "none"}
+              onChange={(value) => onTransition(value)}
+              aria-label={`Transition for ${item.name}`}
+              options={TRANSITIONS.map((t) => ({ value: t, label: t }))}
+              className="w-24"
+            />
+            <Button
+              size="small"
+              icon={<ArrowUpOutlined />}
               disabled={index === 0}
               onClick={() => onMove(item.position - 1)}
               aria-label={`Move ${item.name} up`}
-              className="rounded border border-slate-300 px-2 py-1 text-xs disabled:opacity-30"
-            >
-              ↑
-            </button>
-            <button
-              type="button"
+            />
+            <Button
+              size="small"
+              icon={<ArrowDownOutlined />}
               disabled={index === total - 1}
               onClick={() => onMove(item.position + 1)}
               aria-label={`Move ${item.name} down`}
-              className="rounded border border-slate-300 px-2 py-1 text-xs disabled:opacity-30"
-            >
-              ↓
-            </button>
-            <button
-              type="button"
-              onClick={() => onToggle(!item.enabled)}
-              className="rounded border border-slate-300 px-2 py-1 text-xs"
-            >
+            />
+            <Button size="small" onClick={() => onToggle(!item.enabled)}>
               {item.enabled ? "Disable" : "Enable"}
-            </button>
-            <button
-              type="button"
-              onClick={onRemove}
-              className="rounded border border-red-200 px-2 py-1 text-xs text-red-600"
+            </Button>
+            <Popconfirm
+              title={`Remove "${item.name}" from the playlist?`}
+              onConfirm={onRemove}
+              okButtonProps={{ danger: true }}
             >
-              Remove
-            </button>
-          </div>
-        </>
-      ) : (
-        <span className="text-sm text-slate-500">
-          {item.duration_ms != null ? formatDuration(item.duration_ms) : "natural"}
-        </span>
-      )}
-    </li>
+              <Button size="small" danger>
+                Remove
+              </Button>
+            </Popconfirm>
+          </Space>
+        ) : (
+          <Typography.Text type="secondary">
+            {item.duration_ms != null ? formatDuration(item.duration_ms) : "natural"}
+          </Typography.Text>
+        )}
+      </Flex>
+    </List.Item>
   );
 }
 
@@ -336,9 +339,8 @@ function AddItemModal({
   onClose: () => void;
   onAdded: () => void;
 }) {
+  const [form] = Form.useForm<{ refId: string; seconds: number | null }>();
   const [kind, setKind] = useState<"asset" | "layout">("asset");
-  const [refId, setRefId] = useState("");
-  const [seconds, setSeconds] = useState("8");
   const [error, setError] = useState<string | null>(null);
 
   const assetsQuery = useQuery({
@@ -356,103 +358,71 @@ function AddItemModal({
   const layouts = layoutsQuery.data?.data ?? [];
 
   const add = useMutation({
-    mutationFn: () =>
+    mutationFn: (values: { refId: string; seconds: number | null }) =>
       api.post(`/playlists/${playlistId}/items`, {
-        asset_id: kind === "asset" ? refId : undefined,
-        layout_id: kind === "layout" ? refId : undefined,
-        duration_ms: Number(seconds) > 0 ? Math.round(Number(seconds) * 1000) : undefined,
+        asset_id: kind === "asset" ? values.refId : undefined,
+        layout_id: kind === "layout" ? values.refId : undefined,
+        duration_ms:
+          Number(values.seconds) > 0 ? Math.round(Number(values.seconds) * 1000) : undefined,
       }),
     onSuccess: onAdded,
     onError: (err) => setError(err instanceof ApiError ? err.message : "Failed to add item"),
   });
 
-  function onSubmit(e: FormEvent) {
-    e.preventDefault();
-    if (!refId) {
-      setError("Choose an item to add");
-      return;
-    }
-    setError(null);
-    add.mutate();
-  }
-
   const options = kind === "asset" ? readyAssets : layouts;
 
   return (
-    <Modal title="Add playlist item" open onClose={onClose}>
-      <form className="space-y-4" onSubmit={onSubmit}>
-        <div className="flex gap-2" role="radiogroup" aria-label="Item kind">
-          {(["asset", "layout"] as const).map((k) => (
-            <button
-              key={k}
-              type="button"
-              role="radio"
-              aria-checked={kind === k}
-              onClick={() => {
-                setKind(k);
-                setRefId("");
-              }}
-              className={`rounded-md px-3 py-1.5 text-sm font-medium capitalize ${
-                kind === k ? "bg-slate-900 text-white" : "border border-slate-300 text-slate-600"
-              }`}
-            >
-              {k}
-            </button>
-          ))}
-        </div>
-        <div>
-          <label htmlFor="item-ref" className="block text-sm font-medium text-slate-700">
-            {kind === "asset" ? "Content (READY only)" : "Layout (published only)"}
-          </label>
-          <select
-            id="item-ref"
-            value={refId}
-            onChange={(e) => setRefId(e.target.value)}
-            className="mt-1 block w-full rounded-md border border-slate-300 px-3 py-2 text-sm"
-          >
-            <option value="">— choose —</option>
-            {options.map((o) => (
-              <option key={o.id} value={o.id}>
-                {o.name}
-              </option>
-            ))}
-          </select>
-        </div>
-        <div>
-          <label htmlFor="item-duration" className="block text-sm font-medium text-slate-700">
-            Duration (seconds)
-          </label>
-          <input
-            id="item-duration"
-            type="number"
-            min={1}
-            value={seconds}
-            onChange={(e) => setSeconds(e.target.value)}
-            className="mt-1 block w-32 rounded-md border border-slate-300 px-3 py-2 text-sm"
+    <Modal
+      title="Add playlist item"
+      open
+      onCancel={onClose}
+      okText="Add item"
+      confirmLoading={add.isPending}
+      onOk={() => form.submit()}
+      destroyOnHidden
+    >
+      {error && <Alert type="error" message={error} showIcon role="alert" className="mb-4" />}
+      <Form
+        form={form}
+        layout="vertical"
+        initialValues={{ seconds: 8 }}
+        onFinish={(values) => {
+          setError(null);
+          add.mutate(values);
+        }}
+      >
+        <Form.Item label="Item kind">
+          <Radio.Group
+            value={kind}
+            optionType="button"
+            buttonStyle="solid"
+            aria-label="Item kind"
+            onChange={(e) => {
+              setKind(e.target.value);
+              form.setFieldsValue({ refId: undefined });
+            }}
+            options={[
+              { value: "asset", label: "Asset" },
+              { value: "layout", label: "Layout" },
+            ]}
           />
-        </div>
-        {error && (
-          <p className="rounded-md bg-red-50 px-3 py-2 text-sm text-red-700" role="alert">
-            {error}
-          </p>
-        )}
-        <div className="flex justify-end gap-2">
-          <button
-            type="button"
-            onClick={onClose}
-            className="rounded-md border border-slate-300 px-4 py-2 text-sm font-medium text-slate-600"
-          >
-            Cancel
-          </button>
-          <button
-            type="submit"
-            disabled={add.isPending}
-            className="rounded-md bg-slate-900 px-4 py-2 text-sm font-medium text-white disabled:opacity-50"
-          >
-            {add.isPending ? "Adding…" : "Add item"}
-          </button>
-        </div>
-      </form>
+        </Form.Item>
+        <Form.Item
+          name="refId"
+          label={kind === "asset" ? "Content (READY only)" : "Layout (published only)"}
+          rules={[{ required: true, message: "Choose an item to add" }]}
+        >
+          <Select
+            placeholder="— choose —"
+            showSearch
+            optionFilterProp="label"
+            options={options.map((o) => ({ value: o.id, label: o.name }))}
+          />
+        </Form.Item>
+        <Form.Item name="seconds" label="Duration (seconds)">
+          <InputNumber min={1} className="w-32" />
+        </Form.Item>
+      </Form>
     </Modal>
   );
 }

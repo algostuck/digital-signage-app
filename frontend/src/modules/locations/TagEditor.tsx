@@ -1,4 +1,6 @@
+import { CloseOutlined, PlusOutlined } from "@ant-design/icons";
 import { useMutation } from "@tanstack/react-query";
+import { Button, Input, Space, Tag, Typography } from "antd";
 import { useState } from "react";
 import { api, ApiError } from "../../lib/api";
 import type { LocationDetail } from "./types";
@@ -42,58 +44,52 @@ export function TagEditor({ detail, canManage, onSaved }: Props) {
 
   return (
     <div>
-      <h3 className="text-xs font-medium uppercase tracking-wide text-slate-400">Tags</h3>
-      <div className="mt-2 flex flex-wrap items-center gap-2">
-        {detail.tags.length === 0 && <span className="text-sm text-slate-400">No tags</span>}
-        {detail.tags.map((t) => (
-          <span
-            key={t.id}
-            className="inline-flex items-center gap-1 rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-medium text-slate-700"
-          >
-            {t.key}={t.value}
-            {canManage && (
-              <button
-                type="button"
-                aria-label={`Remove tag ${t.key}=${t.value}`}
-                onClick={() => removeTag(t.key, t.value)}
-                className="text-slate-400 hover:text-red-600"
-              >
-                ✕
-              </button>
-            )}
-          </span>
-        ))}
+      <Typography.Text type="secondary" className="text-xs font-medium uppercase tracking-wide">
+        Tags
+      </Typography.Text>
+      <div className="mt-2">
+        <Space size={[4, 8]} wrap>
+          {detail.tags.length === 0 && (
+            <Typography.Text type="secondary">No tags</Typography.Text>
+          )}
+          {detail.tags.map((t) => (
+            <Tag
+              key={t.id}
+              closable={canManage}
+              closeIcon={
+                canManage ? (
+                  <CloseOutlined aria-label={`Remove tag ${t.key}=${t.value}`} />
+                ) : undefined
+              }
+              onClose={(e) => {
+                e.preventDefault();
+                removeTag(t.key, t.value);
+              }}
+            >
+              {t.key}={t.value}
+            </Tag>
+          ))}
+        </Space>
       </div>
       {canManage && (
-        <div className="mt-3 flex gap-2">
-          <input
-            type="text"
+        <Space.Compact className="mt-3">
+          <Input
+            className="w-48"
             value={draft}
             onChange={(e) => setDraft(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === "Enter") {
-                e.preventDefault();
-                addTag();
-              }
-            }}
+            onPressEnter={addTag}
             placeholder="key=value"
             aria-label="New tag"
-            className="w-48 rounded-md border border-slate-300 px-3 py-1.5 text-sm shadow-sm"
           />
-          <button
-            type="button"
-            onClick={addTag}
-            disabled={save.isPending}
-            className="rounded-md border border-slate-300 px-3 py-1.5 text-sm font-medium text-slate-600 disabled:opacity-50"
-          >
+          <Button icon={<PlusOutlined />} onClick={addTag} loading={save.isPending}>
             Add tag
-          </button>
-        </div>
+          </Button>
+        </Space.Compact>
       )}
       {error && (
-        <p className="mt-2 text-sm text-red-600" role="alert">
+        <Typography.Paragraph type="danger" role="alert" className="!mb-0 mt-2 text-sm">
           {error}
-        </p>
+        </Typography.Paragraph>
       )}
     </div>
   );

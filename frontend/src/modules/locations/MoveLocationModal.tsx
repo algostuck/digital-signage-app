@@ -1,8 +1,8 @@
 import { useMutation } from "@tanstack/react-query";
-import { useMemo, useState, type FormEvent } from "react";
-import { Modal } from "../../components/ui/Modal";
+import { Alert, Form, Modal, TreeSelect } from "antd";
+import { useMemo, useState } from "react";
 import { api, ApiError } from "../../lib/api";
-import type { LocationDetail, LocationNode, TreeEntry } from "./types";
+import type { LocationDetail, TreeEntry } from "./types";
 
 interface Props {
   detail: LocationDetail;
@@ -11,28 +11,34 @@ interface Props {
   onSaved: () => void;
 }
 
-function flatten(entries: TreeEntry[], out: LocationNode[] = []): LocationNode[] {
-  for (const entry of entries) {
-    out.push(entry.node);
-    flatten(entry.children, out);
+interface ParentOption {
+  value: string;
+  title: string;
+  disabled?: boolean;
+  children?: ParentOption[];
+}
+
+/** A node cannot move under itself or anything in its own subtree; the
+ * current parent is shown but not selectable. */
+function toParentOptions(entries: TreeEntry[], detail: LocationDetail): ParentOption[] {
+  const out: ParentOption[] = [];
+  for (const { node, children } of entries) {
+    if (node.path.startsWith(detail.path)) continue;
+    out.push({
+      value: node.id,
+      title: node.name,
+      disabled: node.id === detail.parent_id,
+      children: toParentOptions(children, detail),
+    });
   }
   return out;
 }
-
-const NBSP = " ";
 
 export function MoveLocationModal({ detail, tree, onClose, onSaved }: Props) {
   const [newParentId, setNewParentId] = useState<string>("");
   const [error, setError] = useState<string | null>(null);
 
-  // A node cannot move under itself or anything in its own subtree.
-  const candidates = useMemo(
-    () =>
-      flatten(tree).filter(
-        (n) => !n.path.startsWith(detail.path) && n.id !== detail.parent_id,
-      ),
-    [tree, detail],
-  );
+  const treeData = useMemo(() => toParentOptions(tree, detail), [tree, detail]);
 
   const move = useMutation({
     mutationFn: () =>
@@ -42,59 +48,39 @@ export function MoveLocationModal({ detail, tree, onClose, onSaved }: Props) {
       setError(err instanceof ApiError ? err.message : "Failed to move location"),
   });
 
-  function onSubmit(e: FormEvent) {
-    e.preventDefault();
-    setError(null);
-    move.mutate();
-  }
-
   return (
-    <Modal title={`Move: ${detail.name}`} open onClose={onClose}>
-      <form className="space-y-4" onSubmit={onSubmit}>
-        <div>
-          <label htmlFor="move-parent" className="block text-sm font-medium text-slate-700">
-            New parent
-          </label>
-          <select
-            id="move-parent"
-            value={newParentId}
-            onChange={(e) => setNewParentId(e.target.value)}
-            className="mt-1 block w-full rounded-md border border-slate-300 px-3 py-2 text-sm shadow-sm"
-          >
-            <option value="">(root, no parent)</option>
-            {candidates.map((n) => (
-              <option key={n.id} value={n.id}>
-                {/* NBSP indentation: plain spaces collapse inside <option>. */}
-                {(NBSP + NBSP).repeat(n.depth) + n.name}
-              </option>
-            ))}
-          </select>
-          <p className="mt-1 text-xs text-slate-500">
-            The location's own subtree is excluded to prevent cycles.
-          </p>
-        </div>
-        {error && (
-          <p className="rounded-md bg-red-50 px-3 py-2 text-sm text-red-700" role="alert">
-            {error}
-          </p>
-        )}
-        <div className="flex justify-end gap-2">
-          <button
-            type="button"
-            onClick={onClose}
-            className="rounded-md border border-slate-300 px-4 py-2 text-sm font-medium text-slate-600"
-          >
-            Cancel
-          </button>
-          <button
-            type="submit"
-            disabled={move.isPending}
-            className="rounded-md bg-slate-900 px-4 py-2 text-sm font-medium text-white disabled:opacity-50"
-          >
-            {move.isPending ? "Moving…" : "Move location"}
-          </button>
-        </div>
-      </form>
+    <Modal
+      title={`Move: ${detail.name}`}
+      open
+      onCancel={onClose}
+      okText="Move location"
+      confirmLoading={move.isPending}
+      onOk={() => {
+        setError(null);
+        move.mutate();
+      }}
+      destroyOnHidden
+    >
+      {error && <Alert type="error" message={error} showIcon className="mb-4" role="alert" />}
+      <Form layout="vertical">
+        <Form.Item
+          label="New parent"
+          extra="The location's own subtree is excluded to prevent cycles."
+        >
+          <TreeSelect
+            className="w-full"
+            value={newParentId || undefined}
+            onChange={(value?: string) => setNewParentId(value ?? "")}
+            treeData={treeData}
+            treeDefaultExpandAll
+            showSearch
+            treeNodeFilterProp="title"
+            allowClear
+            placeholder="(root, no parent)"
+            aria-label="New parent"
+          />
+        </Form.Item>
+      </Form>
     </Modal>
   );
 }

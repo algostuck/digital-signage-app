@@ -1,7 +1,24 @@
+import { PlusOutlined } from "@ant-design/icons";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useState, type FormEvent } from "react";
-import { Modal } from "../../components/ui/Modal";
-import { Spinner } from "../../components/ui/Spinner";
+import {
+  Alert,
+  Button,
+  Card,
+  Checkbox,
+  Flex,
+  Form,
+  Input,
+  InputNumber,
+  List,
+  Modal,
+  Popconfirm,
+  Select,
+  Space,
+  Tag,
+  Typography,
+} from "antd";
+import { useState } from "react";
+import { EmptyState, LoadingState } from "../../components/ui/states";
 import { StatusBadge } from "../../components/ui/StatusBadge";
 import { api, ApiError } from "../../lib/api";
 import { useAuth } from "../../lib/auth";
@@ -73,103 +90,89 @@ export function NotificationRulesTab() {
 
   return (
     <div>
-      <div className="flex items-center justify-between">
-        <p className="text-sm text-slate-500">
+      <Flex wrap align="center" justify="space-between" gap="small">
+        <Typography.Text type="secondary">
           Route operational events to in-app, email and webhook channels, with
           escalation for unacknowledged alerts.
-        </p>
+        </Typography.Text>
         {canManage && (
-          <button
-            type="button"
-            onClick={() => setCreateOpen(true)}
-            className="rounded-md bg-slate-900 px-4 py-2 text-sm font-medium text-white"
-          >
+          <Button type="primary" icon={<PlusOutlined />} onClick={() => setCreateOpen(true)}>
             New rule
-          </button>
+          </Button>
         )}
-      </div>
+      </Flex>
 
-      {error && (
-        <p className="mt-3 rounded-md bg-red-50 px-3 py-2 text-sm text-red-700" role="alert">
-          {error}
-        </p>
-      )}
+      {error && <Alert type="error" message={error} showIcon className="mt-3" role="alert" />}
 
       {rulesQuery.isLoading ? (
-        <Spinner label="Loading rules…" />
+        <LoadingState rows={4} />
       ) : rules.length === 0 ? (
-        <p className="mt-6 rounded-lg border border-dashed border-slate-300 bg-white p-10 text-center text-sm text-slate-500">
-          No alert rules yet. Events still land in the in-app inbox; rules add
-          email/webhook delivery and escalation.
-        </p>
+        <Card className="mt-4">
+          <EmptyState
+            title="No alert rules yet"
+            description="Events still land in the in-app inbox; rules add email/webhook delivery and escalation."
+          />
+        </Card>
       ) : (
-        <ul className="mt-4 space-y-2">
+        <Space orientation="vertical" size="small" className="mt-4 w-full">
           {rules.map((rule) => (
-            <li key={rule.id} className="rounded-lg border border-slate-200 bg-white px-4 py-3">
-              <div className="flex flex-wrap items-center gap-3 text-sm">
-                <span className="font-medium text-slate-800">{rule.name}</span>
-                <span className="rounded bg-slate-100 px-1.5 py-0.5 font-mono text-xs text-slate-600">
+            <Card key={rule.id} size="small">
+              <Flex wrap align="center" gap="small">
+                <Typography.Text strong>{rule.name}</Typography.Text>
+                <Tag variant="filled" className="font-mono text-xs">
                   {rule.event_type}
-                </span>
+                </Tag>
                 {rule.condition_json?.severity && (
-                  <span className="text-xs text-slate-500">
+                  <Typography.Text type="secondary" className="text-xs">
                     severity: {rule.condition_json.severity.join(", ")}
-                  </span>
+                  </Typography.Text>
                 )}
-                <span className="text-xs text-slate-500">
+                <Typography.Text type="secondary" className="text-xs">
                   →{" "}
                   {rule.channels_json
                     .map((c) => (c.recipient ? `${c.channel}: ${c.recipient}` : c.channel))
                     .join(" · ")}
-                </span>
+                </Typography.Text>
                 {rule.escalation_minutes && (
-                  <span className="rounded bg-red-50 px-1.5 py-0.5 text-xs text-red-700">
+                  <Tag color="error" variant="filled">
                     escalate after {rule.escalation_minutes}m
-                  </span>
+                  </Tag>
                 )}
-                {!rule.active && (
-                  <span className="rounded bg-slate-200 px-1.5 py-0.5 text-xs text-slate-500">
-                    inactive
-                  </span>
-                )}
-                <span className="ml-auto space-x-3 text-xs">
-                  <button
-                    type="button"
-                    onClick={() =>
-                      setExpandedRule((v) => (v === rule.id ? null : rule.id))
-                    }
-                    className="font-medium text-slate-600 underline"
+                {!rule.active && <Tag variant="filled">inactive</Tag>}
+                <Space className="ms-auto">
+                  <Button
+                    type="link"
+                    size="small"
+                    onClick={() => setExpandedRule((v) => (v === rule.id ? null : rule.id))}
                   >
                     Deliveries
-                  </button>
+                  </Button>
                   {canManage && (
                     <>
-                      <button
-                        type="button"
+                      <Button
+                        type="link"
+                        size="small"
                         onClick={() => toggle.mutate({ id: rule.id, active: !rule.active })}
-                        className="font-medium text-slate-600 underline"
                       >
                         {rule.active ? "Disable" : "Enable"}
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          if (window.confirm(`Delete rule "${rule.name}"?`)) {
-                            remove.mutate(rule.id);
-                          }
-                        }}
-                        className="font-medium text-red-600 underline"
+                      </Button>
+                      <Popconfirm
+                        title={`Delete rule "${rule.name}"?`}
+                        okButtonProps={{ danger: true }}
+                        onConfirm={() => remove.mutate(rule.id)}
                       >
-                        Delete
-                      </button>
+                        <Button type="link" size="small" danger>
+                          Delete
+                        </Button>
+                      </Popconfirm>
                     </>
                   )}
-                </span>
-              </div>
+                </Space>
+              </Flex>
               {expandedRule === rule.id && <DeliveryList ruleId={rule.id} />}
-            </li>
+            </Card>
           ))}
-        </ul>
+        </Space>
       )}
 
       {createOpen && (
@@ -192,28 +195,50 @@ function DeliveryList({ ruleId }: { ruleId: string }) {
       api.get<Delivery[]>(`/notification-deliveries?rule_id=${ruleId}&page_size=20`),
   });
   const rows = deliveriesQuery.data?.data ?? [];
-  if (deliveriesQuery.isLoading) return <Spinner label="Loading deliveries…" />;
-  return rows.length === 0 ? (
-    <p className="mt-2 border-t border-slate-100 pt-2 text-xs text-slate-400">
-      No deliveries yet for this rule.
-    </p>
-  ) : (
-    <ul className="mt-2 space-y-1 border-t border-slate-100 pt-2 text-xs text-slate-600">
-      {rows.map((row) => (
-        <li key={row.id} className="flex flex-wrap items-center gap-2">
-          <StatusBadge status={row.state} />
-          <span className="font-mono">{row.channel}</span>
-          <span>→ {row.recipient}</span>
-          <span className="text-slate-400">
-            {row.notification_type} · “{row.notification_title}” ·{" "}
-            {timeAgo(row.created_at)}
-            {row.attempts > 1 && ` · ${row.attempts} attempts`}
-          </span>
-          {row.last_error && <span className="text-red-600">{row.last_error}</span>}
-        </li>
-      ))}
-    </ul>
+  if (deliveriesQuery.isLoading) return <LoadingState rows={2} />;
+  return (
+    <List
+      size="small"
+      className="mt-2"
+      dataSource={rows}
+      locale={{
+        emptyText: (
+          <Typography.Text type="secondary" className="text-xs">
+            No deliveries yet for this rule.
+          </Typography.Text>
+        ),
+      }}
+      renderItem={(row) => (
+        <List.Item className="!px-0">
+          <Flex wrap align="center" gap="small">
+            <StatusBadge status={row.state} />
+            <Typography.Text code className="text-xs">
+              {row.channel}
+            </Typography.Text>
+            <Typography.Text className="text-xs">→ {row.recipient}</Typography.Text>
+            <Typography.Text type="secondary" className="text-xs">
+              {row.notification_type} · “{row.notification_title}” · {timeAgo(row.created_at)}
+              {row.attempts > 1 && ` · ${row.attempts} attempts`}
+            </Typography.Text>
+            {row.last_error && (
+              <Typography.Text type="danger" className="text-xs">
+                {row.last_error}
+              </Typography.Text>
+            )}
+          </Flex>
+        </List.Item>
+      )}
+    />
   );
+}
+
+interface RuleFormValues {
+  name: string;
+  event_type: string;
+  in_app: boolean;
+  email?: string;
+  webhook?: string;
+  escalation?: number | null;
 }
 
 function CreateRuleModal({
@@ -223,13 +248,8 @@ function CreateRuleModal({
   onClose: () => void;
   onCreated: () => void;
 }) {
-  const [name, setName] = useState("");
-  const [eventType, setEventType] = useState("*");
+  const [form] = Form.useForm<RuleFormValues>();
   const [severities, setSeverities] = useState<string[]>([]);
-  const [inApp, setInApp] = useState(true);
-  const [email, setEmail] = useState("");
-  const [webhook, setWebhook] = useState("");
-  const [escalation, setEscalation] = useState("");
   const [error, setError] = useState<string | null>(null);
 
   const eventsQuery = useQuery({
@@ -238,17 +258,19 @@ function CreateRuleModal({
   });
 
   const create = useMutation({
-    mutationFn: () => {
+    mutationFn: (values: RuleFormValues) => {
       const channels: RuleChannel[] = [];
-      if (inApp) channels.push({ channel: "in_app" });
-      if (email.trim()) channels.push({ channel: "email", recipient: email.trim() });
-      if (webhook.trim()) channels.push({ channel: "webhook", recipient: webhook.trim() });
+      if (values.in_app) channels.push({ channel: "in_app" });
+      if (values.email?.trim())
+        channels.push({ channel: "email", recipient: values.email.trim() });
+      if (values.webhook?.trim())
+        channels.push({ channel: "webhook", recipient: values.webhook.trim() });
       return api.post("/notification-rules", {
-        name,
-        event_type: eventType,
+        name: values.name,
+        event_type: values.event_type,
         condition_json: severities.length ? { severity: severities } : null,
         channels_json: channels,
-        escalation_minutes: escalation ? Number(escalation) : null,
+        escalation_minutes: values.escalation ? Number(values.escalation) : null,
       });
     },
     onSuccess: onCreated,
@@ -262,141 +284,86 @@ function CreateRuleModal({
     );
   }
 
-  function onSubmit(e: FormEvent) {
-    e.preventDefault();
-    setError(null);
-    create.mutate();
-  }
-
   return (
-    <Modal title="New notification rule" open onClose={onClose}>
-      <form className="space-y-4" onSubmit={onSubmit}>
-        <div className="grid grid-cols-2 gap-3">
-          <div>
-            <label htmlFor="rule-name" className="block text-sm font-medium text-slate-700">
-              Name
-            </label>
-            <input
-              id="rule-name"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              className="mt-1 block w-full rounded-md border border-slate-300 px-3 py-2 text-sm"
+    <Modal
+      title="New notification rule"
+      open
+      onCancel={onClose}
+      okText="Create rule"
+      confirmLoading={create.isPending}
+      onOk={() => form.submit()}
+    >
+      <Form
+        form={form}
+        layout="vertical"
+        initialValues={{ name: "", event_type: "*", in_app: true, email: "", webhook: "" }}
+        onFinish={(values) => {
+          setError(null);
+          create.mutate(values);
+        }}
+      >
+        <Flex gap="small">
+          <Form.Item
+            name="name"
+            label="Name"
+            className="flex-1"
+            rules={[{ required: true, message: "Name is required" }]}
+          >
+            <Input />
+          </Form.Item>
+          <Form.Item name="event_type" label="Event" className="flex-1">
+            <Select
+              options={(eventsQuery.data?.data ?? []).map((event) => ({
+                value: event.event_type,
+                label: `${event.label} (${event.event_type})`,
+              }))}
+              loading={eventsQuery.isLoading}
             />
-          </div>
-          <div>
-            <label htmlFor="rule-event" className="block text-sm font-medium text-slate-700">
-              Event
-            </label>
-            <select
-              id="rule-event"
-              value={eventType}
-              onChange={(e) => setEventType(e.target.value)}
-              className="mt-1 block w-full rounded-md border border-slate-300 px-3 py-2 text-sm"
-            >
-              {(eventsQuery.data?.data ?? []).map((event) => (
-                <option key={event.event_type} value={event.event_type}>
-                  {event.label} ({event.event_type})
-                </option>
-              ))}
-            </select>
-          </div>
-        </div>
+          </Form.Item>
+        </Flex>
 
-        <div>
-          <span className="block text-sm font-medium text-slate-700">
-            Only for severities (empty = any)
-          </span>
-          <div className="mt-1 flex gap-2">
+        <Form.Item label="Only for severities (empty = any)">
+          <Space>
             {["info", "warning", "critical"].map((severity) => (
-              <button
+              <Tag.CheckableTag
                 key={severity}
-                type="button"
-                onClick={() => toggleSeverity(severity)}
+                checked={severities.includes(severity)}
+                onChange={() => toggleSeverity(severity)}
                 aria-pressed={severities.includes(severity)}
-                className={`rounded-md px-2.5 py-1 text-xs font-medium ${
-                  severities.includes(severity)
-                    ? "bg-slate-900 text-white"
-                    : "border border-slate-300 text-slate-600"
-                }`}
               >
                 {severity}
-              </button>
+              </Tag.CheckableTag>
             ))}
-          </div>
-        </div>
+          </Space>
+        </Form.Item>
 
-        <div className="space-y-2">
-          <span className="block text-sm font-medium text-slate-700">Channels</span>
-          <label className="flex items-center gap-2 text-sm text-slate-600">
-            <input
-              type="checkbox"
-              checked={inApp}
-              onChange={(e) => setInApp(e.target.checked)}
-            />
-            In-app inbox
-          </label>
-          <div className="flex items-center gap-2 text-sm">
-            <span className="w-16 text-slate-600">Email</span>
-            <input
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="noc@company.com (empty = off)"
-              aria-label="Email recipient"
-              className="flex-1 rounded-md border border-slate-300 px-3 py-1.5 text-sm"
-            />
-          </div>
-          <div className="flex items-center gap-2 text-sm">
-            <span className="w-16 text-slate-600">Webhook</span>
-            <input
-              value={webhook}
-              onChange={(e) => setWebhook(e.target.value)}
+        <Form.Item label="Channels" className="mb-0">
+          <Form.Item name="in_app" valuePropName="checked" className="mb-2">
+            <Checkbox>In-app inbox</Checkbox>
+          </Form.Item>
+          <Form.Item name="email" label="Email" className="mb-2">
+            <Input placeholder="noc@company.com (empty = off)" aria-label="Email recipient" />
+          </Form.Item>
+          <Form.Item name="webhook" label="Webhook">
+            <Input
               placeholder="https://hooks.company.com/… (empty = off)"
               aria-label="Webhook URL"
-              className="flex-1 rounded-md border border-slate-300 px-3 py-1.5 text-sm"
             />
-          </div>
-        </div>
+          </Form.Item>
+        </Form.Item>
 
-        <div>
-          <label htmlFor="rule-escalation" className="block text-sm font-medium text-slate-700">
-            Escalate after (minutes, empty = never)
-          </label>
-          <input
-            id="rule-escalation"
-            type="number"
-            min={1}
-            max={1440}
-            value={escalation}
-            onChange={(e) => setEscalation(e.target.value)}
-            className="mt-1 w-40 rounded-md border border-slate-300 px-3 py-2 text-sm"
-          />
-          <p className="mt-1 text-xs text-slate-400">
-            Unread matching alerts re-fire as critical ESCALATION notifications.
-          </p>
-        </div>
+        <Form.Item
+          name="escalation"
+          label="Escalate after (minutes, empty = never)"
+          extra="Unread matching alerts re-fire as critical ESCALATION notifications."
+        >
+          <InputNumber min={1} max={1440} className="w-40" />
+        </Form.Item>
 
         {error && (
-          <p className="rounded-md bg-red-50 px-3 py-2 text-sm text-red-700" role="alert">
-            {error}
-          </p>
+          <Alert type="error" message={error} showIcon className="mb-2" role="alert" />
         )}
-        <div className="flex justify-end gap-2">
-          <button
-            type="button"
-            onClick={onClose}
-            className="rounded-md border border-slate-300 px-4 py-2 text-sm font-medium text-slate-600"
-          >
-            Cancel
-          </button>
-          <button
-            type="submit"
-            disabled={create.isPending}
-            className="rounded-md bg-slate-900 px-4 py-2 text-sm font-medium text-white disabled:opacity-50"
-          >
-            {create.isPending ? "Creating…" : "Create rule"}
-          </button>
-        </div>
-      </form>
+      </Form>
     </Modal>
   );
 }

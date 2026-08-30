@@ -1,7 +1,6 @@
 import { useMutation, useQuery } from "@tanstack/react-query";
-import { useState, type FormEvent } from "react";
-import { FormField } from "../../components/ui/FormField";
-import { Modal } from "../../components/ui/Modal";
+import { Alert, Form, Input, Modal, Select } from "antd";
+import { useState } from "react";
 import { api, ApiError } from "../../lib/api";
 import type { LocationDetail, LocationType } from "./types";
 
@@ -13,12 +12,16 @@ interface Props {
   onSaved: (id: string) => void;
 }
 
+interface FormValues {
+  name: string;
+  code?: string;
+  type_id?: string;
+  address?: string;
+  timezone?: string;
+}
+
 export function LocationFormModal({ existing, parentId, parentName, onClose, onSaved }: Props) {
-  const [name, setName] = useState(existing?.name ?? "");
-  const [code, setCode] = useState(existing?.code ?? "");
-  const [typeId, setTypeId] = useState(existing?.type?.id ?? "");
-  const [address, setAddress] = useState(existing?.address ?? "");
-  const [timezone, setTimezone] = useState(existing?.timezone ?? "");
+  const [form] = Form.useForm<FormValues>();
   const [error, setError] = useState<string | null>(null);
 
   const typesQuery = useQuery({
@@ -27,13 +30,13 @@ export function LocationFormModal({ existing, parentId, parentName, onClose, onS
   });
 
   const save = useMutation({
-    mutationFn: () => {
+    mutationFn: (values: FormValues) => {
       const body = {
-        name,
-        code: code || null,
-        type_id: typeId || null,
-        address: address || null,
-        timezone: timezone || null,
+        name: values.name,
+        code: values.code || null,
+        type_id: values.type_id || null,
+        address: values.address || null,
+        timezone: values.timezone || null,
       };
       return existing
         ? api.patch<LocationDetail>(`/locations/${existing.id}`, body)
@@ -44,12 +47,6 @@ export function LocationFormModal({ existing, parentId, parentName, onClose, onS
       setError(err instanceof ApiError ? err.message : "Failed to save location"),
   });
 
-  function onSubmit(e: FormEvent) {
-    e.preventDefault();
-    setError(null);
-    save.mutate();
-  }
-
   const title = existing
     ? `Edit location: ${existing.name}`
     : parentName
@@ -57,74 +54,58 @@ export function LocationFormModal({ existing, parentId, parentName, onClose, onS
       : "Add root location";
 
   return (
-    <Modal title={title} open onClose={onClose}>
-      <form className="space-y-4" onSubmit={onSubmit}>
-        <FormField
-          id="loc-name"
+    <Modal
+      title={title}
+      open
+      onCancel={onClose}
+      okText={existing ? "Save changes" : "Create location"}
+      confirmLoading={save.isPending}
+      onOk={() => form.submit()}
+      destroyOnHidden
+    >
+      {error && <Alert type="error" message={error} showIcon className="mb-4" role="alert" />}
+      <Form
+        form={form}
+        layout="vertical"
+        initialValues={{
+          name: existing?.name ?? "",
+          code: existing?.code ?? "",
+          type_id: existing?.type?.id || undefined,
+          address: existing?.address ?? "",
+          timezone: existing?.timezone ?? "",
+        }}
+        onFinish={(values) => {
+          setError(null);
+          save.mutate(values);
+        }}
+      >
+        <Form.Item
+          name="name"
           label="Name"
-          required
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-        />
-        <FormField
-          id="loc-code"
-          label="Code (unique among siblings, optional)"
-          value={code}
-          onChange={(e) => setCode(e.target.value)}
-        />
-        <div>
-          <label htmlFor="loc-type" className="block text-sm font-medium text-slate-700">
-            Type
-          </label>
-          <select
-            id="loc-type"
-            value={typeId}
-            onChange={(e) => setTypeId(e.target.value)}
-            className="mt-1 block w-full rounded-md border border-slate-300 px-3 py-2 text-sm shadow-sm"
-          >
-            <option value="">— none —</option>
-            {(typesQuery.data?.data ?? []).map((t) => (
-              <option key={t.id} value={t.id}>
-                {t.name}
-              </option>
-            ))}
-          </select>
-        </div>
-        <FormField
-          id="loc-address"
-          label="Address (optional)"
-          value={address}
-          onChange={(e) => setAddress(e.target.value)}
-        />
-        <FormField
-          id="loc-timezone"
-          label="Timezone (IANA, optional — inherits when empty)"
-          value={timezone}
-          onChange={(e) => setTimezone(e.target.value)}
-          placeholder="e.g. Asia/Kolkata"
-        />
-        {error && (
-          <p className="rounded-md bg-red-50 px-3 py-2 text-sm text-red-700" role="alert">
-            {error}
-          </p>
-        )}
-        <div className="flex justify-end gap-2">
-          <button
-            type="button"
-            onClick={onClose}
-            className="rounded-md border border-slate-300 px-4 py-2 text-sm font-medium text-slate-600"
-          >
-            Cancel
-          </button>
-          <button
-            type="submit"
-            disabled={save.isPending}
-            className="rounded-md bg-slate-900 px-4 py-2 text-sm font-medium text-white disabled:opacity-50"
-          >
-            {save.isPending ? "Saving…" : existing ? "Save changes" : "Create location"}
-          </button>
-        </div>
-      </form>
+          rules={[{ required: true, message: "Name is required." }]}
+        >
+          <Input autoFocus />
+        </Form.Item>
+        <Form.Item name="code" label="Code (unique among siblings, optional)">
+          <Input />
+        </Form.Item>
+        <Form.Item name="type_id" label="Type">
+          <Select
+            allowClear
+            placeholder="— none —"
+            options={(typesQuery.data?.data ?? []).map((t) => ({
+              value: t.id,
+              label: t.name,
+            }))}
+          />
+        </Form.Item>
+        <Form.Item name="address" label="Address (optional)">
+          <Input />
+        </Form.Item>
+        <Form.Item name="timezone" label="Timezone (IANA, optional — inherits when empty)">
+          <Input placeholder="e.g. Asia/Kolkata" />
+        </Form.Item>
+      </Form>
     </Modal>
   );
 }

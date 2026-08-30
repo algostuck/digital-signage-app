@@ -1,6 +1,20 @@
+import { DownloadOutlined } from "@ant-design/icons";
 import { useQuery } from "@tanstack/react-query";
+import {
+  Button,
+  DatePicker,
+  Flex,
+  Progress,
+  Select,
+  Space,
+  Table,
+  Typography,
+  type TableProps,
+} from "antd";
+import dayjs from "dayjs";
 import { useState } from "react";
-import { Spinner } from "../../components/ui/Spinner";
+import { FilterBar } from "../../components/ui/FilterBar";
+import { EmptyState } from "../../components/ui/states";
 import { api, ApiError } from "../../lib/api";
 import { useAuth } from "../../lib/auth";
 
@@ -70,20 +84,24 @@ export function ExportButtons({
   }
 
   return (
-    <span className="flex items-center gap-2">
+    <Space wrap>
       {(["csv", "xlsx"] as const).map((format) => (
-        <button
+        <Button
           key={format}
-          type="button"
+          icon={<DownloadOutlined />}
           disabled={busy !== null}
+          loading={busy === format}
           onClick={() => run(format)}
-          className="rounded-md border border-slate-300 px-3 py-1.5 text-xs font-medium uppercase text-slate-600 disabled:opacity-50"
         >
-          {busy === format ? "…" : `Export ${format}`}
-        </button>
+          Export {format.toUpperCase()}
+        </Button>
       ))}
-      {error && <span className="text-xs text-red-600">{error}</span>}
-    </span>
+      {error && (
+        <Typography.Text type="danger" className="text-xs" role="alert">
+          {error}
+        </Typography.Text>
+      )}
+    </Space>
   );
 }
 
@@ -105,85 +123,108 @@ export function ProofOfPlayTab() {
   const rows = query.data?.data ?? [];
   const filters = { group_by: groupBy, date_from: dateFrom, date_to: dateTo };
 
+  const columns: TableProps<PopRow>["columns"] = [
+    {
+      title: groupBy.charAt(0).toUpperCase() + groupBy.slice(1),
+      dataIndex: "name",
+      render: (name: string) => <Typography.Text strong>{name}</Typography.Text>,
+    },
+    { title: "Plays", dataIndex: "plays", align: "right" },
+    {
+      title: "Completed",
+      dataIndex: "completed",
+      align: "right",
+      render: (value: number) => <Typography.Text type="success">{value}</Typography.Text>,
+    },
+    {
+      title: "Completion",
+      dataIndex: "completion_rate",
+      align: "right",
+      render: (rate: number) => `${Math.round(rate * 100)}%`,
+    },
+    { title: "Devices", dataIndex: "devices_reached", align: "right" },
+    {
+      title: "Last play",
+      dataIndex: "last_play",
+      responsive: ["lg"],
+      render: (value: string | null) => (
+        <Typography.Text type="secondary">
+          {value ? new Date(value).toLocaleString() : "—"}
+        </Typography.Text>
+      ),
+    },
+  ];
+
   return (
     <div>
-      <div className="flex flex-wrap items-end gap-3">
-        <label className="block text-sm">
-          <span className="block text-xs text-slate-500">Dimension</span>
-          <select
-            value={groupBy}
-            onChange={(e) => setGroupBy(e.target.value)}
-            className="mt-0.5 rounded-md border border-slate-300 px-2 py-1.5 text-sm"
-          >
-            {DIMENSIONS.map((d) => (
-              <option key={d} value={d}>
-                {d}
-              </option>
-            ))}
-          </select>
-        </label>
-        <label className="block text-sm">
-          <span className="block text-xs text-slate-500">From</span>
-          <input
-            type="date"
-            value={dateFrom}
-            onChange={(e) => setDateFrom(e.target.value)}
-            className="mt-0.5 rounded-md border border-slate-300 px-2 py-1.5 text-sm"
-          />
-        </label>
-        <label className="block text-sm">
-          <span className="block text-xs text-slate-500">To</span>
-          <input
-            type="date"
-            value={dateTo}
-            onChange={(e) => setDateTo(e.target.value)}
-            className="mt-0.5 rounded-md border border-slate-300 px-2 py-1.5 text-sm"
-          />
-        </label>
+      <FilterBar>
+        <Select
+          className="w-44"
+          value={groupBy}
+          aria-label="Dimension"
+          onChange={setGroupBy}
+          options={DIMENSIONS.map((d) => ({
+            value: d,
+            label: d.charAt(0).toUpperCase() + d.slice(1),
+          }))}
+        />
+        <DatePicker
+          allowClear={false}
+          value={dayjs(dateFrom)}
+          aria-label="From date"
+          onChange={(date) => date && setDateFrom(date.format("YYYY-MM-DD"))}
+        />
+        <DatePicker
+          allowClear={false}
+          value={dayjs(dateTo)}
+          aria-label="To date"
+          onChange={(date) => date && setDateTo(date.format("YYYY-MM-DD"))}
+        />
         <ExportButtons report="proof-of-play" filters={filters} />
-      </div>
+      </FilterBar>
 
-      {query.isLoading ? (
-        <Spinner label="Loading proof of play…" />
-      ) : rows.length === 0 ? (
-        <p className="mt-4 rounded-lg border border-dashed border-slate-300 bg-white p-8 text-center text-sm text-slate-500">
-          No playback events in this range.
-        </p>
-      ) : (
-        <div className="mt-3 overflow-x-auto rounded-lg border border-slate-200 bg-white">
-          <table className="min-w-full divide-y divide-slate-200 text-sm">
-            <thead className="bg-slate-50 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
-              <tr>
-                <th className="px-4 py-2 capitalize">{groupBy}</th>
-                <th className="px-4 py-2">Plays</th>
-                <th className="px-4 py-2">Completed</th>
-                <th className="px-4 py-2">Completion</th>
-                <th className="px-4 py-2">Devices</th>
-                <th className="px-4 py-2">Last play</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-100">
-              {rows.map((row) => (
-                <tr key={row.key_id ?? "none"}>
-                  <td className="px-4 py-2 font-medium text-slate-800">{row.name}</td>
-                  <td className="px-4 py-2 text-slate-600">{row.plays}</td>
-                  <td className="px-4 py-2 text-emerald-700">{row.completed}</td>
-                  <td className="px-4 py-2 text-slate-600">
-                    {Math.round(row.completion_rate * 100)}%
-                  </td>
-                  <td className="px-4 py-2 text-slate-600">{row.devices_reached}</td>
-                  <td className="px-4 py-2 text-slate-500">
-                    {row.last_play ? new Date(row.last_play).toLocaleString() : "—"}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      )}
+      <Table<PopRow>
+        size="middle"
+        rowKey={(row) => row.key_id ?? "none"}
+        columns={columns}
+        dataSource={rows}
+        loading={query.isLoading}
+        pagination={false}
+        scroll={{ x: "max-content" }}
+        locale={{ emptyText: <EmptyState title="No playback events in this range" /> }}
+      />
     </div>
   );
 }
+
+const performanceColumns: TableProps<PerformanceRow>["columns"] = [
+  {
+    title: "Campaign",
+    dataIndex: "campaign_name",
+    render: (name: string) => <Typography.Text strong>{name}</Typography.Text>,
+  },
+  {
+    title: "Delivered",
+    dataIndex: "acknowledged",
+    align: "right",
+    render: (value: number) => <Typography.Text type="success">{value}</Typography.Text>,
+  },
+  { title: "Pending", dataIndex: "pending", align: "right" },
+  {
+    title: "Failed",
+    dataIndex: "failed",
+    align: "right",
+    render: (value: number) => <Typography.Text type="danger">{value}</Typography.Text>,
+  },
+  { title: "Plays", dataIndex: "plays", align: "right" },
+  {
+    title: "Completion",
+    dataIndex: "completion_rate",
+    align: "right",
+    render: (rate: number) => `${Math.round(rate * 100)}%`,
+  },
+  { title: "Devices played", dataIndex: "devices_played", align: "right", responsive: ["lg"] },
+];
 
 /** P2-16 Campaign Analytics. */
 export function CampaignAnalyticsTab() {
@@ -195,47 +236,19 @@ export function CampaignAnalyticsTab() {
 
   return (
     <div>
-      <div className="flex justify-end">
+      <Flex justify="flex-end" className="mb-4">
         <ExportButtons report="campaign-performance" filters={{}} />
-      </div>
-      {query.isLoading ? (
-        <Spinner label="Loading analytics…" />
-      ) : rows.length === 0 ? (
-        <p className="mt-4 rounded-lg border border-dashed border-slate-300 bg-white p-8 text-center text-sm text-slate-500">
-          No campaign activity yet.
-        </p>
-      ) : (
-        <div className="mt-3 overflow-x-auto rounded-lg border border-slate-200 bg-white">
-          <table className="min-w-full divide-y divide-slate-200 text-sm">
-            <thead className="bg-slate-50 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
-              <tr>
-                <th className="px-4 py-2">Campaign</th>
-                <th className="px-4 py-2">Delivered</th>
-                <th className="px-4 py-2">Pending</th>
-                <th className="px-4 py-2">Failed</th>
-                <th className="px-4 py-2">Plays</th>
-                <th className="px-4 py-2">Completion</th>
-                <th className="px-4 py-2">Devices played</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-100">
-              {rows.map((row) => (
-                <tr key={row.campaign_id}>
-                  <td className="px-4 py-2 font-medium text-slate-800">{row.campaign_name}</td>
-                  <td className="px-4 py-2 text-emerald-700">{row.acknowledged}</td>
-                  <td className="px-4 py-2 text-slate-600">{row.pending}</td>
-                  <td className="px-4 py-2 text-red-600">{row.failed}</td>
-                  <td className="px-4 py-2 text-slate-600">{row.plays}</td>
-                  <td className="px-4 py-2 text-slate-600">
-                    {Math.round(row.completion_rate * 100)}%
-                  </td>
-                  <td className="px-4 py-2 text-slate-600">{row.devices_played}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      )}
+      </Flex>
+      <Table<PerformanceRow>
+        size="middle"
+        rowKey="campaign_id"
+        columns={performanceColumns}
+        dataSource={rows}
+        loading={query.isLoading}
+        pagination={false}
+        scroll={{ x: "max-content" }}
+        locale={{ emptyText: <EmptyState title="No campaign activity yet" /> }}
+      />
     </div>
   );
 }
@@ -254,76 +267,74 @@ export function UptimeTab() {
   const rows = query.data?.data ?? [];
   const filters = { date_from: dateFrom, date_to: dateTo };
 
+  const columns: TableProps<UptimeRow>["columns"] = [
+    {
+      title: "Device",
+      dataIndex: "device_name",
+      render: (name: string) => <Typography.Text strong>{name}</Typography.Text>,
+    },
+    {
+      title: "Uptime",
+      dataIndex: "uptime_pct",
+      render: (pct: number) => (
+        <Space>
+          <Typography.Text
+            strong
+            type={pct >= 99 ? "success" : pct >= 90 ? "warning" : "danger"}
+          >
+            {pct}%
+          </Typography.Text>
+          <Progress
+            className="w-24"
+            percent={Math.min(pct, 100)}
+            size="small"
+            showInfo={false}
+            strokeColor={pct >= 99 ? "#059669" : pct >= 90 ? "#D97706" : "#DC2626"}
+            aria-label={`Uptime ${pct}%`}
+          />
+        </Space>
+      ),
+    },
+    { title: "Heartbeats", dataIndex: "heartbeats", align: "right" },
+    {
+      title: "Covered",
+      align: "right",
+      responsive: ["lg"],
+      render: (_, row) => (
+        <Typography.Text type="secondary">
+          {Math.round(row.covered_seconds / 3600)}h / {Math.round(row.window_seconds / 3600)}h
+        </Typography.Text>
+      ),
+    },
+  ];
+
   return (
     <div>
-      <div className="flex flex-wrap items-end gap-3">
-        <label className="block text-sm">
-          <span className="block text-xs text-slate-500">From</span>
-          <input
-            type="date"
-            value={dateFrom}
-            onChange={(e) => setDateFrom(e.target.value)}
-            className="mt-0.5 rounded-md border border-slate-300 px-2 py-1.5 text-sm"
-          />
-        </label>
-        <label className="block text-sm">
-          <span className="block text-xs text-slate-500">To</span>
-          <input
-            type="date"
-            value={dateTo}
-            onChange={(e) => setDateTo(e.target.value)}
-            className="mt-0.5 rounded-md border border-slate-300 px-2 py-1.5 text-sm"
-          />
-        </label>
+      <FilterBar>
+        <DatePicker
+          allowClear={false}
+          value={dayjs(dateFrom)}
+          aria-label="From date"
+          onChange={(date) => date && setDateFrom(date.format("YYYY-MM-DD"))}
+        />
+        <DatePicker
+          allowClear={false}
+          value={dayjs(dateTo)}
+          aria-label="To date"
+          onChange={(date) => date && setDateTo(date.format("YYYY-MM-DD"))}
+        />
         <ExportButtons report="device-uptime" filters={filters} />
-      </div>
-      {query.isLoading ? (
-        <Spinner label="Loading uptime…" />
-      ) : (
-        <div className="mt-3 overflow-x-auto rounded-lg border border-slate-200 bg-white">
-          <table className="min-w-full divide-y divide-slate-200 text-sm">
-            <thead className="bg-slate-50 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
-              <tr>
-                <th className="px-4 py-2">Device</th>
-                <th className="px-4 py-2">Uptime</th>
-                <th className="px-4 py-2">Heartbeats</th>
-                <th className="px-4 py-2">Covered</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-100">
-              {rows.map((row) => (
-                <tr key={row.device_id}>
-                  <td className="px-4 py-2 font-medium text-slate-800">{row.device_name}</td>
-                  <td className="px-4 py-2">
-                    <span
-                      className={`font-semibold ${
-                        row.uptime_pct >= 99
-                          ? "text-emerald-600"
-                          : row.uptime_pct >= 90
-                            ? "text-amber-600"
-                            : "text-red-600"
-                      }`}
-                    >
-                      {row.uptime_pct}%
-                    </span>
-                    <span className="ml-2 inline-block h-1.5 w-24 overflow-hidden rounded bg-slate-100 align-middle">
-                      <span
-                        className="block h-full bg-emerald-500"
-                        style={{ width: `${Math.min(row.uptime_pct, 100)}%` }}
-                      />
-                    </span>
-                  </td>
-                  <td className="px-4 py-2 text-slate-600">{row.heartbeats}</td>
-                  <td className="px-4 py-2 text-slate-500">
-                    {Math.round(row.covered_seconds / 3600)}h /{" "}
-                    {Math.round(row.window_seconds / 3600)}h
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      )}
+      </FilterBar>
+      <Table<UptimeRow>
+        size="middle"
+        rowKey="device_id"
+        columns={columns}
+        dataSource={rows}
+        loading={query.isLoading}
+        pagination={false}
+        scroll={{ x: "max-content" }}
+        locale={{ emptyText: <EmptyState title="No uptime data in this range" /> }}
+      />
     </div>
   );
 }

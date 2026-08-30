@@ -1,6 +1,8 @@
 import { useQuery } from "@tanstack/react-query";
+import { Card, Space, Table, Tabs, Typography, type TableProps } from "antd";
 import { useState } from "react";
-import { Spinner } from "../../components/ui/Spinner";
+import { PageHeader } from "../../components/ui/PageHeader";
+import { EmptyState, LoadingState } from "../../components/ui/states";
 import { StatusBadge } from "../../components/ui/StatusBadge";
 import { api } from "../../lib/api";
 import { CampaignAnalyticsTab, ProofOfPlayTab, UptimeTab } from "./AnalyticsTabs";
@@ -34,57 +36,106 @@ interface LocationRow {
   offline: number;
 }
 
-const TABS = [
-  { key: "overview", label: "Overview" },
-  { key: "pop", label: "Proof of play" },
-  { key: "analytics", label: "Campaign analytics" },
-  { key: "uptime", label: "Uptime" },
-  { key: "ads", label: "Ads" },
-  { key: "exports", label: "Exports" },
-] as const;
-
 /** SCR-24 Reports + P2-15/16/17 analytics & exports. */
 export function ReportsPage() {
   const [tab, setTab] = useState<string>("overview");
 
   return (
     <div>
-      <h1 className="text-xl font-semibold text-slate-900">Reports</h1>
-      <div className="mt-4 border-b border-slate-200" role="tablist">
-        {TABS.map((t) => (
-          <button
-            key={t.key}
-            role="tab"
-            aria-selected={tab === t.key}
-            onClick={() => setTab(t.key)}
-            className={`-mb-px border-b-2 px-4 py-2 text-sm font-medium ${
-              tab === t.key
-                ? "border-slate-900 text-slate-900"
-                : "border-transparent text-slate-500 hover:text-slate-700"
-            }`}
-          >
-            {t.label}
-          </button>
-        ))}
-      </div>
-      <div className="mt-4">
-        {tab === "overview" ? (
-          <OverviewTab />
-        ) : tab === "pop" ? (
-          <ProofOfPlayTab />
-        ) : tab === "analytics" ? (
-          <CampaignAnalyticsTab />
-        ) : tab === "uptime" ? (
-          <UptimeTab />
-        ) : tab === "ads" ? (
-          <AdsReportTab />
-        ) : (
-          <ExportsTab />
-        )}
-      </div>
+      <PageHeader
+        title="Reports"
+        description="Deployment, proof-of-play, uptime and ad performance reporting."
+      />
+      <Tabs
+        activeKey={tab}
+        onChange={setTab}
+        items={[
+          { key: "overview", label: "Overview", children: <OverviewTab /> },
+          { key: "pop", label: "Proof of play", children: <ProofOfPlayTab /> },
+          { key: "analytics", label: "Campaign analytics", children: <CampaignAnalyticsTab /> },
+          { key: "uptime", label: "Uptime", children: <UptimeTab /> },
+          { key: "ads", label: "Ads", children: <AdsReportTab /> },
+          { key: "exports", label: "Exports", children: <ExportsTab /> },
+        ]}
+      />
     </div>
   );
 }
+
+const deploymentColumns: TableProps<DeploymentRow>["columns"] = [
+  {
+    title: "Campaign",
+    dataIndex: "campaign_name",
+    render: (name: string) => <Typography.Text strong>{name}</Typography.Text>,
+  },
+  {
+    title: "Status",
+    dataIndex: "status",
+    render: (status: string) => <StatusBadge status={status} />,
+  },
+  { title: "Deployments", dataIndex: "deployments", align: "right" },
+  {
+    title: "Latest",
+    dataIndex: "latest_version",
+    align: "right",
+    responsive: ["lg"],
+    render: (version: number | null) => `v${version}`,
+  },
+  {
+    title: "Acked",
+    dataIndex: "acknowledged",
+    align: "right",
+    render: (value: number) => <Typography.Text type="success">{value}</Typography.Text>,
+  },
+  {
+    title: "Failed",
+    dataIndex: "failed",
+    align: "right",
+    render: (value: number) => <Typography.Text type="danger">{value}</Typography.Text>,
+  },
+  { title: "Pending", dataIndex: "pending", align: "right" },
+];
+
+const playbackColumns: TableProps<PlaybackRow>["columns"] = [
+  {
+    title: "Content",
+    dataIndex: "asset_name",
+    render: (name: string) => <Typography.Text strong>{name}</Typography.Text>,
+  },
+  { title: "Plays", dataIndex: "plays", align: "right" },
+  { title: "Devices reached", dataIndex: "devices_reached", align: "right" },
+];
+
+const locationColumns: TableProps<LocationRow>["columns"] = [
+  {
+    title: "Location",
+    dataIndex: "location_name",
+    render: (_, row) => (
+      <Typography.Text strong style={{ paddingLeft: row.depth * 12 }}>
+        {row.location_name}
+      </Typography.Text>
+    ),
+  },
+  { title: "Devices", dataIndex: "devices", align: "right" },
+  {
+    title: "Online",
+    dataIndex: "online",
+    align: "right",
+    render: (value: number) => <Typography.Text type="success">{value}</Typography.Text>,
+  },
+  {
+    title: "Warning",
+    dataIndex: "warning",
+    align: "right",
+    render: (value: number) => <Typography.Text type="warning">{value}</Typography.Text>,
+  },
+  {
+    title: "Offline",
+    dataIndex: "offline",
+    align: "right",
+    render: (value: number) => <Typography.Text type="danger">{value}</Typography.Text>,
+  },
+];
 
 function OverviewTab() {
   const deploymentsQuery = useQuery({
@@ -101,7 +152,7 @@ function OverviewTab() {
   });
 
   if (deploymentsQuery.isLoading || playbackQuery.isLoading || locationsQuery.isLoading) {
-    return <Spinner label="Loading reports…" />;
+    return <LoadingState rows={8} />;
   }
 
   const deployments = deploymentsQuery.data?.data ?? [];
@@ -109,110 +160,42 @@ function OverviewTab() {
   const locations = locationsQuery.data?.data ?? [];
 
   return (
-    <div className="space-y-6">
-      <ReportSection title="Campaign deployments" empty={deployments.length === 0}>
-        <table className="min-w-full divide-y divide-slate-200 text-sm">
-          <thead className="bg-slate-50 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
-            <tr>
-              <th className="px-4 py-2">Campaign</th>
-              <th className="px-4 py-2">Status</th>
-              <th className="px-4 py-2">Deployments</th>
-              <th className="px-4 py-2">Latest</th>
-              <th className="px-4 py-2">Acked</th>
-              <th className="px-4 py-2">Failed</th>
-              <th className="px-4 py-2">Pending</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-slate-100">
-            {deployments.map((row) => (
-              <tr key={row.campaign_id}>
-                <td className="px-4 py-2 font-medium text-slate-800">{row.campaign_name}</td>
-                <td className="px-4 py-2">
-                  <StatusBadge status={row.status} />
-                </td>
-                <td className="px-4 py-2 text-slate-600">{row.deployments}</td>
-                <td className="px-4 py-2 text-slate-600">v{row.latest_version}</td>
-                <td className="px-4 py-2 text-emerald-700">{row.acknowledged}</td>
-                <td className="px-4 py-2 text-red-600">{row.failed}</td>
-                <td className="px-4 py-2 text-slate-600">{row.pending}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </ReportSection>
+    <Space orientation="vertical" size="large" className="w-full">
+      <Card size="small" title="Campaign deployments">
+        <Table<DeploymentRow>
+          size="middle"
+          rowKey="campaign_id"
+          columns={deploymentColumns}
+          dataSource={deployments}
+          pagination={false}
+          scroll={{ x: "max-content" }}
+          locale={{ emptyText: <EmptyState title="No data yet" /> }}
+        />
+      </Card>
 
-      <ReportSection title="Playback (proof-of-play foundation)" empty={playback.length === 0}>
-        <table className="min-w-full divide-y divide-slate-200 text-sm">
-          <thead className="bg-slate-50 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
-            <tr>
-              <th className="px-4 py-2">Content</th>
-              <th className="px-4 py-2">Plays</th>
-              <th className="px-4 py-2">Devices reached</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-slate-100">
-            {playback.map((row) => (
-              <tr key={row.asset_id}>
-                <td className="px-4 py-2 font-medium text-slate-800">{row.asset_name}</td>
-                <td className="px-4 py-2 text-slate-600">{row.plays}</td>
-                <td className="px-4 py-2 text-slate-600">{row.devices_reached}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </ReportSection>
+      <Card size="small" title="Playback (proof-of-play foundation)">
+        <Table<PlaybackRow>
+          size="middle"
+          rowKey="asset_id"
+          columns={playbackColumns}
+          dataSource={playback}
+          pagination={false}
+          scroll={{ x: "max-content" }}
+          locale={{ emptyText: <EmptyState title="No data yet" /> }}
+        />
+      </Card>
 
-      <ReportSection title="Device health by location" empty={locations.length === 0}>
-        <table className="min-w-full divide-y divide-slate-200 text-sm">
-          <thead className="bg-slate-50 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
-            <tr>
-              <th className="px-4 py-2">Location</th>
-              <th className="px-4 py-2">Devices</th>
-              <th className="px-4 py-2">Online</th>
-              <th className="px-4 py-2">Warning</th>
-              <th className="px-4 py-2">Offline</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-slate-100">
-            {locations.map((row) => (
-              <tr key={row.location_id}>
-                <td className="px-4 py-2 font-medium text-slate-800">
-                  <span style={{ paddingLeft: row.depth * 12 }}>{row.location_name}</span>
-                </td>
-                <td className="px-4 py-2 text-slate-600">{row.devices}</td>
-                <td className="px-4 py-2 text-emerald-700">{row.online}</td>
-                <td className="px-4 py-2 text-amber-600">{row.warning}</td>
-                <td className="px-4 py-2 text-red-600">{row.offline}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </ReportSection>
-    </div>
-  );
-}
-
-function ReportSection({
-  title,
-  empty,
-  children,
-}: {
-  title: string;
-  empty: boolean;
-  children: React.ReactNode;
-}) {
-  return (
-    <section>
-      <h2 className="text-sm font-semibold uppercase tracking-wide text-slate-400">{title}</h2>
-      {empty ? (
-        <p className="mt-2 rounded-lg border border-dashed border-slate-300 bg-white p-6 text-center text-sm text-slate-500">
-          No data yet.
-        </p>
-      ) : (
-        <div className="mt-2 overflow-x-auto rounded-lg border border-slate-200 bg-white">
-          {children}
-        </div>
-      )}
-    </section>
+      <Card size="small" title="Device health by location">
+        <Table<LocationRow>
+          size="middle"
+          rowKey="location_id"
+          columns={locationColumns}
+          dataSource={locations}
+          pagination={false}
+          scroll={{ x: "max-content" }}
+          locale={{ emptyText: <EmptyState title="No data yet" /> }}
+        />
+      </Card>
+    </Space>
   );
 }

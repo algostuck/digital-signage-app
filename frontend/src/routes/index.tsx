@@ -1,30 +1,41 @@
+import { Skeleton } from "antd";
+import { lazy, Suspense, type ReactNode } from "react";
 import { createBrowserRouter, Navigate } from "react-router-dom";
 import { AppLayout } from "../components/layout/AppLayout";
-import { DashboardPage } from "../modules/dashboard/DashboardPage";
 import { LoginPage } from "../modules/auth/LoginPage";
-import { ApprovalsPage } from "../modules/approvals/ApprovalsPage";
-import { CampaignsPage } from "../modules/campaigns/CampaignsPage";
-import { DeploymentsPage } from "../modules/campaigns/DeploymentsPage";
-import { SchedulesPage } from "../modules/campaigns/SchedulesPage";
-import { ContentPage } from "../modules/content/ContentPage";
-import { DesignerPage } from "../modules/design/DesignerPage";
-import { LayoutsPage } from "../modules/design/LayoutsPage";
-import { DevicesPage } from "../modules/devices/DevicesPage";
-import { LocationsPage } from "../modules/locations/LocationsPage";
-import { AuditPage } from "../modules/ops/AuditPage";
-import { NotificationsPage } from "../modules/ops/NotificationsPage";
-import { ReportsPage } from "../modules/ops/ReportsPage";
-import { PlaylistEditorPage } from "../modules/playlists/PlaylistEditorPage";
-import { PlaylistsPage } from "../modules/playlists/PlaylistsPage";
-import { MonitoringPage } from "../modules/monitoring/MonitoringPage";
-import { ReleasesPage } from "../modules/releases/ReleasesPage";
-import { AdsPage } from "../modules/ads/AdsPage";
-import { DeveloperPage } from "../modules/developer/DeveloperPage";
-import { OrganizationSettingsPage } from "../modules/organization/OrganizationSettingsPage";
-import { PlatformPage } from "../modules/platform/PlatformPage";
-import { SecurityPage } from "../modules/security/SecurityPage";
-import { UsersRolesPage } from "../modules/users/UsersRolesPage";
 import { ProtectedRoute } from "./ProtectedRoute";
+
+const DashboardPage = lazy(() => import("../modules/dashboard/DashboardPage").then((m) => ({ default: m.DashboardPage })));
+const ContentPage = lazy(() => import("../modules/content/ContentPage").then((m) => ({ default: m.ContentPage })));
+const LayoutsPage = lazy(() => import("../modules/design/LayoutsPage").then((m) => ({ default: m.LayoutsPage })));
+const DesignerPage = lazy(() => import("../modules/design/DesignerPage").then((m) => ({ default: m.DesignerPage })));
+const PlaylistsPage = lazy(() => import("../modules/playlists/PlaylistsPage").then((m) => ({ default: m.PlaylistsPage })));
+const PlaylistEditorPage = lazy(() => import("../modules/playlists/PlaylistEditorPage").then((m) => ({ default: m.PlaylistEditorPage })));
+const CampaignsPage = lazy(() => import("../modules/campaigns/CampaignsPage").then((m) => ({ default: m.CampaignsPage })));
+const ApprovalsPage = lazy(() => import("../modules/approvals/ApprovalsPage").then((m) => ({ default: m.ApprovalsPage })));
+const SchedulesPage = lazy(() => import("../modules/campaigns/SchedulesPage").then((m) => ({ default: m.SchedulesPage })));
+const DeploymentsPage = lazy(() => import("../modules/campaigns/DeploymentsPage").then((m) => ({ default: m.DeploymentsPage })));
+const DevicesPage = lazy(() => import("../modules/devices/DevicesPage").then((m) => ({ default: m.DevicesPage })));
+const LocationsPage = lazy(() => import("../modules/locations/LocationsPage").then((m) => ({ default: m.LocationsPage })));
+const ReleasesPage = lazy(() => import("../modules/releases/ReleasesPage").then((m) => ({ default: m.ReleasesPage })));
+const MonitoringPage = lazy(() => import("../modules/monitoring/MonitoringPage").then((m) => ({ default: m.MonitoringPage })));
+const ReportsPage = lazy(() => import("../modules/ops/ReportsPage").then((m) => ({ default: m.ReportsPage })));
+const UsersRolesPage = lazy(() => import("../modules/users/UsersRolesPage").then((m) => ({ default: m.UsersRolesPage })));
+const NotificationsPage = lazy(() => import("../modules/ops/NotificationsPage").then((m) => ({ default: m.NotificationsPage })));
+const AuditPage = lazy(() => import("../modules/ops/AuditPage").then((m) => ({ default: m.AuditPage })));
+const OrganizationSettingsPage = lazy(() => import("../modules/organization/OrganizationSettingsPage").then((m) => ({ default: m.OrganizationSettingsPage })));
+const DeveloperPage = lazy(() => import("../modules/developer/DeveloperPage").then((m) => ({ default: m.DeveloperPage })));
+const AdsPage = lazy(() => import("../modules/ads/AdsPage").then((m) => ({ default: m.AdsPage })));
+const SecurityPage = lazy(() => import("../modules/security/SecurityPage").then((m) => ({ default: m.SecurityPage })));
+const PlatformPage = lazy(() => import("../modules/platform/PlatformPage").then((m) => ({ default: m.PlatformPage })));
+
+function withSuspense(node: ReactNode) {
+  return (
+    <Suspense fallback={<Skeleton active paragraph={{ rows: 6 }} className="p-2" />}>
+      {node}
+    </Suspense>
+  );
+}
 
 export const router = createBrowserRouter([
   { path: "/login", element: <LoginPage /> },
@@ -36,29 +47,29 @@ export const router = createBrowserRouter([
         element: <AppLayout />,
         children: [
           { index: true, element: <Navigate to="/dashboard" replace /> },
-          { path: "dashboard", element: <DashboardPage /> },
-          { path: "content", element: <ContentPage /> },
-          { path: "design", element: <LayoutsPage /> },
-          { path: "design/:layoutId", element: <DesignerPage /> },
-          { path: "playlists", element: <PlaylistsPage /> },
-          { path: "playlists/:playlistId", element: <PlaylistEditorPage /> },
-          { path: "campaigns", element: <CampaignsPage /> },
-          { path: "approvals", element: <ApprovalsPage /> },
-          { path: "schedules", element: <SchedulesPage /> },
-          { path: "deployments", element: <DeploymentsPage /> },
-          { path: "devices", element: <DevicesPage /> },
-          { path: "locations", element: <LocationsPage /> },
-          { path: "releases", element: <ReleasesPage /> },
-          { path: "monitoring", element: <MonitoringPage /> },
-          { path: "reports", element: <ReportsPage /> },
-          { path: "users", element: <UsersRolesPage /> },
-          { path: "notifications", element: <NotificationsPage /> },
-          { path: "audit", element: <AuditPage /> },
-          { path: "settings", element: <OrganizationSettingsPage /> },
-          { path: "developer", element: <DeveloperPage /> },
-          { path: "ads", element: <AdsPage /> },
-          { path: "security", element: <SecurityPage /> },
-          { path: "platform", element: <PlatformPage /> },
+          { path: "dashboard", element: withSuspense(<DashboardPage />) },
+          { path: "content", element: withSuspense(<ContentPage />) },
+          { path: "design", element: withSuspense(<LayoutsPage />) },
+          { path: "design/:layoutId", element: withSuspense(<DesignerPage />) },
+          { path: "playlists", element: withSuspense(<PlaylistsPage />) },
+          { path: "playlists/:playlistId", element: withSuspense(<PlaylistEditorPage />) },
+          { path: "campaigns", element: withSuspense(<CampaignsPage />) },
+          { path: "approvals", element: withSuspense(<ApprovalsPage />) },
+          { path: "schedules", element: withSuspense(<SchedulesPage />) },
+          { path: "deployments", element: withSuspense(<DeploymentsPage />) },
+          { path: "devices", element: withSuspense(<DevicesPage />) },
+          { path: "locations", element: withSuspense(<LocationsPage />) },
+          { path: "releases", element: withSuspense(<ReleasesPage />) },
+          { path: "monitoring", element: withSuspense(<MonitoringPage />) },
+          { path: "reports", element: withSuspense(<ReportsPage />) },
+          { path: "users", element: withSuspense(<UsersRolesPage />) },
+          { path: "notifications", element: withSuspense(<NotificationsPage />) },
+          { path: "audit", element: withSuspense(<AuditPage />) },
+          { path: "settings", element: withSuspense(<OrganizationSettingsPage />) },
+          { path: "developer", element: withSuspense(<DeveloperPage />) },
+          { path: "ads", element: withSuspense(<AdsPage />) },
+          { path: "security", element: withSuspense(<SecurityPage />) },
+          { path: "platform", element: withSuspense(<PlatformPage />) },
         ],
       },
     ],

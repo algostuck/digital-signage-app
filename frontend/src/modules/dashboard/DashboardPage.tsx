@@ -1,8 +1,19 @@
+import {
+  BellOutlined,
+  CloudUploadOutlined,
+  DesktopOutlined,
+  FolderOutlined,
+  RocketOutlined,
+} from "@ant-design/icons";
 import { useQuery } from "@tanstack/react-query";
-import { Link } from "react-router-dom";
-import { Spinner } from "../../components/ui/Spinner";
+import { Badge, Button, Card, Col, List, Row, Tag, Typography } from "antd";
+import { Link, useNavigate } from "react-router-dom";
+import { PageHeader } from "../../components/ui/PageHeader";
+import { StatCard } from "../../components/ui/StatCard";
+import { EmptyState, ErrorState, LoadingState } from "../../components/ui/states";
 import { StatusBadge } from "../../components/ui/StatusBadge";
 import { api } from "../../lib/api";
+import { GOLDEN_SPLIT } from "../../theme/tokens";
 import { timeAgo } from "../devices/types";
 
 interface Summary {
@@ -32,158 +43,157 @@ interface Summary {
 
 /** SCR-02 Dashboard: all critical health information at a glance. */
 export function DashboardPage() {
+  const navigate = useNavigate();
   const summaryQuery = useQuery({
     queryKey: ["monitoring-summary"],
     queryFn: () => api.get<Summary>("/monitoring/summary"),
     refetchInterval: 30_000,
   });
 
-  if (summaryQuery.isLoading) return <Spinner label="Loading dashboard…" />;
+  if (summaryQuery.isLoading) return <LoadingState rows={8} />;
   const data = summaryQuery.data?.data;
   if (!data) {
     return (
-      <p className="text-sm text-red-600" role="alert">
-        Failed to load dashboard.
-      </p>
+      <ErrorState
+        title="Unable to load the dashboard"
+        description="The monitoring service did not respond."
+        onRetry={() => summaryQuery.refetch()}
+      />
     );
   }
 
+  const deploymentsInProgress = data.deployments.publishing + data.deployments.partial;
+
   return (
     <div>
-      <div className="flex items-center justify-between">
-        <h1 className="text-xl font-semibold text-slate-900">Dashboard</h1>
-        {data.notifications_unread > 0 && (
-          <Link
-            to="/notifications"
-            className="rounded-full bg-amber-100 px-3 py-1 text-sm font-medium text-amber-800"
-          >
-            {data.notifications_unread} unread notification
-            {data.notifications_unread === 1 ? "" : "s"}
+      <PageHeader
+        title="Dashboard"
+        description="Platform health at a glance — devices, content, campaigns and publishing."
+        actions={
+          data.notifications_unread > 0 && (
+            <Badge count={data.notifications_unread} overflowCount={99}>
+              <Button icon={<BellOutlined />} onClick={() => navigate("/notifications")}>
+                Notifications
+              </Button>
+            </Badge>
+          )
+        }
+      />
+
+      <Row gutter={[16, 16]}>
+        <Col xs={24} sm={12} xl={6}>
+          <Link to="/devices">
+            <StatCard
+              label="Devices online"
+              icon={<DesktopOutlined />}
+              value={`${data.devices.online}/${data.devices.total}`}
+              valueColor={data.devices.offline > 0 ? "#D97706" : "#059669"}
+              context={`${data.devices.warning} warning · ${data.devices.offline} offline${
+                data.devices.pending ? ` · ${data.devices.pending} pending approval` : ""
+              }`}
+            />
           </Link>
-        )}
-      </div>
+        </Col>
+        <Col xs={24} sm={12} xl={6}>
+          <Link to="/content">
+            <StatCard
+              label="Content"
+              icon={<FolderOutlined />}
+              value={data.content.total}
+              context={`${data.content.published} published · ${data.content.draft} draft`}
+            />
+          </Link>
+        </Col>
+        <Col xs={24} sm={12} xl={6}>
+          <Link to="/campaigns">
+            <StatCard
+              label="Active campaigns"
+              icon={<RocketOutlined />}
+              value={data.campaigns.published}
+              valueColor={data.campaigns.pending_approval > 0 ? "#D97706" : undefined}
+              context={`${data.campaigns.pending_approval} awaiting approval · ${data.campaigns.draft} draft`}
+            />
+          </Link>
+        </Col>
+        <Col xs={24} sm={12} xl={6}>
+          <Link to="/deployments">
+            <StatCard
+              label="Deployments"
+              icon={<CloudUploadOutlined />}
+              value={deploymentsInProgress + data.deployments.published}
+              valueColor={data.deployments.failed > 0 ? "#DC2626" : undefined}
+              context={`${deploymentsInProgress} in progress · ${data.deployments.failed} failed`}
+            />
+          </Link>
+        </Col>
+      </Row>
 
-      <div className="mt-4 grid grid-cols-2 gap-4 lg:grid-cols-4">
-        <Card
-          title="Devices online"
-          value={`${data.devices.online}/${data.devices.total}`}
-          detail={`${data.devices.warning} warning · ${data.devices.offline} offline${
-            data.devices.pending ? ` · ${data.devices.pending} pending approval` : ""
-          }`}
-          to="/devices"
-          tone={data.devices.offline > 0 ? "warn" : "ok"}
-        />
-        <Card
-          title="Content"
-          value={String(data.content.total)}
-          detail={`${data.content.published} published · ${data.content.draft} draft`}
-          to="/content"
-        />
-        <Card
-          title="Active campaigns"
-          value={String(data.campaigns.published)}
-          detail={`${data.campaigns.pending_approval} awaiting approval · ${data.campaigns.draft} draft`}
-          to="/campaigns"
-          tone={data.campaigns.pending_approval > 0 ? "warn" : undefined}
-        />
-        <Card
-          title="Deployments"
-          value={String(
-            data.deployments.publishing + data.deployments.partial + data.deployments.published,
-          )}
-          detail={`${data.deployments.publishing + data.deployments.partial} in progress · ${
-            data.deployments.failed
-          } failed`}
-          to="/deployments"
-          tone={data.deployments.failed > 0 ? "bad" : undefined}
-        />
-      </div>
-
-      <div className="mt-6 grid grid-cols-1 gap-4 xl:grid-cols-2">
-        <section className="rounded-lg border border-slate-200 bg-white p-4">
-          <h2 className="text-sm font-semibold uppercase tracking-wide text-slate-400">
-            Recent deployments
-          </h2>
-          {data.recent_deployments.length === 0 ? (
-            <p className="mt-2 text-sm text-slate-500">Nothing published yet.</p>
-          ) : (
-            <ul className="mt-2 space-y-2">
-              {data.recent_deployments.map((deployment) => (
-                <li key={deployment.id} className="flex items-center gap-3 text-sm">
-                  <StatusBadge status={deployment.status} />
-                  <span className="font-medium text-slate-800">{deployment.campaign_name}</span>
-                  <span className="text-slate-500">
-                    v{deployment.version} · {deployment.acknowledged}/{deployment.total_devices}{" "}
-                    acked
-                    {deployment.failed > 0 && (
-                      <span className="text-red-600"> · {deployment.failed} failed</span>
-                    )}
-                  </span>
-                  <span className="ml-auto text-xs text-slate-400">
-                    {timeAgo(deployment.created_at)}
-                  </span>
-                </li>
-              ))}
-            </ul>
-          )}
-        </section>
-
-        <section className="rounded-lg border border-slate-200 bg-white p-4">
-          <h2 className="text-sm font-semibold uppercase tracking-wide text-slate-400">
-            Recent activity
-          </h2>
-          {data.recent_activity.length === 0 ? (
-            <p className="mt-2 text-sm text-slate-500">No activity recorded yet.</p>
-          ) : (
-            <ul className="mt-2 space-y-1.5">
-              {data.recent_activity.map((entry) => (
-                <li key={entry.id} className="flex items-center gap-2 text-sm">
-                  <span className="rounded bg-slate-100 px-1.5 py-0.5 font-mono text-xs text-slate-600">
-                    {entry.action}
-                  </span>
-                  <span className="text-slate-500">{entry.user_name ?? "system"}</span>
-                  <span className="ml-auto text-xs text-slate-400">
-                    {timeAgo(entry.created_at)}
-                  </span>
-                </li>
-              ))}
-            </ul>
-          )}
-        </section>
-      </div>
+      <Row gutter={[16, 16]} className="mt-4">
+        <Col xs={24} xl={GOLDEN_SPLIT.primary}>
+          <Card
+            title="Recent deployments"
+            size="small"
+            extra={<Link to="/deployments">View all</Link>}
+          >
+            {data.recent_deployments.length === 0 ? (
+              <EmptyState
+                title="Nothing published yet"
+                description="Publish a campaign to see its rollout here."
+              />
+            ) : (
+              <List
+                dataSource={data.recent_deployments}
+                renderItem={(deployment) => (
+                  <List.Item className="!px-0">
+                    <div className="flex w-full flex-wrap items-center gap-3">
+                      <StatusBadge status={deployment.status} />
+                      <Typography.Text strong>{deployment.campaign_name}</Typography.Text>
+                      <Typography.Text type="secondary">
+                        v{deployment.version} · {deployment.acknowledged}/
+                        {deployment.total_devices} acked
+                      </Typography.Text>
+                      {deployment.failed > 0 && (
+                        <Tag color="error" variant="filled">
+                          {deployment.failed} failed
+                        </Tag>
+                      )}
+                      <Typography.Text type="secondary" className="ml-auto text-xs">
+                        {timeAgo(deployment.created_at)}
+                      </Typography.Text>
+                    </div>
+                  </List.Item>
+                )}
+              />
+            )}
+          </Card>
+        </Col>
+        <Col xs={24} xl={GOLDEN_SPLIT.secondary}>
+          <Card title="Recent activity" size="small" extra={<Link to="/audit">Audit log</Link>}>
+            {data.recent_activity.length === 0 ? (
+              <EmptyState title="No activity recorded yet" />
+            ) : (
+              <List
+                dataSource={data.recent_activity}
+                renderItem={(entry) => (
+                  <List.Item className="!px-0 !py-2">
+                    <div className="flex w-full items-center gap-2">
+                      <Typography.Text code className="text-xs">
+                        {entry.action}
+                      </Typography.Text>
+                      <Typography.Text type="secondary" className="truncate text-sm">
+                        {entry.user_name ?? "system"}
+                      </Typography.Text>
+                      <Typography.Text type="secondary" className="ml-auto shrink-0 text-xs">
+                        {timeAgo(entry.created_at)}
+                      </Typography.Text>
+                    </div>
+                  </List.Item>
+                )}
+              />
+            )}
+          </Card>
+        </Col>
+      </Row>
     </div>
-  );
-}
-
-function Card({
-  title,
-  value,
-  detail,
-  to,
-  tone,
-}: {
-  title: string;
-  value: string;
-  detail: string;
-  to: string;
-  tone?: "ok" | "warn" | "bad";
-}) {
-  const accent =
-    tone === "ok"
-      ? "text-emerald-600"
-      : tone === "warn"
-        ? "text-amber-600"
-        : tone === "bad"
-          ? "text-red-600"
-          : "text-slate-900";
-  return (
-    <Link
-      to={to}
-      className="rounded-lg border border-slate-200 bg-white p-4 transition-shadow hover:shadow-md"
-    >
-      <p className="text-sm font-medium text-slate-500">{title}</p>
-      <p className={`mt-1 text-2xl font-semibold ${accent}`}>{value}</p>
-      <p className="mt-1 text-xs text-slate-500">{detail}</p>
-    </Link>
   );
 }

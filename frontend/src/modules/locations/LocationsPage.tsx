@@ -1,6 +1,29 @@
+import {
+  DeleteOutlined,
+  DragOutlined,
+  EditOutlined,
+  EnvironmentOutlined,
+  PlusOutlined,
+} from "@ant-design/icons";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useState } from "react";
-import { Spinner } from "../../components/ui/Spinner";
+import {
+  App,
+  Button,
+  Card,
+  Col,
+  Descriptions,
+  Flex,
+  Popconfirm,
+  Row,
+  Space,
+  Tag,
+  Tree,
+  Typography,
+  type TreeDataNode,
+} from "antd";
+import { useMemo, useState } from "react";
+import { PageHeader } from "../../components/ui/PageHeader";
+import { EmptyState, ErrorState, LoadingState } from "../../components/ui/states";
 import { StatusBadge } from "../../components/ui/StatusBadge";
 import { api, ApiError } from "../../lib/api";
 import { useAuth } from "../../lib/auth";
@@ -9,14 +32,31 @@ import { MoveLocationModal } from "./MoveLocationModal";
 import { TagEditor } from "./TagEditor";
 import type { LocationDetail, TreeEntry } from "./types";
 
+function toTreeData(entries: TreeEntry[]): TreeDataNode[] {
+  return entries.map(({ node, children }) => ({
+    key: node.id,
+    title: (
+      <span>
+        {node.name}
+        {node.type && (
+          <Typography.Text type="secondary" className="ml-2 text-xs">
+            {node.type.name}
+          </Typography.Text>
+        )}
+      </span>
+    ),
+    children: children.length > 0 ? toTreeData(children) : undefined,
+  }));
+}
+
 /** SCR-06 Location Tree + SCR-07 Location Details (master-detail). */
 export function LocationsPage() {
   const { hasPermission } = useAuth();
+  const { message } = App.useApp();
   const canManage = hasPermission("locations.manage");
   const queryClient = useQueryClient();
 
   const [selectedId, setSelectedId] = useState<string | null>(null);
-  const [collapsed, setCollapsed] = useState<Set<string>>(new Set());
   const [modal, setModal] = useState<
     | { kind: "create"; parentId: string | null; parentName: string | null }
     | { kind: "edit"; detail: LocationDetail }
@@ -45,153 +85,175 @@ export function LocationsPage() {
     onSuccess: () => {
       invalidate();
       setSelectedId(null);
+      message.success("Location archived");
     },
     onError: (err) =>
-      window.alert(err instanceof ApiError ? err.message : "Failed to archive location"),
+      message.error(err instanceof ApiError ? err.message : "Failed to archive location"),
   });
 
-  function toggleCollapse(id: string) {
-    setCollapsed((prev) => {
-      const next = new Set(prev);
-      if (next.has(id)) next.delete(id);
-      else next.add(id);
-      return next;
-    });
-  }
-
   const tree = treeQuery.data?.data ?? [];
+  const treeData = useMemo(() => toTreeData(tree), [tree]);
   const detail = detailQuery.data?.data ?? null;
 
   return (
     <div>
-      <div className="flex items-center justify-between">
-        <h1 className="text-xl font-semibold text-slate-900">Locations</h1>
-        {canManage && (
-          <button
-            type="button"
-            onClick={() => setModal({ kind: "create", parentId: null, parentName: null })}
-            className="rounded-md bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-700"
-          >
-            Add root location
-          </button>
-        )}
-      </div>
+      <PageHeader
+        title="Locations"
+        description="Organize your estate in a hierarchy — regions, cities, sites, zones."
+        actions={
+          canManage && (
+            <Button
+              type="primary"
+              icon={<PlusOutlined />}
+              onClick={() => setModal({ kind: "create", parentId: null, parentName: null })}
+            >
+              Add root location
+            </Button>
+          )
+        }
+      />
 
-      <div className="mt-4 grid grid-cols-1 gap-4 lg:grid-cols-[minmax(280px,1fr)_2fr]">
-        <div className="rounded-lg border border-slate-200 bg-white p-3">
-          {treeQuery.isLoading ? (
-            <Spinner label="Loading tree…" />
-          ) : treeQuery.isError ? (
-            <p className="p-3 text-sm text-red-600" role="alert">
-              Failed to load location tree.
-            </p>
-          ) : tree.length === 0 ? (
-            <p className="p-4 text-sm text-slate-500">
-              No locations yet. Create the first root node to start the hierarchy.
-            </p>
-          ) : (
-            <ul role="tree" aria-label="Location hierarchy">
-              {tree.map((entry) => (
-                <TreeRow
-                  key={entry.node.id}
-                  entry={entry}
-                  selectedId={selectedId}
-                  collapsed={collapsed}
-                  onSelect={setSelectedId}
-                  onToggle={toggleCollapse}
-                />
-              ))}
-            </ul>
-          )}
-        </div>
-
-        <div className="rounded-lg border border-slate-200 bg-white p-5">
-          {!selectedId ? (
-            <p className="p-4 text-sm text-slate-500">
-              Select a location to see its details.
-            </p>
-          ) : detailQuery.isLoading ? (
-            <Spinner label="Loading details…" />
-          ) : !detail ? (
-            <p className="p-4 text-sm text-red-600" role="alert">
-              Failed to load location details.
-            </p>
-          ) : (
-            <div>
-              <div className="flex flex-wrap items-start justify-between gap-3">
-                <div>
-                  <h2 className="text-lg font-semibold text-slate-900">
-                    {detail.name}
-                    {detail.code && (
-                      <span className="ml-2 font-mono text-sm text-slate-400">{detail.code}</span>
-                    )}
-                  </h2>
-                  <p className="mt-0.5 text-sm text-slate-500">
-                    {detail.type?.name ?? "Untyped"} · depth {detail.depth} ·{" "}
-                    <StatusBadge status={detail.status} />
-                  </p>
-                </div>
-                {canManage && (
-                  <div className="flex flex-wrap gap-2">
-                    <button
-                      type="button"
+      <Row gutter={[16, 16]}>
+        <Col xs={24} lg={9}>
+          <Card size="small" title="Hierarchy">
+            {treeQuery.isLoading ? (
+              <LoadingState rows={5} />
+            ) : treeQuery.isError ? (
+              <ErrorState
+                title="Unable to load the location tree"
+                onRetry={() => treeQuery.refetch()}
+              />
+            ) : tree.length === 0 ? (
+              <EmptyState
+                title="No locations yet"
+                description="Create the first root node to start the hierarchy."
+                action={
+                  canManage && (
+                    <Button
+                      type="primary"
+                      icon={<PlusOutlined />}
                       onClick={() =>
-                        setModal({ kind: "create", parentId: detail.id, parentName: detail.name })
+                        setModal({ kind: "create", parentId: null, parentName: null })
                       }
-                      className="rounded-md bg-slate-900 px-3 py-1.5 text-sm font-medium text-white"
                     >
-                      Add child
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setModal({ kind: "edit", detail })}
-                      className="rounded-md border border-slate-300 px-3 py-1.5 text-sm font-medium text-slate-600"
-                    >
-                      Edit
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setModal({ kind: "move", detail })}
-                      className="rounded-md border border-slate-300 px-3 py-1.5 text-sm font-medium text-slate-600"
-                    >
-                      Move
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        if (window.confirm(`Archive "${detail.name}"?`)) archive.mutate(detail.id);
-                      }}
-                      className="rounded-md border border-red-200 px-3 py-1.5 text-sm font-medium text-red-600"
-                    >
-                      Archive
-                    </button>
-                  </div>
-                )}
-              </div>
+                      Add root location
+                    </Button>
+                  )
+                }
+              />
+            ) : (
+              <Tree
+                treeData={treeData}
+                defaultExpandAll
+                selectedKeys={selectedId ? [selectedId] : []}
+                onSelect={(keys) => setSelectedId((keys[0] as string) ?? null)}
+                showLine={{ showLeafIcon: false }}
+                aria-label="Location hierarchy"
+              />
+            )}
+          </Card>
+        </Col>
 
-              <dl className="mt-5 grid grid-cols-1 gap-x-6 gap-y-3 text-sm sm:grid-cols-2">
-                <Item label="Effective timezone" value={detail.effective_timezone} />
-                <Item label="Own timezone" value={detail.timezone ?? "inherited"} />
-                <Item label="Address" value={detail.address ?? "—"} />
-                <Item
-                  label="Coordinates"
-                  value={
-                    detail.latitude != null && detail.longitude != null
-                      ? `${detail.latitude}, ${detail.longitude}`
-                      : "—"
-                  }
+        <Col xs={24} lg={15}>
+          <Card size="small" title="Details">
+            {!selectedId ? (
+              <EmptyState
+                title="Select a location"
+                description="Pick a node in the hierarchy to see its details."
+              />
+            ) : detailQuery.isLoading ? (
+              <LoadingState rows={5} />
+            ) : !detail ? (
+              <ErrorState
+                title="Unable to load location details"
+                onRetry={() => detailQuery.refetch()}
+              />
+            ) : (
+              <div>
+                <Flex wrap justify="space-between" align="flex-start" gap="small">
+                  <Space orientation="vertical" size={0}>
+                    <Space align="center">
+                      <EnvironmentOutlined className="text-slate-400" />
+                      <Typography.Title level={5} className="!mb-0">
+                        {detail.name}
+                      </Typography.Title>
+                      {detail.code && <Tag variant="filled">{detail.code}</Tag>}
+                    </Space>
+                    <Space size="small">
+                      <Typography.Text type="secondary">
+                        {detail.type?.name ?? "Untyped"} · depth {detail.depth}
+                      </Typography.Text>
+                      <StatusBadge status={detail.status} />
+                    </Space>
+                  </Space>
+                  {canManage && (
+                    <Space wrap>
+                      <Button
+                        type="primary"
+                        icon={<PlusOutlined />}
+                        onClick={() =>
+                          setModal({
+                            kind: "create",
+                            parentId: detail.id,
+                            parentName: detail.name,
+                          })
+                        }
+                      >
+                        Add child
+                      </Button>
+                      <Button
+                        icon={<EditOutlined />}
+                        onClick={() => setModal({ kind: "edit", detail })}
+                      >
+                        Edit
+                      </Button>
+                      <Button
+                        icon={<DragOutlined />}
+                        onClick={() => setModal({ kind: "move", detail })}
+                      >
+                        Move
+                      </Button>
+                      <Popconfirm
+                        title={`Archive "${detail.name}"?`}
+                        onConfirm={() => archive.mutate(detail.id)}
+                        okButtonProps={{ danger: true }}
+                      >
+                        <Button danger icon={<DeleteOutlined />}>
+                          Archive
+                        </Button>
+                      </Popconfirm>
+                    </Space>
+                  )}
+                </Flex>
+
+                <Descriptions
+                  className="mt-5"
+                  column={{ xs: 1, sm: 2 }}
+                  size="small"
+                  items={[
+                    { label: "Effective timezone", children: detail.effective_timezone },
+                    { label: "Own timezone", children: detail.timezone ?? "inherited" },
+                    { label: "Address", children: detail.address ?? "—" },
+                    {
+                      label: "Coordinates",
+                      children:
+                        detail.latitude != null && detail.longitude != null
+                          ? `${detail.latitude}, ${detail.longitude}`
+                          : "—",
+                    },
+                    { label: "Direct children", children: String(detail.children_count) },
+                    { label: "Total descendants", children: String(detail.descendants_count) },
+                  ]}
                 />
-                <Item label="Direct children" value={String(detail.children_count)} />
-                <Item label="Total descendants" value={String(detail.descendants_count)} />
-              </dl>
 
-              <div className="mt-6">
-                <TagEditor detail={detail} canManage={canManage} onSaved={invalidate} />
+                <div className="mt-6">
+                  <TagEditor detail={detail} canManage={canManage} onSaved={invalidate} />
+                </div>
               </div>
-            </div>
-          )}
-        </div>
-      </div>
+            )}
+          </Card>
+        </Col>
+      </Row>
 
       {modal?.kind === "create" && (
         <LocationFormModal
@@ -227,82 +289,5 @@ export function LocationsPage() {
         />
       )}
     </div>
-  );
-}
-
-function Item({ label, value }: { label: string; value: string }) {
-  return (
-    <div>
-      <dt className="text-xs font-medium uppercase tracking-wide text-slate-400">{label}</dt>
-      <dd className="mt-0.5 text-slate-700">{value}</dd>
-    </div>
-  );
-}
-
-function TreeRow({
-  entry,
-  selectedId,
-  collapsed,
-  onSelect,
-  onToggle,
-}: {
-  entry: TreeEntry;
-  selectedId: string | null;
-  collapsed: Set<string>;
-  onSelect: (id: string) => void;
-  onToggle: (id: string) => void;
-}) {
-  const { node, children } = entry;
-  const isCollapsed = collapsed.has(node.id);
-  const isSelected = node.id === selectedId;
-
-  return (
-    <li role="treeitem" aria-expanded={children.length ? !isCollapsed : undefined}>
-      <div
-        className={`flex items-center gap-1 rounded-md px-1 py-1 ${
-          isSelected ? "bg-slate-900 text-white" : "hover:bg-slate-100 text-slate-700"
-        }`}
-        style={{ marginLeft: node.depth * 14 }}
-      >
-        {children.length > 0 ? (
-          <button
-            type="button"
-            aria-label={isCollapsed ? "Expand" : "Collapse"}
-            onClick={() => onToggle(node.id)}
-            className={`w-5 text-xs ${isSelected ? "text-slate-300" : "text-slate-400"}`}
-          >
-            {isCollapsed ? "▸" : "▾"}
-          </button>
-        ) : (
-          <span className="w-5" />
-        )}
-        <button
-          type="button"
-          onClick={() => onSelect(node.id)}
-          className="flex-1 truncate px-1 py-0.5 text-left text-sm"
-        >
-          {node.name}
-          {node.type && (
-            <span className={`ml-2 text-xs ${isSelected ? "text-slate-300" : "text-slate-400"}`}>
-              {node.type.name}
-            </span>
-          )}
-        </button>
-      </div>
-      {!isCollapsed && children.length > 0 && (
-        <ul role="group">
-          {children.map((child) => (
-            <TreeRow
-              key={child.node.id}
-              entry={child}
-              selectedId={selectedId}
-              collapsed={collapsed}
-              onSelect={onSelect}
-              onToggle={onToggle}
-            />
-          ))}
-        </ul>
-      )}
-    </li>
   );
 }

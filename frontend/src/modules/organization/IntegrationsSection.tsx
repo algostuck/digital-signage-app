@@ -1,6 +1,22 @@
+import { PlusOutlined } from "@ant-design/icons";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import {
+  Alert,
+  Button,
+  Card,
+  Flex,
+  Form,
+  Input,
+  InputNumber,
+  List,
+  Modal,
+  Popconfirm,
+  Space,
+  Tag,
+  Typography,
+} from "antd";
 import { useState } from "react";
-import { Modal } from "../../components/ui/Modal";
+import { EmptyState } from "../../components/ui/states";
 import { StatusBadge } from "../../components/ui/StatusBadge";
 import { api, ApiError } from "../../lib/api";
 import { useAuth } from "../../lib/auth";
@@ -48,19 +64,25 @@ export function IntegrationsSection() {
   const canKeys = hasPermission("api_keys.manage");
   if (!canWebhooks && !canKeys) return null;
   return (
-    <div className="mt-8 space-y-8">
+    <Space orientation="vertical" size="middle" className="w-full">
       {canWebhooks && <WebhooksPanel />}
       {canKeys && <ApiKeysPanel />}
-    </div>
+    </Space>
   );
 }
 
 function SecretReveal({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded-md border border-amber-300 bg-amber-50 px-3 py-2 text-sm">
-      <p className="font-medium text-amber-800">{label} — shown only once, copy it now:</p>
-      <code className="mt-1 block break-all font-mono text-xs text-slate-800">{value}</code>
-    </div>
+    <Alert
+      type="warning"
+      showIcon
+      message={`${label} — shown only once, copy it now:`}
+      description={
+        <Typography.Text code copyable className="break-all">
+          {value}
+        </Typography.Text>
+      }
+    />
   );
 }
 
@@ -102,84 +124,72 @@ function WebhooksPanel() {
   const webhooks = webhooksQuery.data?.data ?? [];
 
   return (
-    <section>
-      <div className="flex items-center justify-between">
-        <h2 className="text-sm font-semibold uppercase tracking-wide text-slate-400">
-          Webhook integrations
-        </h2>
-        <button
-          type="button"
-          onClick={() => setCreateOpen(true)}
-          className="rounded-md bg-slate-900 px-3 py-1.5 text-sm font-medium text-white"
-        >
+    <Card
+      size="small"
+      title="Webhook integrations"
+      loading={webhooksQuery.isLoading}
+      extra={
+        <Button type="primary" icon={<PlusOutlined />} onClick={() => setCreateOpen(true)}>
           New webhook
-        </button>
-      </div>
-      {error && (
-        <p className="mt-2 rounded-md bg-red-50 px-3 py-2 text-sm text-red-700" role="alert">
-          {error}
-        </p>
-      )}
-      {revealed && <div className="mt-2"><SecretReveal label="Signing secret" value={revealed} /></div>}
-      {webhooks.length === 0 ? (
-        <p className="mt-2 rounded-lg border border-dashed border-slate-300 bg-white p-6 text-center text-sm text-slate-500">
-          No webhook subscriptions. Deliveries are signed with HMAC-SHA256 and
-          retried with backoff into a replayable dead-letter state.
-        </p>
-      ) : (
-        <ul className="mt-2 space-y-2">
-          {webhooks.map((webhook) => (
-            <li key={webhook.id} className="rounded-lg border border-slate-200 bg-white px-4 py-3 text-sm">
-              <div className="flex flex-wrap items-center gap-3">
-                <code className="font-mono text-xs text-slate-700">{webhook.url}</code>
-                <span className="text-xs text-slate-500">
-                  {webhook.event_types_json.join(", ")}
-                </span>
-                {!webhook.active && (
-                  <span className="rounded bg-slate-200 px-1.5 py-0.5 text-xs text-slate-500">
-                    inactive
-                  </span>
-                )}
-                <span className="ml-auto space-x-3 text-xs">
-                  <button
-                    type="button"
-                    onClick={() => setExpanded((v) => (v === webhook.id ? null : webhook.id))}
-                    className="font-medium text-slate-600 underline"
-                  >
-                    Deliveries
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => rotate.mutate(webhook.id)}
-                    className="font-medium text-slate-600 underline"
-                  >
-                    Rotate secret
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => toggle.mutate({ id: webhook.id, active: !webhook.active })}
-                    className="font-medium text-slate-600 underline"
-                  >
-                    {webhook.active ? "Disable" : "Enable"}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      if (window.confirm("Delete this webhook subscription?")) {
-                        remove.mutate(webhook.id);
-                      }
-                    }}
-                    className="font-medium text-red-600 underline"
-                  >
-                    Delete
-                  </button>
-                </span>
-              </div>
-              {expanded === webhook.id && <WebhookDeliveries webhookId={webhook.id} />}
-            </li>
-          ))}
-        </ul>
-      )}
+        </Button>
+      }
+    >
+      <Space orientation="vertical" size="small" className="w-full">
+        {error && <Alert type="error" message={error} showIcon role="alert" />}
+        {revealed && <SecretReveal label="Signing secret" value={revealed} />}
+        {webhooks.length === 0 ? (
+          <EmptyState
+            title="No webhook subscriptions"
+            description="Deliveries are signed with HMAC-SHA256 and retried with backoff into a replayable dead-letter state."
+          />
+        ) : (
+          <List
+            size="small"
+            dataSource={webhooks}
+            renderItem={(webhook) => (
+              <List.Item className="!block">
+                <Flex wrap align="center" gap="small">
+                  <Typography.Text code>{webhook.url}</Typography.Text>
+                  <Typography.Text type="secondary" className="text-xs">
+                    {webhook.event_types_json.join(", ")}
+                  </Typography.Text>
+                  {!webhook.active && <Tag variant="filled">inactive</Tag>}
+                  <Space size="small" className="ms-auto">
+                    <Button
+                      size="small"
+                      type="link"
+                      onClick={() => setExpanded((v) => (v === webhook.id ? null : webhook.id))}
+                    >
+                      Deliveries
+                    </Button>
+                    <Button size="small" type="link" onClick={() => rotate.mutate(webhook.id)}>
+                      Rotate secret
+                    </Button>
+                    <Button
+                      size="small"
+                      type="link"
+                      onClick={() => toggle.mutate({ id: webhook.id, active: !webhook.active })}
+                    >
+                      {webhook.active ? "Disable" : "Enable"}
+                    </Button>
+                    <Popconfirm
+                      title="Delete this webhook subscription?"
+                      okText="Delete"
+                      okButtonProps={{ danger: true }}
+                      onConfirm={() => remove.mutate(webhook.id)}
+                    >
+                      <Button size="small" type="link" danger>
+                        Delete
+                      </Button>
+                    </Popconfirm>
+                  </Space>
+                </Flex>
+                {expanded === webhook.id && <WebhookDeliveries webhookId={webhook.id} />}
+              </List.Item>
+            )}
+          />
+        )}
+      </Space>
       {createOpen && (
         <CreateWebhookModal
           onClose={() => setCreateOpen(false)}
@@ -190,7 +200,7 @@ function WebhooksPanel() {
           }}
         />
       )}
-    </section>
+    </Card>
   );
 }
 
@@ -208,33 +218,40 @@ function WebhookDeliveries({ webhookId }: { webhookId: string }) {
   });
   const rows = deliveriesQuery.data?.data ?? [];
   return rows.length === 0 ? (
-    <p className="mt-2 border-t border-slate-100 pt-2 text-xs text-slate-400">
+    <Typography.Paragraph type="secondary" className="!mb-0 mt-2 text-xs">
       No deliveries yet.
-    </p>
+    </Typography.Paragraph>
   ) : (
-    <ul className="mt-2 space-y-1 border-t border-slate-100 pt-2 text-xs text-slate-600">
-      {rows.map((row) => (
-        <li key={row.id} className="flex flex-wrap items-center gap-2">
-          <StatusBadge status={row.state} />
-          <span className="font-mono">{row.event_type}</span>
-          <span className="text-slate-400">
-            attempt {row.attempt_no}
-            {row.response_code != null && ` · HTTP ${row.response_code}`} ·{" "}
-            {timeAgo(row.created_at)}
-          </span>
-          {row.last_error && <span className="text-red-600">{row.last_error}</span>}
-          {(row.state === "dead" || row.state === "failed") && (
-            <button
-              type="button"
-              onClick={() => replay.mutate(row.id)}
-              className="font-medium text-slate-600 underline"
-            >
-              Replay
-            </button>
-          )}
-        </li>
-      ))}
-    </ul>
+    <List
+      size="small"
+      className="mt-2"
+      dataSource={rows}
+      renderItem={(row) => (
+        <List.Item className="!py-1">
+          <Flex wrap align="center" gap="small">
+            <StatusBadge status={row.state} />
+            <Typography.Text code className="text-xs">
+              {row.event_type}
+            </Typography.Text>
+            <Typography.Text type="secondary" className="text-xs">
+              attempt {row.attempt_no}
+              {row.response_code != null && ` · HTTP ${row.response_code}`} ·{" "}
+              {timeAgo(row.created_at)}
+            </Typography.Text>
+            {row.last_error && (
+              <Typography.Text type="danger" className="text-xs">
+                {row.last_error}
+              </Typography.Text>
+            )}
+            {(row.state === "dead" || row.state === "failed") && (
+              <Button size="small" type="link" onClick={() => replay.mutate(row.id)}>
+                Replay
+              </Button>
+            )}
+          </Flex>
+        </List.Item>
+      )}
+    />
   );
 }
 
@@ -245,8 +262,7 @@ function CreateWebhookModal({
   onClose: () => void;
   onCreated: (secret: string | null) => void;
 }) {
-  const [url, setUrl] = useState("");
-  const [description, setDescription] = useState("");
+  const [form] = Form.useForm<{ url: string; description?: string }>();
   const [events, setEvents] = useState<string[]>(["*"]);
   const [error, setError] = useState<string | null>(null);
 
@@ -256,10 +272,10 @@ function CreateWebhookModal({
   });
 
   const create = useMutation({
-    mutationFn: () =>
+    mutationFn: (values: { url: string; description?: string }) =>
       api.post<Webhook>("/webhooks", {
-        url,
-        description: description || null,
+        url: values.url,
+        description: values.description || null,
         event_types_json: events,
       }),
     onSuccess: (envelope) => onCreated(envelope.data!.secret ?? null),
@@ -276,74 +292,45 @@ function CreateWebhookModal({
   }
 
   return (
-    <Modal title="New webhook subscription" open onClose={onClose}>
-      <div className="space-y-4">
-        <div>
-          <label htmlFor="wh-url" className="block text-sm font-medium text-slate-700">
-            Endpoint URL
-          </label>
-          <input
-            id="wh-url"
-            value={url}
-            onChange={(e) => setUrl(e.target.value)}
-            placeholder="https://hooks.company.com/signage"
-            className="mt-1 block w-full rounded-md border border-slate-300 px-3 py-2 text-sm"
-          />
-        </div>
-        <div>
-          <label htmlFor="wh-desc" className="block text-sm font-medium text-slate-700">
-            Description
-          </label>
-          <input
-            id="wh-desc"
-            value={description}
-            onChange={(e) => setDescription(e.target.value)}
-            className="mt-1 block w-full rounded-md border border-slate-300 px-3 py-2 text-sm"
-          />
-        </div>
-        <div>
-          <span className="block text-sm font-medium text-slate-700">Events</span>
-          <div className="mt-1 flex flex-wrap gap-1">
+    <Modal
+      title="New webhook subscription"
+      open
+      onCancel={onClose}
+      okText="Create webhook"
+      onOk={() => form.submit()}
+      confirmLoading={create.isPending}
+      okButtonProps={{ disabled: events.length === 0 }}
+    >
+      <Form
+        form={form}
+        layout="vertical"
+        onFinish={(values) => create.mutate(values)}
+      >
+        <Form.Item
+          name="url"
+          label="Endpoint URL"
+          rules={[{ required: true, message: "Endpoint URL is required" }]}
+        >
+          <Input placeholder="https://hooks.company.com/signage" />
+        </Form.Item>
+        <Form.Item name="description" label="Description">
+          <Input />
+        </Form.Item>
+        <Form.Item label="Events">
+          <Flex wrap gap={4}>
             {(eventsQuery.data?.data ?? []).map((event) => (
-              <button
+              <Tag.CheckableTag
                 key={event.event_type}
-                type="button"
-                onClick={() => toggleEvent(event.event_type)}
-                aria-pressed={events.includes(event.event_type)}
-                className={`rounded-md px-2 py-1 text-xs font-medium ${
-                  events.includes(event.event_type)
-                    ? "bg-slate-900 text-white"
-                    : "border border-slate-300 text-slate-600"
-                }`}
+                checked={events.includes(event.event_type)}
+                onChange={() => toggleEvent(event.event_type)}
               >
                 {event.event_type}
-              </button>
+              </Tag.CheckableTag>
             ))}
-          </div>
-        </div>
-        {error && (
-          <p className="rounded-md bg-red-50 px-3 py-2 text-sm text-red-700" role="alert">
-            {error}
-          </p>
-        )}
-        <div className="flex justify-end gap-2">
-          <button
-            type="button"
-            onClick={onClose}
-            className="rounded-md border border-slate-300 px-4 py-2 text-sm font-medium text-slate-600"
-          >
-            Cancel
-          </button>
-          <button
-            type="button"
-            disabled={create.isPending || !url || events.length === 0}
-            onClick={() => create.mutate()}
-            className="rounded-md bg-slate-900 px-4 py-2 text-sm font-medium text-white disabled:opacity-50"
-          >
-            {create.isPending ? "Creating…" : "Create webhook"}
-          </button>
-        </div>
-      </div>
+          </Flex>
+        </Form.Item>
+        {error && <Alert type="error" message={error} showIcon role="alert" />}
+      </Form>
     </Modal>
   );
 }
@@ -381,68 +368,68 @@ function ApiKeysPanel() {
   const keys = keysQuery.data?.data ?? [];
 
   return (
-    <section>
-      <div className="flex items-center justify-between">
-        <h2 className="text-sm font-semibold uppercase tracking-wide text-slate-400">
-          API keys
-        </h2>
-        <button
-          type="button"
-          onClick={() => setCreateOpen(true)}
-          className="rounded-md bg-slate-900 px-3 py-1.5 text-sm font-medium text-white"
-        >
+    <Card
+      size="small"
+      title="API keys"
+      loading={keysQuery.isLoading}
+      extra={
+        <Button type="primary" icon={<PlusOutlined />} onClick={() => setCreateOpen(true)}>
           New API key
-        </button>
-      </div>
-      {error && (
-        <p className="mt-2 rounded-md bg-red-50 px-3 py-2 text-sm text-red-700" role="alert">
-          {error}
-        </p>
-      )}
-      {revealed && <div className="mt-2"><SecretReveal label="API key" value={revealed} /></div>}
-      {keys.length === 0 ? (
-        <p className="mt-2 rounded-lg border border-dashed border-slate-300 bg-white p-6 text-center text-sm text-slate-500">
-          No API keys. Keys are scoped, expirable, revocable — and shown only once.
-        </p>
-      ) : (
-        <ul className="mt-2 space-y-2">
-          {keys.map((key) => (
-            <li
-              key={key.id}
-              className="flex flex-wrap items-center gap-3 rounded-lg border border-slate-200 bg-white px-4 py-2.5 text-sm"
-            >
-              <span className="font-medium text-slate-800">{key.name}</span>
-              <code className="font-mono text-xs text-slate-500">{key.prefix}…</code>
-              <span className="text-xs text-slate-500">{key.scopes_json.join(", ")}</span>
-              {key.revoked_at ? (
-                <span className="rounded bg-red-50 px-1.5 py-0.5 text-xs text-red-700">
-                  revoked
-                </span>
-              ) : key.expires_at ? (
-                <span className="text-xs text-slate-400">
-                  expires {new Date(key.expires_at).toLocaleDateString()}
-                </span>
-              ) : null}
-              <span className="text-xs text-slate-400">
-                {key.last_used_at ? `used ${timeAgo(key.last_used_at)}` : "never used"}
-              </span>
-              {!key.revoked_at && (
-                <button
-                  type="button"
-                  onClick={() => {
-                    if (window.confirm(`Revoke API key "${key.name}"?`)) {
-                      revoke.mutate(key.id);
-                    }
-                  }}
-                  className="ml-auto text-xs font-medium text-red-600 underline"
-                >
-                  Revoke
-                </button>
-              )}
-            </li>
-          ))}
-        </ul>
-      )}
+        </Button>
+      }
+    >
+      <Space orientation="vertical" size="small" className="w-full">
+        {error && <Alert type="error" message={error} showIcon role="alert" />}
+        {revealed && <SecretReveal label="API key" value={revealed} />}
+        {keys.length === 0 ? (
+          <EmptyState
+            title="No API keys"
+            description="Keys are scoped, expirable, revocable — and shown only once."
+          />
+        ) : (
+          <List
+            size="small"
+            dataSource={keys}
+            renderItem={(key) => (
+              <List.Item>
+                <Flex wrap align="center" gap="small" className="w-full">
+                  <Typography.Text strong>{key.name}</Typography.Text>
+                  <Typography.Text code className="text-xs">
+                    {key.prefix}…
+                  </Typography.Text>
+                  <Typography.Text type="secondary" className="text-xs">
+                    {key.scopes_json.join(", ")}
+                  </Typography.Text>
+                  {key.revoked_at ? (
+                    <Tag color="error" variant="filled">
+                      revoked
+                    </Tag>
+                  ) : key.expires_at ? (
+                    <Typography.Text type="secondary" className="text-xs">
+                      expires {new Date(key.expires_at).toLocaleDateString()}
+                    </Typography.Text>
+                  ) : null}
+                  <Typography.Text type="secondary" className="text-xs">
+                    {key.last_used_at ? `used ${timeAgo(key.last_used_at)}` : "never used"}
+                  </Typography.Text>
+                  {!key.revoked_at && (
+                    <Popconfirm
+                      title={`Revoke API key "${key.name}"?`}
+                      okText="Revoke"
+                      okButtonProps={{ danger: true }}
+                      onConfirm={() => revoke.mutate(key.id)}
+                    >
+                      <Button size="small" type="link" danger className="ms-auto">
+                        Revoke
+                      </Button>
+                    </Popconfirm>
+                  )}
+                </Flex>
+              </List.Item>
+            )}
+          />
+        )}
+      </Space>
       {createOpen && (
         <CreateApiKeyModal
           onClose={() => setCreateOpen(false)}
@@ -453,7 +440,7 @@ function ApiKeysPanel() {
           }}
         />
       )}
-    </section>
+    </Card>
   );
 }
 
@@ -464,18 +451,17 @@ function CreateApiKeyModal({
   onClose: () => void;
   onCreated: (raw: string | null) => void;
 }) {
-  const [name, setName] = useState("");
+  const [form] = Form.useForm<{ name: string; expires_days?: number | null }>();
   const [scopes, setScopes] = useState<string[]>(["devices.view"]);
-  const [expiresDays, setExpiresDays] = useState("");
   const [error, setError] = useState<string | null>(null);
 
   const create = useMutation({
-    mutationFn: () =>
+    mutationFn: (values: { name: string; expires_days?: number | null }) =>
       api.post<ApiKeyRow>("/api-keys", {
-        name,
+        name: values.name,
         scopes,
-        expires_at: expiresDays
-          ? new Date(Date.now() + Number(expiresDays) * 86400_000).toISOString()
+        expires_at: values.expires_days
+          ? new Date(Date.now() + Number(values.expires_days) * 86400_000).toISOString()
           : null,
       }),
     onSuccess: (envelope) => onCreated(envelope.data!.key ?? null),
@@ -490,76 +476,41 @@ function CreateApiKeyModal({
   }
 
   return (
-    <Modal title="New API key" open onClose={onClose}>
-      <div className="space-y-4">
-        <div>
-          <label htmlFor="key-name" className="block text-sm font-medium text-slate-700">
-            Name
-          </label>
-          <input
-            id="key-name"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            placeholder="Reporting bot"
-            className="mt-1 block w-full rounded-md border border-slate-300 px-3 py-2 text-sm"
-          />
-        </div>
-        <div>
-          <span className="block text-sm font-medium text-slate-700">Scopes</span>
-          <div className="mt-1 flex flex-wrap gap-1">
+    <Modal
+      title="New API key"
+      open
+      onCancel={onClose}
+      okText="Create key"
+      onOk={() => form.submit()}
+      confirmLoading={create.isPending}
+      okButtonProps={{ disabled: scopes.length === 0 }}
+    >
+      <Form form={form} layout="vertical" onFinish={(values) => create.mutate(values)}>
+        <Form.Item
+          name="name"
+          label="Name"
+          rules={[{ required: true, message: "Name is required" }]}
+        >
+          <Input placeholder="Reporting bot" />
+        </Form.Item>
+        <Form.Item label="Scopes">
+          <Flex wrap gap={4}>
             {SCOPE_OPTIONS.map((scope) => (
-              <button
+              <Tag.CheckableTag
                 key={scope}
-                type="button"
-                onClick={() => toggleScope(scope)}
-                aria-pressed={scopes.includes(scope)}
-                className={`rounded-md px-2 py-1 text-xs font-medium ${
-                  scopes.includes(scope)
-                    ? "bg-slate-900 text-white"
-                    : "border border-slate-300 text-slate-600"
-                }`}
+                checked={scopes.includes(scope)}
+                onChange={() => toggleScope(scope)}
               >
                 {scope}
-              </button>
+              </Tag.CheckableTag>
             ))}
-          </div>
-        </div>
-        <div>
-          <label htmlFor="key-expiry" className="block text-sm font-medium text-slate-700">
-            Expires after (days, empty = never)
-          </label>
-          <input
-            id="key-expiry"
-            type="number"
-            min={1}
-            value={expiresDays}
-            onChange={(e) => setExpiresDays(e.target.value)}
-            className="mt-1 w-40 rounded-md border border-slate-300 px-3 py-2 text-sm"
-          />
-        </div>
-        {error && (
-          <p className="rounded-md bg-red-50 px-3 py-2 text-sm text-red-700" role="alert">
-            {error}
-          </p>
-        )}
-        <div className="flex justify-end gap-2">
-          <button
-            type="button"
-            onClick={onClose}
-            className="rounded-md border border-slate-300 px-4 py-2 text-sm font-medium text-slate-600"
-          >
-            Cancel
-          </button>
-          <button
-            type="button"
-            disabled={create.isPending || !name || scopes.length === 0}
-            onClick={() => create.mutate()}
-            className="rounded-md bg-slate-900 px-4 py-2 text-sm font-medium text-white disabled:opacity-50"
-          >
-            {create.isPending ? "Creating…" : "Create key"}
-          </button>
-        </div>
-      </div>
+          </Flex>
+        </Form.Item>
+        <Form.Item name="expires_days" label="Expires after (days, empty = never)">
+          <InputNumber min={1} className="w-44" />
+        </Form.Item>
+        {error && <Alert type="error" message={error} showIcon role="alert" />}
+      </Form>
     </Modal>
   );
 }

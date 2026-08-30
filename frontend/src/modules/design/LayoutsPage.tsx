@@ -1,9 +1,23 @@
+import { AppstoreOutlined, PlusOutlined } from "@ant-design/icons";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useState, type FormEvent } from "react";
+import {
+  Alert,
+  Button,
+  Card,
+  Col,
+  Flex,
+  Form,
+  Input,
+  Modal,
+  Row,
+  Select,
+  Tabs,
+  Typography,
+} from "antd";
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { FormField } from "../../components/ui/FormField";
-import { Modal } from "../../components/ui/Modal";
-import { Spinner } from "../../components/ui/Spinner";
+import { PageHeader } from "../../components/ui/PageHeader";
+import { EmptyState, LoadingState } from "../../components/ui/states";
 import { StatusBadge } from "../../components/ui/StatusBadge";
 import { api, ApiError } from "../../lib/api";
 import { useAuth } from "../../lib/auth";
@@ -12,48 +26,26 @@ import { TemplatesTab } from "./TemplatesTab";
 import { WidgetsTab } from "./WidgetsTab";
 import type { LayoutDetail, LayoutSummary, Template } from "./types";
 
-const TABS = [
-  { key: "layouts", label: "Layouts" },
-  { key: "templates", label: "Templates" },
-  { key: "widgets", label: "Widgets" },
-  { key: "ai", label: "AI Studio" },
-] as const;
-
 /** Design studio: SCR-15 layouts + P2-06 templates + P2-08 widgets. */
 export function LayoutsPage() {
   const [tab, setTab] = useState<string>("layouts");
 
   return (
     <div>
-      <h1 className="text-xl font-semibold text-slate-900">Design</h1>
-      <div className="mt-4 border-b border-slate-200" role="tablist">
-        {TABS.map((t) => (
-          <button
-            key={t.key}
-            role="tab"
-            aria-selected={tab === t.key}
-            onClick={() => setTab(t.key)}
-            className={`-mb-px border-b-2 px-4 py-2 text-sm font-medium ${
-              tab === t.key
-                ? "border-slate-900 text-slate-900"
-                : "border-transparent text-slate-500 hover:text-slate-700"
-            }`}
-          >
-            {t.label}
-          </button>
-        ))}
-      </div>
-      <div className="mt-4">
-        {tab === "layouts" ? (
-          <LayoutsTab />
-        ) : tab === "templates" ? (
-          <TemplatesTab />
-        ) : tab === "widgets" ? (
-          <WidgetsTab />
-        ) : (
-          <AiStudioTab />
-        )}
-      </div>
+      <PageHeader
+        title="Design"
+        description="Screen compositions, reusable templates, live widgets and AI-assisted content."
+      />
+      <Tabs
+        activeKey={tab}
+        onChange={setTab}
+        items={[
+          { key: "layouts", label: "Layouts", children: <LayoutsTab /> },
+          { key: "templates", label: "Templates", children: <TemplatesTab /> },
+          { key: "widgets", label: "Widgets", children: <WidgetsTab /> },
+          { key: "ai", label: "AI Studio", children: <AiStudioTab /> },
+        ]}
+      />
     </div>
   );
 }
@@ -73,45 +65,65 @@ function LayoutsTab() {
 
   return (
     <div>
-      <div className="flex items-center justify-between">
-        <p className="text-sm text-slate-500">Screen compositions with generic zones.</p>
+      <Flex justify="space-between" align="center" className="mb-4">
+        <Typography.Text type="secondary">
+          Screen compositions with generic zones.
+        </Typography.Text>
         {canManage && (
-          <button
-            type="button"
-            onClick={() => setCreateOpen(true)}
-            className="rounded-md bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-700"
-          >
+          <Button type="primary" icon={<PlusOutlined />} onClick={() => setCreateOpen(true)}>
             New layout
-          </button>
+          </Button>
         )}
-      </div>
+      </Flex>
 
       {layoutsQuery.isLoading ? (
-        <Spinner label="Loading layouts…" />
+        <LoadingState rows={4} />
       ) : layouts.length === 0 ? (
-        <p className="mt-6 rounded-lg border border-dashed border-slate-300 bg-white p-10 text-center text-sm text-slate-500">
-          No layouts yet. Create one from scratch or from a template.
-        </p>
+        <Card>
+          <EmptyState
+            title="No layouts yet"
+            description="Create one from scratch or from a template."
+            action={
+              canManage && (
+                <Button type="primary" icon={<PlusOutlined />} onClick={() => setCreateOpen(true)}>
+                  New layout
+                </Button>
+              )
+            }
+          />
+        </Card>
       ) : (
-        <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+        <Row gutter={[12, 12]}>
           {layouts.map((layout) => (
-            <button
-              key={layout.id}
-              type="button"
-              onClick={() => navigate(`/design/${layout.id}`)}
-              className="rounded-lg border border-slate-200 bg-white p-4 text-left transition-shadow hover:shadow-md"
-            >
-              <div className="flex items-start justify-between">
-                <p className="font-medium text-slate-800">{layout.name}</p>
-                <StatusBadge status={layout.status} />
-              </div>
-              <p className="mt-1 text-sm text-slate-500">
-                {layout.zone_count} zone{layout.zone_count === 1 ? "" : "s"}
-                {layout.current_version_no ? ` · v${layout.current_version_no} published` : " · never published"}
-              </p>
-            </button>
+            <Col key={layout.id} xs={24} sm={12} lg={8}>
+              <Card
+                size="small"
+                hoverable
+                onClick={() => navigate(`/design/${layout.id}`)}
+                tabIndex={0}
+                role="button"
+                aria-label={`Open layout ${layout.name}`}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" || e.key === " ") navigate(`/design/${layout.id}`);
+                }}
+              >
+                <Flex justify="space-between" align="flex-start" gap="small">
+                  <Typography.Text strong ellipsis>
+                    <AppstoreOutlined className="mr-2 text-slate-400" />
+                    {layout.name}
+                  </Typography.Text>
+                  <StatusBadge status={layout.status} />
+                </Flex>
+                <Typography.Paragraph type="secondary" className="!mb-0 !mt-1">
+                  {layout.zone_count} zone{layout.zone_count === 1 ? "" : "s"}
+                  {layout.current_version_no
+                    ? ` · v${layout.current_version_no} published`
+                    : " · never published"}
+                </Typography.Paragraph>
+              </Card>
+            </Col>
           ))}
-        </div>
+        </Row>
       )}
 
       {createOpen && (
@@ -132,8 +144,7 @@ function CreateLayoutModal({
   onCreated: (id: string) => void;
 }) {
   const queryClient = useQueryClient();
-  const [name, setName] = useState("");
-  const [templateId, setTemplateId] = useState("");
+  const [form] = Form.useForm<{ name: string; template_id?: string }>();
   const [error, setError] = useState<string | null>(null);
 
   const templatesQuery = useQuery({
@@ -142,10 +153,10 @@ function CreateLayoutModal({
   });
 
   const create = useMutation({
-    mutationFn: () =>
-      templateId
-        ? api.post<LayoutDetail>(`/templates/${templateId}/clone`, { name })
-        : api.post<LayoutDetail>("/layouts", { name }),
+    mutationFn: (values: { name: string; template_id?: string }) =>
+      values.template_id
+        ? api.post<LayoutDetail>(`/templates/${values.template_id}/clone`, { name: values.name })
+        : api.post<LayoutDetail>("/layouts", { name: values.name }),
     onSuccess: (envelope) => {
       queryClient.invalidateQueries({ queryKey: ["layouts"] });
       onCreated(envelope.data!.id);
@@ -154,62 +165,43 @@ function CreateLayoutModal({
       setError(err instanceof ApiError ? err.message : "Failed to create layout"),
   });
 
-  function onSubmit(e: FormEvent) {
-    e.preventDefault();
-    setError(null);
-    create.mutate();
-  }
-
   return (
-    <Modal title="New layout" open onClose={onClose}>
-      <form className="space-y-4" onSubmit={onSubmit}>
-        <FormField
-          id="layout-name"
+    <Modal
+      title="New layout"
+      open
+      onCancel={onClose}
+      okText="Create & open designer"
+      confirmLoading={create.isPending}
+      onOk={() => form.submit()}
+      destroyOnHidden
+    >
+      {error && <Alert type="error" message={error} showIcon className="mb-4" role="alert" />}
+      <Form
+        form={form}
+        layout="vertical"
+        onFinish={(values) => {
+          setError(null);
+          create.mutate(values);
+        }}
+      >
+        <Form.Item
+          name="name"
           label="Name"
-          required
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-        />
-        <div>
-          <label htmlFor="layout-template" className="block text-sm font-medium text-slate-700">
-            Start from
-          </label>
-          <select
-            id="layout-template"
-            value={templateId}
-            onChange={(e) => setTemplateId(e.target.value)}
-            className="mt-1 block w-full rounded-md border border-slate-300 px-3 py-2 text-sm shadow-sm"
-          >
-            <option value="">Blank 1920×1080</option>
-            {(templatesQuery.data?.data ?? []).map((t) => (
-              <option key={t.id} value={t.id}>
-                Template: {t.name}
-              </option>
-            ))}
-          </select>
-        </div>
-        {error && (
-          <p className="rounded-md bg-red-50 px-3 py-2 text-sm text-red-700" role="alert">
-            {error}
-          </p>
-        )}
-        <div className="flex justify-end gap-2">
-          <button
-            type="button"
-            onClick={onClose}
-            className="rounded-md border border-slate-300 px-4 py-2 text-sm font-medium text-slate-600"
-          >
-            Cancel
-          </button>
-          <button
-            type="submit"
-            disabled={create.isPending}
-            className="rounded-md bg-slate-900 px-4 py-2 text-sm font-medium text-white disabled:opacity-50"
-          >
-            {create.isPending ? "Creating…" : "Create & open designer"}
-          </button>
-        </div>
-      </form>
+          rules={[{ required: true, message: "Give the layout a name." }]}
+        >
+          <Input autoFocus />
+        </Form.Item>
+        <Form.Item name="template_id" label="Start from">
+          <Select
+            allowClear
+            placeholder="Blank 1920×1080"
+            options={(templatesQuery.data?.data ?? []).map((t) => ({
+              value: t.id,
+              label: `Template: ${t.name}`,
+            }))}
+          />
+        </Form.Item>
+      </Form>
     </Modal>
   );
 }

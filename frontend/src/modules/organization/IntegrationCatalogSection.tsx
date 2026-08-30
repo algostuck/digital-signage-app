@@ -1,4 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
+import { Card, Flex, List, Tag, Typography } from "antd";
 import { api } from "../../lib/api";
 import { useAuth } from "../../lib/auth";
 
@@ -25,46 +26,39 @@ export function IntegrationCatalogSection() {
   const connectors = query.data?.data ?? [];
 
   return (
-    <div className="mt-8">
-      <section className="rounded-lg border border-slate-200 bg-white p-4">
-        <h2 className="text-sm font-semibold uppercase tracking-wide text-slate-400">
-          Integration catalog
-        </h2>
-        <p className="mt-0.5 text-xs text-slate-400">
-          Everything the platform connects to, in one place — configure each
-          in its section below (locked items need a plan upgrade).
-        </p>
-        <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
-          {connectors.map((c) => (
-            <div
-              key={c.key}
-              className={`rounded-md border p-3 ${
-                c.available ? "border-slate-200" : "border-slate-200 opacity-60"
-              }`}
-            >
-              <div className="flex items-center justify-between">
-                <p className="font-medium text-slate-800">{c.name}</p>
-                <span
-                  className={`rounded-full px-2 py-0.5 text-xs font-medium ${
-                    !c.available
-                      ? "bg-slate-100 text-slate-500"
-                      : c.configured > 0
-                        ? "bg-emerald-100 text-emerald-700"
-                        : "bg-slate-100 text-slate-600"
-                  }`}
+    <Card size="small" title="Integration catalog" loading={query.isLoading}>
+      <Typography.Paragraph type="secondary" className="!mb-3">
+        Everything the platform connects to, in one place — configure each
+        in its section below (locked items need a plan upgrade).
+      </Typography.Paragraph>
+      <List
+        grid={{ gutter: 12, xs: 1, sm: 2, lg: 3 }}
+        dataSource={connectors}
+        renderItem={(c) => (
+          <List.Item className="!mb-3">
+            <Card size="small">
+              <Flex align="center" justify="space-between" gap="small">
+                <Typography.Text strong disabled={!c.available}>
+                  {c.name}
+                </Typography.Text>
+                <Tag
+                  color={!c.available ? "default" : c.configured > 0 ? "success" : "default"}
+                  variant="filled"
                 >
                   {!c.available
                     ? "plan locked"
                     : c.configured > 0
                       ? `${c.configured} configured`
                       : "not configured"}
-                </span>
-              </div>
-              <p className="mt-1 text-xs text-slate-500">{c.description}</p>
-            </div>
-          ))}
-        </div>
-      </section>
-    </div>
+                </Tag>
+              </Flex>
+              <Typography.Paragraph type="secondary" className="!mb-0 mt-1 text-xs">
+                {c.description}
+              </Typography.Paragraph>
+            </Card>
+          </List.Item>
+        )}
+      />
+    </Card>
   );
 }

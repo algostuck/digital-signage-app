@@ -1,14 +1,26 @@
+import { PlusOutlined } from "@ant-design/icons";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useState, type FormEvent } from "react";
-import { useNavigate } from "react-router-dom";
-import { FormField } from "../../components/ui/FormField";
-import { Modal } from "../../components/ui/Modal";
-import { Spinner } from "../../components/ui/Spinner";
+import {
+  Alert,
+  Button,
+  Card,
+  Col,
+  Flex,
+  Form,
+  Input,
+  Modal,
+  Popconfirm,
+  Row,
+  Typography,
+} from "antd";
+import { useState } from "react";
+import { EmptyState, LoadingState } from "../../components/ui/states";
 import { StatusBadge } from "../../components/ui/StatusBadge";
 import { api, ApiError } from "../../lib/api";
 import { useAuth } from "../../lib/auth";
 import { timeAgo } from "../devices/types";
 import type { Template } from "./types";
+import { useNavigate } from "react-router-dom";
 
 /** P2-06 Template Library: versions, approval status, reuse. */
 export function TemplatesTab() {
@@ -17,6 +29,7 @@ export function TemplatesTab() {
   const queryClient = useQueryClient();
   const navigate = useNavigate();
   const [createOpen, setCreateOpen] = useState(false);
+  const [cloneSource, setCloneSource] = useState<Template | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   const templatesQuery = useQuery({
@@ -54,95 +67,83 @@ export function TemplatesTab() {
 
   return (
     <div>
-      <div className="flex items-center justify-between">
-        <p className="text-sm text-slate-500">
+      <Flex justify="space-between" align="center" gap="middle" wrap>
+        <Typography.Text type="secondary">
           Governed, versioned design assets. Submissions go through the approval inbox.
-        </p>
+        </Typography.Text>
         {canManage && (
-          <button
-            type="button"
-            onClick={() => setCreateOpen(true)}
-            className="rounded-md bg-slate-900 px-4 py-2 text-sm font-medium text-white"
-          >
+          <Button type="primary" icon={<PlusOutlined />} onClick={() => setCreateOpen(true)}>
             New template
-          </button>
+          </Button>
         )}
-      </div>
+      </Flex>
 
-      {error && (
-        <p className="mt-3 rounded-md bg-red-50 px-3 py-2 text-sm text-red-700" role="alert">
-          {error}
-        </p>
-      )}
+      {error && <Alert type="error" message={error} showIcon role="alert" className="mt-3" />}
 
       {templatesQuery.isLoading ? (
-        <Spinner label="Loading templates…" />
+        <LoadingState rows={5} />
       ) : templates.length === 0 ? (
-        <p className="mt-6 rounded-lg border border-dashed border-slate-300 bg-white p-10 text-center text-sm text-slate-500">
-          No templates yet. Create one from scratch, or save a layout as a template
-          from the designer.
-        </p>
+        <Card className="mt-4">
+          <EmptyState
+            title="No templates yet"
+            description="Create one from scratch, or save a layout as a template from the designer."
+          />
+        </Card>
       ) : (
-        <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+        <Row gutter={[12, 12]} className="mt-4">
           {templates.map((template) => (
-            <div key={template.id} className="rounded-lg border border-slate-200 bg-white p-4">
-              <div className="flex items-start justify-between gap-2">
-                <p className="font-medium text-slate-800">{template.name}</p>
-                <StatusBadge status={template.status} />
-              </div>
-              <p className="mt-1 text-sm text-slate-500">
-                {template.canvas_json.zones.length} zone
-                {template.canvas_json.zones.length === 1 ? "" : "s"}
-                {template.current_version_no
-                  ? ` · v${template.current_version_no} approved`
-                  : " · no approved version"}
-                {" · "}updated {timeAgo(template.updated_at)}
-              </p>
-              {template.description && (
-                <p className="mt-1 text-xs text-slate-400">{template.description}</p>
-              )}
-              {canManage && (
-                <div className="mt-3 flex flex-wrap gap-2">
-                  {(template.status === "draft" || template.status === "rejected") && (
-                    <button
-                      type="button"
-                      onClick={() => submit.mutate(template.id)}
-                      className="rounded-md bg-slate-900 px-3 py-1.5 text-xs font-medium text-white"
-                    >
-                      Submit for approval
-                    </button>
-                  )}
-                  <button
-                    type="button"
-                    onClick={() => {
-                      const name = window.prompt(
-                        "Name for the new layout cloned from this template:",
-                        `${template.name} copy`,
-                      );
-                      if (name) clone.mutate({ id: template.id, name });
-                    }}
-                    className="rounded-md border border-slate-300 px-3 py-1.5 text-xs font-medium text-slate-600"
-                  >
-                    Use in layout
-                  </button>
-                  {template.status !== "pending_approval" && (
-                    <button
-                      type="button"
-                      onClick={() => {
-                        if (window.confirm(`Archive template "${template.name}"?`)) {
-                          archive.mutate(template.id);
-                        }
-                      }}
-                      className="rounded-md border border-red-200 px-3 py-1.5 text-xs font-medium text-red-600"
-                    >
-                      Archive
-                    </button>
-                  )}
-                </div>
-              )}
-            </div>
+            <Col key={template.id} xs={24} sm={12} lg={8}>
+              <Card size="small">
+                <Flex justify="space-between" align="flex-start" gap="small">
+                  <Typography.Text strong ellipsis>
+                    {template.name}
+                  </Typography.Text>
+                  <StatusBadge status={template.status} />
+                </Flex>
+                <Typography.Paragraph type="secondary" className="!mb-0 !mt-1">
+                  {template.canvas_json.zones.length} zone
+                  {template.canvas_json.zones.length === 1 ? "" : "s"}
+                  {template.current_version_no
+                    ? ` · v${template.current_version_no} approved`
+                    : " · no approved version"}
+                  {" · "}updated {timeAgo(template.updated_at)}
+                </Typography.Paragraph>
+                {template.description && (
+                  <Typography.Paragraph type="secondary" className="!mb-0 !mt-1 text-xs">
+                    {template.description}
+                  </Typography.Paragraph>
+                )}
+                {canManage && (
+                  <Flex gap="small" wrap className="mt-3">
+                    {(template.status === "draft" || template.status === "rejected") && (
+                      <Button
+                        size="small"
+                        type="primary"
+                        onClick={() => submit.mutate(template.id)}
+                      >
+                        Submit for approval
+                      </Button>
+                    )}
+                    <Button size="small" onClick={() => setCloneSource(template)}>
+                      Use in layout
+                    </Button>
+                    {template.status !== "pending_approval" && (
+                      <Popconfirm
+                        title={`Archive template "${template.name}"?`}
+                        onConfirm={() => archive.mutate(template.id)}
+                        okButtonProps={{ danger: true }}
+                      >
+                        <Button size="small" danger>
+                          Archive
+                        </Button>
+                      </Popconfirm>
+                    )}
+                  </Flex>
+                )}
+              </Card>
+            </Col>
           ))}
-        </div>
+        </Row>
       )}
 
       {createOpen && (
@@ -154,7 +155,58 @@ export function TemplatesTab() {
           }}
         />
       )}
+
+      {cloneSource && (
+        <CloneTemplateModal
+          template={cloneSource}
+          pending={clone.isPending}
+          onClose={() => setCloneSource(null)}
+          onClone={(name) => clone.mutate({ id: cloneSource.id, name })}
+        />
+      )}
     </div>
+  );
+}
+
+/** Replaces the old window.prompt with a controlled modal. */
+function CloneTemplateModal({
+  template,
+  pending,
+  onClose,
+  onClone,
+}: {
+  template: Template;
+  pending: boolean;
+  onClose: () => void;
+  onClone: (name: string) => void;
+}) {
+  const [form] = Form.useForm<{ name: string }>();
+
+  return (
+    <Modal
+      title="Use template in a layout"
+      open
+      onCancel={onClose}
+      okText="Create layout"
+      confirmLoading={pending}
+      onOk={() => form.submit()}
+      destroyOnHidden
+    >
+      <Form
+        form={form}
+        layout="vertical"
+        initialValues={{ name: `${template.name} copy` }}
+        onFinish={(values) => onClone(values.name)}
+      >
+        <Form.Item
+          name="name"
+          label="Name for the new layout cloned from this template"
+          rules={[{ required: true, message: "Give the new layout a name." }]}
+        >
+          <Input autoFocus />
+        </Form.Item>
+      </Form>
+    </Modal>
   );
 }
 
@@ -165,66 +217,51 @@ function CreateTemplateModal({
   onClose: () => void;
   onCreated: () => void;
 }) {
-  const [name, setName] = useState("");
-  const [description, setDescription] = useState("");
+  const [form] = Form.useForm<{ name: string; description?: string }>();
   const [error, setError] = useState<string | null>(null);
 
   const create = useMutation({
-    mutationFn: () =>
-      api.post("/templates", { name, description: description || null }),
+    mutationFn: (values: { name: string; description?: string }) =>
+      api.post("/templates", { name: values.name, description: values.description || null }),
     onSuccess: onCreated,
     onError: (err) =>
       setError(err instanceof ApiError ? err.message : "Failed to create template"),
   });
 
-  function onSubmit(e: FormEvent) {
-    e.preventDefault();
-    setError(null);
-    create.mutate();
-  }
-
   return (
-    <Modal title="New template" open onClose={onClose}>
-      <form className="space-y-4" onSubmit={onSubmit}>
-        <FormField
-          id="template-name"
+    <Modal
+      title="New template"
+      open
+      onCancel={onClose}
+      okText="Create template"
+      confirmLoading={create.isPending}
+      onOk={() => form.submit()}
+      destroyOnHidden
+    >
+      {error && <Alert type="error" message={error} showIcon role="alert" className="mb-4" />}
+      <Form
+        form={form}
+        layout="vertical"
+        onFinish={(values) => {
+          setError(null);
+          create.mutate(values);
+        }}
+      >
+        <Form.Item
+          name="name"
           label="Name"
-          required
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-        />
-        <FormField
-          id="template-description"
-          label="Description"
-          value={description}
-          onChange={(e) => setDescription(e.target.value)}
-        />
-        <p className="text-xs text-slate-400">
-          Starts as a blank 1920×1080 draft. You can also save an existing layout as
-          a template from the designer.
-        </p>
-        {error && (
-          <p className="rounded-md bg-red-50 px-3 py-2 text-sm text-red-700" role="alert">
-            {error}
-          </p>
-        )}
-        <div className="flex justify-end gap-2">
-          <button
-            type="button"
-            onClick={onClose}
-            className="rounded-md border border-slate-300 px-4 py-2 text-sm font-medium text-slate-600"
-          >
-            Cancel
-          </button>
-          <button
-            type="submit"
-            disabled={create.isPending}
-            className="rounded-md bg-slate-900 px-4 py-2 text-sm font-medium text-white disabled:opacity-50"
-          >
-            {create.isPending ? "Creating…" : "Create template"}
-          </button>
-        </div>
-      </form>
+          rules={[{ required: true, message: "Give the template a name." }]}
+        >
+          <Input autoFocus />
+        </Form.Item>
+        <Form.Item name="description" label="Description">
+          <Input />
+        </Form.Item>
+      </Form>
+      <Typography.Text type="secondary" className="text-xs">
+        Starts as a blank 1920×1080 draft. You can also save an existing layout as
+        a template from the designer.
+      </Typography.Text>
     </Modal>
   );
 }

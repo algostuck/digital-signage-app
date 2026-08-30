@@ -41,6 +41,25 @@ async def list_plans(_user: CurrentUser, db: AsyncSession = Depends(get_db)) -> 
     return success([plan_out(plan) for plan in plans])
 
 
+@router.get("/entitlements")
+async def get_entitlements(
+    tenant_id: CurrentTenantId, _user: CurrentUser, db: AsyncSession = Depends(get_db)
+) -> dict:
+    """Lightweight, permission-free entitlement read for frontend UI
+    gating (docs/UI_UX_API_CHANGES.md) — any authenticated org member may
+    ask "what's on my plan" to render locked/unlocked states; this never
+    substitutes for the server-side enforcement in billing.subscription's
+    resource choke points."""
+    effective = await entitlements_service.get_effective(db, tenant_id)
+    return success(
+        {
+            "plan_code": effective.plan_code,
+            "plan_name": effective.plan_name,
+            "values": effective.values,
+        }
+    )
+
+
 @router.get("/billing/subscription", dependencies=[require_permissions("billing.view")])
 async def get_subscription(
     tenant_id: CurrentTenantId, db: AsyncSession = Depends(get_db)

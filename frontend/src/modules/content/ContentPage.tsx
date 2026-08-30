@@ -1,6 +1,29 @@
+import {
+  DeleteOutlined,
+  FolderAddOutlined,
+  FolderOutlined,
+  SearchOutlined,
+  UploadOutlined,
+} from "@ant-design/icons";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import {
+  App,
+  Button,
+  Card,
+  Col,
+  Input,
+  Menu,
+  Modal,
+  Pagination,
+  Popconfirm,
+  Row,
+  Select,
+  Typography,
+} from "antd";
 import { useState } from "react";
-import { Spinner } from "../../components/ui/Spinner";
+import { FilterBar } from "../../components/ui/FilterBar";
+import { PageHeader } from "../../components/ui/PageHeader";
+import { EmptyState, LoadingState } from "../../components/ui/states";
 import { StatusBadge } from "../../components/ui/StatusBadge";
 import { api, ApiError } from "../../lib/api";
 import { useAuth } from "../../lib/auth";
@@ -13,6 +36,7 @@ const TYPE_FILTERS = ["", "image", "video", "audio", "document", "html", "text",
 /** SCR-11 Content Library: folders, filters, grid, lifecycle. */
 export function ContentPage() {
   const { hasPermission } = useAuth();
+  const { message } = App.useApp();
   const canCreate = hasPermission("content.create");
   const canDelete = hasPermission("content.delete");
   const queryClient = useQueryClient();
@@ -23,6 +47,8 @@ export function ContentPage() {
   const [page, setPage] = useState(1);
   const [uploadOpen, setUploadOpen] = useState(false);
   const [detailId, setDetailId] = useState<string | null>(null);
+  const [newFolderOpen, setNewFolderOpen] = useState(false);
+  const [newFolderName, setNewFolderName] = useState("");
   const pageSize = 24;
 
   const foldersQuery = useQuery({
@@ -47,116 +73,121 @@ export function ContentPage() {
 
   const createFolder = useMutation({
     mutationFn: (name: string) => api.post("/folders", { name, parent_id: folderId }),
-    onSuccess: invalidate,
+    onSuccess: () => {
+      setNewFolderOpen(false);
+      setNewFolderName("");
+      message.success("Folder created");
+      invalidate();
+    },
     onError: (err) =>
-      window.alert(err instanceof ApiError ? err.message : "Failed to create folder"),
+      message.error(err instanceof ApiError ? err.message : "Failed to create folder"),
   });
 
   const archiveFolder = useMutation({
     mutationFn: (id: string) => api.delete(`/folders/${id}`),
     onSuccess: () => {
       setFolderId(null);
+      message.success("Folder archived");
       invalidate();
     },
     onError: (err) =>
-      window.alert(err instanceof ApiError ? err.message : "Failed to archive folder"),
+      message.error(err instanceof ApiError ? err.message : "Failed to archive folder"),
   });
 
   const folders = foldersQuery.data?.data ?? [];
   const assets = assetsQuery.data?.data ?? [];
   const total = assetsQuery.data?.meta.total ?? 0;
-  const totalPages = Math.max(1, Math.ceil(total / pageSize));
 
   return (
     <div>
-      <div className="flex items-center justify-between">
-        <h1 className="text-xl font-semibold text-slate-900">Content Library</h1>
-        {canCreate && (
-          <button
-            type="button"
-            onClick={() => setUploadOpen(true)}
-            className="rounded-md bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-700"
+      <PageHeader
+        title="Content Library"
+        description="Manage, organize and publish digital signage content."
+        actions={
+          canCreate && (
+            <Button type="primary" icon={<UploadOutlined />} onClick={() => setUploadOpen(true)}>
+              Upload content
+            </Button>
+          )
+        }
+      />
+
+      <Row gutter={[16, 16]}>
+        <Col xs={24} lg={5}>
+          <Card
+            size="small"
+            title="Folders"
+            extra={
+              canCreate && (
+                <Button
+                  type="text"
+                  size="small"
+                  icon={<FolderAddOutlined />}
+                  aria-label="New folder"
+                  onClick={() => setNewFolderOpen(true)}
+                />
+              )
+            }
           >
-            Upload content
-          </button>
-        )}
-      </div>
+            <Menu
+              mode="inline"
+              selectedKeys={[folderId ?? "__all__"]}
+              className="!border-e-0"
+              onClick={({ key }) => {
+                setFolderId(key === "__all__" ? null : key);
+                setPage(1);
+              }}
+              items={[
+                { key: "__all__", icon: <FolderOutlined />, label: "All content" },
+                ...folders.map((folder) => ({
+                  key: folder.id,
+                  icon: <FolderOutlined />,
+                  label: (
+                    <span className="flex items-center">
+                      <span className="truncate">{folder.name}</span>
+                      {canDelete && (
+                        <Popconfirm
+                          title={`Archive folder "${folder.name}"?`}
+                          onConfirm={(e) => {
+                            e?.stopPropagation();
+                            archiveFolder.mutate(folder.id);
+                          }}
+                          onCancel={(e) => e?.stopPropagation()}
+                        >
+                          <Button
+                            type="text"
+                            size="small"
+                            danger
+                            className="ml-auto"
+                            aria-label={`Archive folder ${folder.name}`}
+                            icon={<DeleteOutlined />}
+                            onClick={(e) => e.stopPropagation()}
+                          />
+                        </Popconfirm>
+                      )}
+                    </span>
+                  ),
+                })),
+              ]}
+            />
+          </Card>
+        </Col>
 
-      <div className="mt-4 grid grid-cols-1 gap-4 lg:grid-cols-[220px_1fr]">
-        <aside className="rounded-lg border border-slate-200 bg-white p-3">
-          <div className="flex items-center justify-between">
-            <h2 className="text-xs font-semibold uppercase tracking-wide text-slate-400">
-              Folders
-            </h2>
-            {canCreate && (
-              <button
-                type="button"
-                onClick={() => {
-                  const name = window.prompt("Folder name");
-                  if (name) createFolder.mutate(name);
-                }}
-                className="text-sm font-medium text-slate-600 hover:underline"
-              >
-                + New
-              </button>
-            )}
-          </div>
-          <ul className="mt-2 space-y-0.5 text-sm">
-            <li>
-              <button
-                type="button"
-                onClick={() => {
-                  setFolderId(null);
-                  setPage(1);
-                }}
-                className={`w-full rounded-md px-2 py-1.5 text-left ${
-                  folderId === null
-                    ? "bg-slate-900 text-white"
-                    : "text-slate-600 hover:bg-slate-100"
-                }`}
-              >
-                All content
-              </button>
-            </li>
-            {folders.map((folder) => (
-              <li key={folder.id} className="group flex items-center">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setFolderId(folder.id);
+        <Col xs={24} lg={19}>
+          <FilterBar
+            onReset={
+              search || typeFilter
+                ? () => {
+                    setSearch("");
+                    setTypeFilter("");
                     setPage(1);
-                  }}
-                  className={`flex-1 rounded-md px-2 py-1.5 text-left ${
-                    folderId === folder.id
-                      ? "bg-slate-900 text-white"
-                      : "text-slate-600 hover:bg-slate-100"
-                  }`}
-                >
-                  {folder.name}
-                </button>
-                {canDelete && (
-                  <button
-                    type="button"
-                    aria-label={`Archive folder ${folder.name}`}
-                    onClick={() => {
-                      if (window.confirm(`Archive folder "${folder.name}"?`)) {
-                        archiveFolder.mutate(folder.id);
-                      }
-                    }}
-                    className="invisible px-1 text-xs text-slate-400 hover:text-red-600 group-hover:visible"
-                  >
-                    ✕
-                  </button>
-                )}
-              </li>
-            ))}
-          </ul>
-        </aside>
-
-        <div>
-          <div className="flex flex-wrap items-center gap-3">
-            <input
-              type="search"
+                  }
+                : undefined
+            }
+          >
+            <Input
+              allowClear
+              className="w-64"
               value={search}
               onChange={(e) => {
                 setSearch(e.target.value);
@@ -164,92 +195,125 @@ export function ContentPage() {
               }}
               placeholder="Search content…"
               aria-label="Search content"
-              className="w-64 rounded-md border border-slate-300 px-3 py-2 text-sm shadow-sm"
+              prefix={<SearchOutlined className="text-slate-400" />}
             />
-            <select
+            <Select
+              className="w-40"
               value={typeFilter}
-              onChange={(e) => {
-                setTypeFilter(e.target.value);
+              aria-label="Filter by type"
+              onChange={(value) => {
+                setTypeFilter(value);
                 setPage(1);
               }}
-              aria-label="Filter by type"
-              className="rounded-md border border-slate-300 px-3 py-2 text-sm shadow-sm capitalize"
-            >
-              {TYPE_FILTERS.map((t) => (
-                <option key={t} value={t}>
-                  {t || "All types"}
-                </option>
-              ))}
-            </select>
-          </div>
+              options={TYPE_FILTERS.map((t) => ({
+                value: t,
+                label: t ? t.charAt(0).toUpperCase() + t.slice(1) : "All types",
+              }))}
+            />
+          </FilterBar>
 
           {assetsQuery.isLoading ? (
-            <Spinner label="Loading content…" />
+            <LoadingState rows={6} />
           ) : assets.length === 0 ? (
-            <p className="mt-6 rounded-lg border border-dashed border-slate-300 bg-white p-10 text-center text-sm text-slate-500">
-              No content here yet. Upload your first asset to get started.
-            </p>
+            <Card>
+              <EmptyState
+                title="No content here yet"
+                description="Upload your first asset to get started."
+                action={
+                  canCreate && (
+                    <Button
+                      type="primary"
+                      icon={<UploadOutlined />}
+                      onClick={() => setUploadOpen(true)}
+                    >
+                      Upload content
+                    </Button>
+                  )
+                }
+              />
+            </Card>
           ) : (
-            <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-4">
+            <Row gutter={[12, 12]}>
               {assets.map((asset) => (
-                <button
-                  key={asset.id}
-                  type="button"
-                  onClick={() => setDetailId(asset.id)}
-                  className="rounded-lg border border-slate-200 bg-white p-3 text-left transition-shadow hover:shadow-md"
-                >
-                  <div className="flex h-28 items-center justify-center overflow-hidden rounded-md bg-slate-100">
-                    {asset.thumbnail_url ? (
-                      <img
-                        src={asset.thumbnail_url}
-                        alt=""
-                        className="h-full w-full object-cover"
-                      />
-                    ) : (
-                      <span className="text-2xl uppercase text-slate-400">
-                        {asset.type.slice(0, 3)}
-                      </span>
-                    )}
-                  </div>
-                  <p className="mt-2 truncate text-sm font-medium text-slate-800">{asset.name}</p>
-                  <div className="mt-1 flex items-center gap-2 text-xs text-slate-500">
-                    <StatusBadge status={asset.status} />
-                    {asset.current_version && (
-                      <span>{formatBytes(asset.current_version.size_bytes)}</span>
-                    )}
-                  </div>
-                </button>
+                <Col key={asset.id} xs={12} sm={8} xl={6}>
+                  <Card
+                    hoverable
+                    size="small"
+                    onClick={() => setDetailId(asset.id)}
+                    tabIndex={0}
+                    role="button"
+                    aria-label={`Open ${asset.name}`}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" || e.key === " ") setDetailId(asset.id);
+                    }}
+                    cover={
+                      <div className="flex h-28 items-center justify-center overflow-hidden bg-slate-100">
+                        {asset.thumbnail_url ? (
+                          <img
+                            src={asset.thumbnail_url}
+                            alt={asset.name}
+                            className="h-full w-full object-cover"
+                          />
+                        ) : (
+                          <span className="text-2xl uppercase text-slate-400">
+                            {asset.type.slice(0, 3)}
+                          </span>
+                        )}
+                      </div>
+                    }
+                  >
+                    <Typography.Text strong ellipsis className="block text-sm">
+                      {asset.name}
+                    </Typography.Text>
+                    <div className="mt-1 flex items-center gap-2 text-xs text-slate-500">
+                      <StatusBadge status={asset.status} />
+                      {asset.current_version && (
+                        <span>{formatBytes(asset.current_version.size_bytes)}</span>
+                      )}
+                    </div>
+                  </Card>
+                </Col>
               ))}
-            </div>
+            </Row>
           )}
 
-          {totalPages > 1 && (
-            <div className="mt-4 flex items-center justify-between text-sm text-slate-600">
-              <span>
-                Page {page} of {totalPages} · {total} assets
-              </span>
-              <div className="space-x-2">
-                <button
-                  type="button"
-                  disabled={page <= 1}
-                  onClick={() => setPage((p) => p - 1)}
-                  className="rounded-md border border-slate-300 px-3 py-1.5 disabled:opacity-40"
-                >
-                  Previous
-                </button>
-                <button
-                  type="button"
-                  disabled={page >= totalPages}
-                  onClick={() => setPage((p) => p + 1)}
-                  className="rounded-md border border-slate-300 px-3 py-1.5 disabled:opacity-40"
-                >
-                  Next
-                </button>
-              </div>
+          {total > pageSize && (
+            <div className="mt-4 flex justify-end">
+              <Pagination
+                current={page}
+                pageSize={pageSize}
+                total={total}
+                showSizeChanger={false}
+                showTotal={(t) => `${t} assets`}
+                onChange={setPage}
+              />
             </div>
           )}
-        </div>
-      </div>
+        </Col>
+      </Row>
+
+      <Modal
+        title="New folder"
+        open={newFolderOpen}
+        okText="Create"
+        confirmLoading={createFolder.isPending}
+        onOk={() => {
+          if (newFolderName.trim()) createFolder.mutate(newFolderName.trim());
+        }}
+        onCancel={() => setNewFolderOpen(false)}
+        destroyOnHidden
+      >
+        <Input
+          autoFocus
+          placeholder="Folder name"
+          aria-label="Folder name"
+          value={newFolderName}
+          onChange={(e) => setNewFolderName(e.target.value)}
+          onPressEnter={() => {
+            if (newFolderName.trim()) createFolder.mutate(newFolderName.trim());
+          }}
+        />
+      </Modal>
 
       {uploadOpen && (
         <UploadModal

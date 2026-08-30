@@ -1,5 +1,24 @@
+import { SyncOutlined } from "@ant-design/icons";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import {
+  Alert,
+  Button,
+  Card,
+  Col,
+  Form,
+  InputNumber,
+  Popconfirm,
+  Row,
+  Space,
+  Table,
+  Tag,
+  Typography,
+  type TableProps,
+} from "antd";
 import { useState } from "react";
+import { PageHeader } from "../../components/ui/PageHeader";
+import { StatCard } from "../../components/ui/StatCard";
+import { EmptyState } from "../../components/ui/states";
 import { api, ApiError } from "../../lib/api";
 import { useAuth } from "../../lib/auth";
 
@@ -103,182 +122,202 @@ export function SecurityPage() {
   const violations = violationsQuery.data?.data ?? [];
   const policies = policiesQuery.data?.data ?? [];
 
+  const violationColumns: TableProps<ViolationRow>["columns"] = [
+    { title: "Entity", dataIndex: "entity_type" },
+    {
+      title: "Detail",
+      dataIndex: "detail",
+      responsive: ["lg"],
+      render: (detail: string | null) => (
+        <Typography.Text type="secondary">{detail}</Typography.Text>
+      ),
+    },
+    {
+      title: "Status",
+      render: (_, v) => (
+        <Tag
+          variant="filled"
+          color={
+            v.state === "open"
+              ? v.severity === "critical"
+                ? "error"
+                : "warning"
+              : "success"
+          }
+        >
+          {v.state} · {v.severity}
+        </Tag>
+      ),
+    },
+    {
+      title: "Actions",
+      render: (_, v) =>
+        v.state === "open" && (
+          <Button size="small" onClick={() => resolve.mutate(v.id)}>
+            Resolve
+          </Button>
+        ),
+    },
+  ];
+
+  const identityColumns: NonNullable<TableProps<IdentityRow>["columns"]> = [
+    {
+      title: "Device",
+      dataIndex: "device_name",
+      render: (name: string) => <Typography.Text strong>{name}</Typography.Text>,
+    },
+    {
+      title: "Fingerprint",
+      render: (_, row) =>
+        row.fingerprint ? (
+          <Typography.Text code className="text-xs">
+            {row.fingerprint}
+          </Typography.Text>
+        ) : (
+          <Typography.Text type="secondary" className="text-xs">
+            — pending re-enrollment
+          </Typography.Text>
+        ),
+    },
+    {
+      title: "Age",
+      align: "right",
+      render: (_, row) => (row.age_days != null ? `${row.age_days}d` : "—"),
+    },
+    {
+      title: "History",
+      dataIndex: "credential_history",
+      align: "right",
+      responsive: ["lg"],
+    },
+  ];
+  if (canManage)
+    identityColumns.push({
+      title: "Actions",
+      render: (_, row) =>
+        row.has_credential && (
+          <Popconfirm
+            title={`Rotate credential for ${row.device_name}?`}
+            description="The token is revoked and the player re-enrolls through the standard pipeline."
+            okButtonProps={{ danger: true }}
+            onConfirm={() => rotate.mutate(row.device_id)}
+          >
+            <Button size="small" icon={<SyncOutlined />}>
+              Rotate
+            </Button>
+          </Popconfirm>
+        ),
+    });
+
   return (
-    <div className="max-w-4xl space-y-6">
-      <div>
-        <h1 className="text-xl font-semibold text-slate-900">Security Center</h1>
-        <p className="mt-1 text-sm text-slate-500">
-          Device credential lifecycle, age policies and violations. Rotation
-          revokes the token — the player re-enrolls through the standard
-          pipeline.
-        </p>
-      </div>
-
-      {summary && (
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-          <div className="rounded-lg border border-slate-200 bg-white p-3">
-            <p className="text-xs uppercase text-slate-400">Identities</p>
-            <p className="text-xl font-semibold text-slate-900">{summary.device_identities}</p>
-          </div>
-          <div className="rounded-lg border border-slate-200 bg-white p-3">
-            <p className="text-xs uppercase text-slate-400">Open violations</p>
-            <p className="text-xl font-semibold text-red-600">
-              {Object.values(summary.open_violations).reduce((a, b) => a + b, 0)}
-            </p>
-          </div>
-          <div className="rounded-lg border border-slate-200 bg-white p-3">
-            <p className="text-xs uppercase text-slate-400">Missing credentials</p>
-            <p className="text-xl font-semibold text-amber-600">
-              {summary.credentials_missing}
-            </p>
-          </div>
-          <div className="rounded-lg border border-slate-200 bg-white p-3">
-            <p className="text-xs uppercase text-slate-400">Oldest credential</p>
-            <p className="text-xl font-semibold text-slate-900">
-              {summary.oldest_credential_days}d
-            </p>
-          </div>
-        </div>
-      )}
-
-      {canManage && (
-        <section className="rounded-lg border border-slate-200 bg-white p-4">
-          <h2 className="text-sm font-semibold uppercase tracking-wide text-slate-400">
-            Age policies
-          </h2>
-          <div className="mt-2 flex flex-wrap items-end gap-3">
-            <label className="block text-sm">
-              <span className="block text-xs text-slate-500">Max credential age (days)</span>
-              <input
-                type="number"
-                min={1}
-                value={ageDays}
-                onChange={(e) => setAgeDays(e.target.value)}
-                className="mt-0.5 w-24 rounded-md border border-slate-300 px-2 py-1.5"
+    <div className="max-w-4xl">
+      <PageHeader
+        title="Security Center"
+        description="Device credential lifecycle, age policies and violations. Rotation revokes the token — the player re-enrolls through the standard pipeline."
+      />
+      <Space orientation="vertical" size="large" className="w-full">
+        {summary && (
+          <Row gutter={[12, 12]}>
+            <Col xs={12} sm={6}>
+              <StatCard label="Identities" value={summary.device_identities} />
+            </Col>
+            <Col xs={12} sm={6}>
+              <StatCard
+                label="Open violations"
+                value={Object.values(summary.open_violations).reduce((a, b) => a + b, 0)}
+                valueColor={
+                  Object.values(summary.open_violations).reduce((a, b) => a + b, 0)
+                    ? "#DC2626"
+                    : undefined
+                }
               />
-            </label>
-            <button
-              type="button"
-              onClick={() => savePolicy.mutate("device_credentials")}
-              className="rounded-md bg-slate-900 px-3 py-1.5 text-sm font-medium text-white"
-            >
-              Apply to device tokens
-            </button>
-            <button
-              type="button"
-              onClick={() => savePolicy.mutate("api_keys")}
-              className="rounded-md bg-slate-900 px-3 py-1.5 text-sm font-medium text-white"
-            >
-              Apply to API keys
-            </button>
-            {policies.map((p) => (
-              <span
-                key={p.id}
-                className="rounded-full bg-slate-100 px-2 py-1 text-xs text-slate-600"
-              >
-                {p.scope_type}: {p.conditions.max_age_days}d ({p.severity})
-              </span>
-            ))}
-          </div>
-          <p className="mt-1 text-xs text-slate-400">
-            The daily sweep opens violations for over-age credentials and
-            auto-resolves them once rotated. Violations are surfaced, never
-            auto-enforced.
-          </p>
-        </section>
-      )}
+            </Col>
+            <Col xs={12} sm={6}>
+              <StatCard
+                label="Missing credentials"
+                value={summary.credentials_missing}
+                valueColor={summary.credentials_missing ? "#D97706" : undefined}
+              />
+            </Col>
+            <Col xs={12} sm={6}>
+              <StatCard
+                label="Oldest credential"
+                value={`${summary.oldest_credential_days}d`}
+              />
+            </Col>
+          </Row>
+        )}
 
-      {canManage && violations.length > 0 && (
-        <section className="rounded-lg border border-slate-200 bg-white p-4">
-          <h2 className="text-sm font-semibold uppercase tracking-wide text-slate-400">
-            Policy violations
-          </h2>
-          <table className="mt-2 w-full text-left text-sm">
-            <tbody>
-              {violations.map((v) => (
-                <tr key={v.id} className="border-t border-slate-100">
-                  <td className="py-1.5 pr-4 text-xs">{v.entity_type}</td>
-                  <td className="py-1.5 pr-4 text-xs text-slate-500">{v.detail}</td>
-                  <td className="py-1.5 pr-4">
-                    <span
-                      className={`rounded-full px-2 py-0.5 text-xs font-medium ${
-                        v.state === "open"
-                          ? v.severity === "critical"
-                            ? "bg-red-100 text-red-700"
-                            : "bg-amber-100 text-amber-800"
-                          : "bg-emerald-100 text-emerald-700"
-                      }`}
-                    >
-                      {v.state} · {v.severity}
-                    </span>
-                  </td>
-                  <td className="py-1.5">
-                    {v.state === "open" && (
-                      <button
-                        type="button"
-                        onClick={() => resolve.mutate(v.id)}
-                        className="rounded-md border border-slate-300 px-2 py-1 text-xs text-slate-600"
-                      >
-                        Resolve
-                      </button>
-                    )}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </section>
-      )}
+        {canManage && (
+          <Card size="small" title="Age policies">
+            <Form layout="inline">
+              <Form.Item label="Max credential age (days)">
+                <InputNumber
+                  min={1}
+                  className="w-24"
+                  value={ageDays === "" ? null : Number(ageDays)}
+                  onChange={(v) => setAgeDays(v == null ? "" : String(v))}
+                />
+              </Form.Item>
+              <Form.Item>
+                <Space wrap>
+                  <Button
+                    type="primary"
+                    loading={savePolicy.isPending}
+                    onClick={() => savePolicy.mutate("device_credentials")}
+                  >
+                    Apply to device tokens
+                  </Button>
+                  <Button
+                    loading={savePolicy.isPending}
+                    onClick={() => savePolicy.mutate("api_keys")}
+                  >
+                    Apply to API keys
+                  </Button>
+                  {policies.map((p) => (
+                    <Tag key={p.id} variant="filled">
+                      {p.scope_type}: {p.conditions.max_age_days}d ({p.severity})
+                    </Tag>
+                  ))}
+                </Space>
+              </Form.Item>
+            </Form>
+            <Typography.Paragraph type="secondary" className="!mb-0 mt-2 text-xs">
+              The daily sweep opens violations for over-age credentials and
+              auto-resolves them once rotated. Violations are surfaced, never
+              auto-enforced.
+            </Typography.Paragraph>
+          </Card>
+        )}
 
-      <section className="rounded-lg border border-slate-200 bg-white p-4">
-        <h2 className="text-sm font-semibold uppercase tracking-wide text-slate-400">
-          Device identities
-        </h2>
-        <table className="mt-2 w-full text-left text-sm">
-          <thead>
-            <tr className="text-xs uppercase text-slate-400">
-              <th className="py-1.5 pr-4">Device</th>
-              <th className="py-1.5 pr-4">Fingerprint</th>
-              <th className="py-1.5 pr-4">Age</th>
-              <th className="py-1.5 pr-4">History</th>
-              {canManage && <th className="py-1.5">Actions</th>}
-            </tr>
-          </thead>
-          <tbody>
-            {identities.map((row) => (
-              <tr key={row.device_id} className="border-t border-slate-100">
-                <td className="py-1.5 pr-4 font-medium text-slate-800">{row.device_name}</td>
-                <td className="py-1.5 pr-4 font-mono text-xs">
-                  {row.fingerprint ?? "— pending re-enrollment"}
-                </td>
-                <td className="py-1.5 pr-4 text-xs">
-                  {row.age_days != null ? `${row.age_days}d` : "—"}
-                </td>
-                <td className="py-1.5 pr-4 text-xs">{row.credential_history}</td>
-                {canManage && (
-                  <td className="py-1.5">
-                    {row.has_credential && (
-                      <button
-                        type="button"
-                        onClick={() => rotate.mutate(row.device_id)}
-                        className="rounded-md border border-amber-400 px-2 py-1 text-xs font-medium text-amber-700"
-                      >
-                        Rotate
-                      </button>
-                    )}
-                  </td>
-                )}
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </section>
+        {canManage && violations.length > 0 && (
+          <Card size="small" title="Policy violations">
+            <Table<ViolationRow>
+              size="middle"
+              rowKey="id"
+              columns={violationColumns}
+              dataSource={violations}
+              loading={violationsQuery.isLoading}
+              scroll={{ x: "max-content" }}
+              pagination={false}
+            />
+          </Card>
+        )}
 
-      {error && (
-        <p role="alert" className="rounded-md bg-red-50 px-3 py-2 text-sm text-red-700">
-          {error}
-        </p>
-      )}
+        <Card size="small" title="Device identities">
+          <Table<IdentityRow>
+            size="middle"
+            rowKey="device_id"
+            columns={identityColumns}
+            dataSource={identities}
+            loading={identitiesQuery.isLoading}
+            scroll={{ x: "max-content" }}
+            locale={{ emptyText: <EmptyState title="No device identities yet" /> }}
+          />
+        </Card>
+
+        {error && <Alert type="error" showIcon role="alert" message={error} />}
+      </Space>
     </div>
   );
 }

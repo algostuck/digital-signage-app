@@ -1,5 +1,22 @@
+import { UserAddOutlined } from "@ant-design/icons";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useState, type FormEvent } from "react";
+import {
+  Alert,
+  Button,
+  Card,
+  Form,
+  Input,
+  Popconfirm,
+  Select,
+  Space,
+  Table,
+  Tag,
+  Typography,
+  type TableProps,
+} from "antd";
+import { useState } from "react";
+import { EmptyState } from "../../components/ui/states";
+import { StatusBadge } from "../../components/ui/StatusBadge";
 import { api, ApiError } from "../../lib/api";
 import { useAuth } from "../../lib/auth";
 
@@ -26,8 +43,7 @@ export function MembersTab() {
   const canManage = hasPermission("members.manage");
   const queryClient = useQueryClient();
   const [message, setMessage] = useState<{ kind: "ok" | "error"; text: string } | null>(null);
-  const [email, setEmail] = useState("");
-  const [roleId, setRoleId] = useState("");
+  const [form] = Form.useForm<{ email: string; role_id: string }>();
 
   const membersQuery = useQuery({
     queryKey: ["org-members"],
@@ -49,11 +65,15 @@ export function MembersTab() {
     });
 
   const addMember = useMutation({
-    mutationFn: () =>
-      api.post("/organization/members", { email, role_id: roleId, is_owner: false }),
+    mutationFn: (values: { email: string; role_id: string }) =>
+      api.post("/organization/members", {
+        email: values.email,
+        role_id: values.role_id,
+        is_owner: false,
+      }),
     onSuccess: () => {
       done("Member added.");
-      setEmail("");
+      form.resetFields(["email"]);
     },
     onError,
   });
@@ -67,118 +87,127 @@ export function MembersTab() {
   const members = membersQuery.data?.data ?? [];
   const roles = rolesQuery.data?.data ?? [];
 
-  function onAdd(e: FormEvent) {
-    e.preventDefault();
-    setMessage(null);
-    addMember.mutate();
-  }
+  const columns: TableProps<MemberRow>["columns"] = [
+    { title: "Email", dataIndex: "email" },
+    {
+      title: "Name",
+      dataIndex: "full_name",
+      render: (name: string) => <Typography.Text strong>{name}</Typography.Text>,
+    },
+    {
+      title: "Type",
+      dataIndex: "kind",
+      render: (kind: MemberRow["kind"]) => (
+        <Tag variant="filled" color={kind === "guest" ? "blue" : "default"}>
+          {kind}
+        </Tag>
+      ),
+    },
+    {
+      title: "Roles",
+      responsive: ["lg"],
+      render: (_, member) => member.roles.join(", ") || "—",
+    },
+    {
+      title: "Status",
+      dataIndex: "status",
+      render: (status: string) => <StatusBadge status={status} />,
+    },
+    ...(canManage
+      ? [
+          {
+            title: "Actions",
+            align: "right" as const,
+            render: (_: unknown, member: MemberRow) =>
+              member.kind === "guest" && member.membership_id ? (
+                <Popconfirm
+                  title={`Remove ${member.email} from this organization?`}
+                  okButtonProps={{ danger: true }}
+                  onConfirm={() => removeMember.mutate(member.membership_id!)}
+                >
+                  <Button size="small" danger>
+                    Remove
+                  </Button>
+                </Popconfirm>
+              ) : null,
+          },
+        ]
+      : []),
+  ];
 
   return (
-    <div className="space-y-4">
-      <p className="text-sm text-slate-500">
+    <Space orientation="vertical" size="middle" className="w-full">
+      <Typography.Text type="secondary">
         Home users belong to this organization; guests are users from another
         organization granted a role here.
-      </p>
-      <table className="w-full text-left text-sm">
-        <thead>
-          <tr className="text-xs uppercase text-slate-400">
-            <th className="py-1.5 pr-4">Email</th>
-            <th className="py-1.5 pr-4">Name</th>
-            <th className="py-1.5 pr-4">Type</th>
-            <th className="py-1.5 pr-4">Roles</th>
-            <th className="py-1.5 pr-4">Status</th>
-            {canManage && <th className="py-1.5">Actions</th>}
-          </tr>
-        </thead>
-        <tbody>
-          {members.map((m) => (
-            <tr key={m.user_id} className="border-t border-slate-100">
-              <td className="py-2 pr-4">{m.email}</td>
-              <td className="py-2 pr-4">{m.full_name}</td>
-              <td className="py-2 pr-4">
-                <span
-                  className={`rounded-full px-2 py-0.5 text-xs font-medium ${
-                    m.kind === "home"
-                      ? "bg-slate-100 text-slate-600"
-                      : "bg-sky-100 text-sky-700"
-                  }`}
-                >
-                  {m.kind}
-                </span>
-              </td>
-              <td className="py-2 pr-4">{m.roles.join(", ") || "—"}</td>
-              <td className="py-2 pr-4">{m.status}</td>
-              {canManage && (
-                <td className="py-2">
-                  {m.kind === "guest" && m.membership_id && (
-                    <button
-                      type="button"
-                      onClick={() => removeMember.mutate(m.membership_id!)}
-                      className="rounded-md border border-red-300 px-2 py-1 text-xs font-medium text-red-600"
-                    >
-                      Remove
-                    </button>
-                  )}
-                </td>
-              )}
-            </tr>
-          ))}
-        </tbody>
-      </table>
+      </Typography.Text>
+
+      <Table<MemberRow>
+        size="middle"
+        rowKey="user_id"
+        columns={columns}
+        dataSource={members}
+        loading={membersQuery.isLoading}
+        pagination={false}
+        scroll={{ x: "max-content" }}
+        locale={{ emptyText: <EmptyState title="No members yet" /> }}
+      />
 
       {canManage && (
-        <form
-          className="flex flex-wrap items-end gap-3 rounded-lg border border-slate-200 bg-white p-4"
-          onSubmit={onAdd}
-        >
-          <label className="block text-sm">
-            <span className="block text-xs text-slate-500">Existing user's email</span>
-            <input
-              type="email"
-              required
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              className="mt-0.5 w-64 rounded-md border border-slate-300 px-2 py-1.5"
-            />
-          </label>
-          <label className="block text-sm">
-            <span className="block text-xs text-slate-500">Role</span>
-            <select
-              required
-              value={roleId}
-              onChange={(e) => setRoleId(e.target.value)}
-              className="mt-0.5 rounded-md border border-slate-300 px-2 py-1.5"
-            >
-              <option value="">Select role…</option>
-              {roles.map((r) => (
-                <option key={r.id} value={r.id}>
-                  {r.name}
-                </option>
-              ))}
-            </select>
-          </label>
-          <button
-            type="submit"
-            disabled={addMember.isPending}
-            className="rounded-md bg-slate-900 px-4 py-2 text-sm font-medium text-white disabled:opacity-50"
+        <Card size="small">
+          <Form
+            form={form}
+            layout="inline"
+            onFinish={(values) => {
+              setMessage(null);
+              addMember.mutate(values);
+            }}
           >
-            Add member
-          </button>
-        </form>
+            <Form.Item
+              name="email"
+              label="Existing user's email"
+              rules={[
+                { required: true, message: "Email is required" },
+                { type: "email", message: "Enter a valid email" },
+              ]}
+            >
+              <Input type="email" className="w-64" />
+            </Form.Item>
+            <Form.Item
+              name="role_id"
+              label="Role"
+              rules={[{ required: true, message: "Role is required" }]}
+            >
+              <Select
+                className="w-44"
+                placeholder="Select role…"
+                aria-label="Role"
+                options={roles.map((r) => ({ value: r.id, label: r.name }))}
+                loading={rolesQuery.isLoading}
+              />
+            </Form.Item>
+            <Form.Item>
+              <Button
+                type="primary"
+                htmlType="submit"
+                icon={<UserAddOutlined />}
+                loading={addMember.isPending}
+              >
+                Add member
+              </Button>
+            </Form.Item>
+          </Form>
+        </Card>
       )}
 
       {message && (
-        <p
+        <Alert
+          type={message.kind === "ok" ? "success" : "error"}
+          message={message.text}
+          showIcon
           role={message.kind === "error" ? "alert" : undefined}
-          className={`rounded-md px-3 py-2 text-sm ${
-            message.kind === "ok"
-              ? "bg-emerald-50 text-emerald-700"
-              : "bg-red-50 text-red-700"
-          }`}
-        >
-          {message.text}
-        </p>
+        />
       )}
-    </div>
+    </Space>
   );
 }

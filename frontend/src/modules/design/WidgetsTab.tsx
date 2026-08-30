@@ -1,8 +1,24 @@
+import { DeleteOutlined, PlusOutlined } from "@ant-design/icons";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useState, type FormEvent } from "react";
-import { FormField } from "../../components/ui/FormField";
-import { Modal } from "../../components/ui/Modal";
-import { Spinner } from "../../components/ui/Spinner";
+import {
+  Alert,
+  Button,
+  Card,
+  Checkbox,
+  Col,
+  Flex,
+  Form,
+  Input,
+  Modal,
+  Row,
+  Select,
+  Space,
+  Tag,
+  Tooltip,
+  Typography,
+} from "antd";
+import { useState } from "react";
+import { EmptyState, LoadingState } from "../../components/ui/states";
 import { StatusBadge } from "../../components/ui/StatusBadge";
 import { api, ApiError } from "../../lib/api";
 import { useAuth } from "../../lib/auth";
@@ -36,79 +52,76 @@ export function WidgetsTab() {
 
   return (
     <div>
-      <div className="flex items-center justify-between">
-        <p className="text-sm text-slate-500">
+      <Flex justify="space-between" align="center" gap="middle" wrap>
+        <Typography.Text type="secondary">
           Schema-driven widgets with fallback content. Zones bind them via the
           designer's widget panel.
-        </p>
+        </Typography.Text>
         {canManage && (
-          <button
-            type="button"
-            onClick={() => setCreateOpen(true)}
-            className="rounded-md bg-slate-900 px-4 py-2 text-sm font-medium text-white"
-          >
+          <Button type="primary" icon={<PlusOutlined />} onClick={() => setCreateOpen(true)}>
             New widget
-          </button>
+          </Button>
         )}
-      </div>
+      </Flex>
 
-      {error && (
-        <p className="mt-3 rounded-md bg-red-50 px-3 py-2 text-sm text-red-700" role="alert">
-          {error}
-        </p>
-      )}
+      {error && <Alert type="error" message={error} showIcon role="alert" className="mt-3" />}
 
       {widgetsQuery.isLoading ? (
-        <Spinner label="Loading widgets…" />
+        <LoadingState rows={5} />
       ) : widgets.length === 0 ? (
-        <p className="mt-6 rounded-lg border border-dashed border-slate-300 bg-white p-10 text-center text-sm text-slate-500">
-          No widgets yet. Create one to make it configurable inside layout zones.
-        </p>
+        <Card className="mt-4">
+          <EmptyState
+            title="No widgets yet"
+            description="Create one to make it configurable inside layout zones."
+          />
+        </Card>
       ) : (
-        <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+        <Row gutter={[12, 12]} className="mt-4">
           {widgets.map((widget) => {
             const current = widget.versions[widget.versions.length - 1];
             return (
-              <div key={widget.id} className="rounded-lg border border-slate-200 bg-white p-4">
-                <div className="flex items-start justify-between gap-2">
-                  <p className="font-medium text-slate-800">{widget.name}</p>
-                  <StatusBadge status={widget.status} />
-                </div>
-                <p className="mt-1 text-sm text-slate-500">
-                  {widget.type} · schema v{current?.version_no ?? "?"}
-                  {widget.fallback_json ? " · fallback set" : ""}
-                </p>
-                <div className="mt-2 flex flex-wrap gap-1">
-                  {(current?.config_schema_json.fields ?? []).map((field) => (
-                    <span
-                      key={field.key}
-                      className="rounded bg-slate-100 px-2 py-0.5 text-xs text-slate-600"
-                      title={`${field.type}${field.required ? " · required" : ""}`}
-                    >
-                      {field.key}
-                    </span>
-                  ))}
-                </div>
-                {canManage && (
-                  <div className="mt-3">
-                    <button
-                      type="button"
-                      onClick={() =>
-                        archive.mutate({
-                          id: widget.id,
-                          status: widget.status === "active" ? "archived" : "active",
-                        })
-                      }
-                      className="rounded-md border border-slate-300 px-3 py-1.5 text-xs font-medium text-slate-600"
-                    >
-                      {widget.status === "active" ? "Archive" : "Restore"}
-                    </button>
-                  </div>
-                )}
-              </div>
+              <Col key={widget.id} xs={24} sm={12} lg={8}>
+                <Card size="small">
+                  <Flex justify="space-between" align="flex-start" gap="small">
+                    <Typography.Text strong ellipsis>
+                      {widget.name}
+                    </Typography.Text>
+                    <StatusBadge status={widget.status} />
+                  </Flex>
+                  <Typography.Paragraph type="secondary" className="!mb-0 !mt-1">
+                    {widget.type} · schema v{current?.version_no ?? "?"}
+                    {widget.fallback_json ? " · fallback set" : ""}
+                  </Typography.Paragraph>
+                  <Flex gap={4} wrap className="mt-2">
+                    {(current?.config_schema_json.fields ?? []).map((field) => (
+                      <Tooltip
+                        key={field.key}
+                        title={`${field.type}${field.required ? " · required" : ""}`}
+                      >
+                        <Tag className="!mr-0">{field.key}</Tag>
+                      </Tooltip>
+                    ))}
+                  </Flex>
+                  {canManage && (
+                    <div className="mt-3">
+                      <Button
+                        size="small"
+                        onClick={() =>
+                          archive.mutate({
+                            id: widget.id,
+                            status: widget.status === "active" ? "archived" : "active",
+                          })
+                        }
+                      >
+                        {widget.status === "active" ? "Archive" : "Restore"}
+                      </Button>
+                    </div>
+                  )}
+                </Card>
+              </Col>
             );
           })}
-        </div>
+        </Row>
       )}
 
       {createOpen && (
@@ -139,16 +152,14 @@ function CreateWidgetModal({
   onClose: () => void;
   onCreated: () => void;
 }) {
-  const [name, setName] = useState("");
-  const [type, setType] = useState("clock");
-  const [fallbackText, setFallbackText] = useState("");
+  const [form] = Form.useForm<{ name: string; type: string; fallbackText?: string }>();
   const [fields, setFields] = useState<FieldDraft[]>([
     { key: "text", label: "Text", type: "string", required: false, options: "" },
   ]);
   const [error, setError] = useState<string | null>(null);
 
   const create = useMutation({
-    mutationFn: () => {
+    mutationFn: (values: { name: string; type: string; fallbackText?: string }) => {
       const schemaFields: WidgetSchemaField[] = fields.map((f) => ({
         key: f.key.trim(),
         label: f.label.trim() || f.key.trim(),
@@ -159,10 +170,10 @@ function CreateWidgetModal({
           : {}),
       }));
       return api.post("/widgets", {
-        type,
-        name,
+        type: values.type,
+        name: values.name,
         config_schema_json: { fields: schemaFields },
-        fallback_json: fallbackText ? { text: fallbackText } : null,
+        fallback_json: values.fallbackText ? { text: values.fallbackText } : null,
       });
     },
     onSuccess: onCreated,
@@ -174,135 +185,111 @@ function CreateWidgetModal({
     setFields((prev) => prev.map((f, i) => (i === index ? { ...f, ...patch } : f)));
   }
 
-  function onSubmit(e: FormEvent) {
-    e.preventDefault();
-    setError(null);
-    create.mutate();
-  }
-
   return (
-    <Modal title="New widget" open onClose={onClose}>
-      <form className="space-y-4" onSubmit={onSubmit}>
-        <div className="grid grid-cols-2 gap-3">
-          <FormField
-            id="widget-name"
-            label="Name"
-            required
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-          />
-          <div>
-            <label htmlFor="widget-type" className="block text-sm font-medium text-slate-700">
-              Type
-            </label>
-            <input
-              id="widget-type"
-              value={type}
-              onChange={(e) => setType(e.target.value)}
-              placeholder="clock, weather, ticker…"
-              className="mt-1 block w-full rounded-md border border-slate-300 px-3 py-2 text-sm"
-            />
-          </div>
-        </div>
+    <Modal
+      title="New widget"
+      open
+      onCancel={onClose}
+      okText="Create widget"
+      confirmLoading={create.isPending}
+      onOk={() => form.submit()}
+      destroyOnHidden
+    >
+      {error && <Alert type="error" message={error} showIcon role="alert" className="mb-4" />}
+      <Form
+        form={form}
+        layout="vertical"
+        initialValues={{ type: "clock" }}
+        onFinish={(values) => {
+          setError(null);
+          create.mutate(values);
+        }}
+      >
+        <Row gutter={12}>
+          <Col span={12}>
+            <Form.Item
+              name="name"
+              label="Name"
+              rules={[{ required: true, message: "Give the widget a name." }]}
+            >
+              <Input autoFocus />
+            </Form.Item>
+          </Col>
+          <Col span={12}>
+            <Form.Item name="type" label="Type">
+              <Input placeholder="clock, weather, ticker…" />
+            </Form.Item>
+          </Col>
+        </Row>
 
-        <div>
-          <p className="text-sm font-medium text-slate-700">Configuration fields</p>
-          <div className="mt-2 space-y-2">
+        <Form.Item label="Configuration fields">
+          <Space orientation="vertical" size="small" className="w-full">
             {fields.map((field, index) => (
-              <div key={index} className="flex flex-wrap items-center gap-2">
-                <input
+              <Flex key={index} align="center" gap="small" wrap>
+                <Input
                   value={field.key}
                   onChange={(e) => setField(index, { key: e.target.value })}
                   placeholder="key"
                   aria-label={`Field ${index + 1} key`}
-                  className="w-28 rounded-md border border-slate-300 px-2 py-1.5 text-sm font-mono"
+                  className="w-28 font-mono"
                 />
-                <select
+                <Select
                   value={field.type}
-                  onChange={(e) =>
-                    setField(index, { type: e.target.value as FieldDraft["type"] })
-                  }
+                  onChange={(value) => setField(index, { type: value })}
                   aria-label={`Field ${index + 1} type`}
-                  className="rounded-md border border-slate-300 px-2 py-1.5 text-sm"
-                >
-                  {FIELD_TYPES.map((t) => (
-                    <option key={t} value={t}>
-                      {t}
-                    </option>
-                  ))}
-                </select>
+                  options={FIELD_TYPES.map((t) => ({ value: t, label: t }))}
+                  className="w-28"
+                />
                 {field.type === "select" && (
-                  <input
+                  <Input
                     value={field.options}
                     onChange={(e) => setField(index, { options: e.target.value })}
                     placeholder="options, comma-separated"
                     aria-label={`Field ${index + 1} options`}
-                    className="w-44 rounded-md border border-slate-300 px-2 py-1.5 text-sm"
+                    className="w-44"
                   />
                 )}
-                <label className="flex items-center gap-1 text-xs text-slate-500">
-                  <input
-                    type="checkbox"
-                    checked={field.required}
-                    onChange={(e) => setField(index, { required: e.target.checked })}
-                  />
+                <Checkbox
+                  checked={field.required}
+                  onChange={(e) => setField(index, { required: e.target.checked })}
+                >
                   required
-                </label>
+                </Checkbox>
                 {fields.length > 1 && (
-                  <button
-                    type="button"
+                  <Button
+                    type="text"
+                    size="small"
+                    danger
+                    icon={<DeleteOutlined />}
+                    aria-label={`Remove field ${index + 1}`}
                     onClick={() => setFields((prev) => prev.filter((_, i) => i !== index))}
-                    className="text-xs text-red-600"
-                  >
-                    Remove
-                  </button>
+                  />
                 )}
-              </div>
+              </Flex>
             ))}
-          </div>
-          <button
-            type="button"
-            onClick={() =>
-              setFields((prev) => [
-                ...prev,
-                { key: "", label: "", type: "string", required: false, options: "" },
-              ])
-            }
-            className="mt-2 text-sm font-medium text-slate-600 underline"
-          >
-            + Add field
-          </button>
-        </div>
+            <Button
+              type="dashed"
+              size="small"
+              icon={<PlusOutlined />}
+              onClick={() =>
+                setFields((prev) => [
+                  ...prev,
+                  { key: "", label: "", type: "string", required: false, options: "" },
+                ])
+              }
+            >
+              Add field
+            </Button>
+          </Space>
+        </Form.Item>
 
-        <FormField
-          id="widget-fallback"
+        <Form.Item
+          name="fallbackText"
           label="Fallback text (shown when data is unavailable)"
-          value={fallbackText}
-          onChange={(e) => setFallbackText(e.target.value)}
-        />
-
-        {error && (
-          <p className="rounded-md bg-red-50 px-3 py-2 text-sm text-red-700" role="alert">
-            {error}
-          </p>
-        )}
-        <div className="flex justify-end gap-2">
-          <button
-            type="button"
-            onClick={onClose}
-            className="rounded-md border border-slate-300 px-4 py-2 text-sm font-medium text-slate-600"
-          >
-            Cancel
-          </button>
-          <button
-            type="submit"
-            disabled={create.isPending}
-            className="rounded-md bg-slate-900 px-4 py-2 text-sm font-medium text-white disabled:opacity-50"
-          >
-            {create.isPending ? "Creating…" : "Create widget"}
-          </button>
-        </div>
-      </form>
+        >
+          <Input />
+        </Form.Item>
+      </Form>
     </Modal>
   );
 }

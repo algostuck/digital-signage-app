@@ -1,8 +1,21 @@
+import { PlusOutlined, SearchOutlined } from "@ant-design/icons";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useState, type FormEvent } from "react";
-import { FormField } from "../../components/ui/FormField";
-import { Modal } from "../../components/ui/Modal";
-import { Spinner } from "../../components/ui/Spinner";
+import {
+  Alert,
+  Button,
+  Flex,
+  Form,
+  Input,
+  Modal,
+  Popconfirm,
+  Select,
+  Space,
+  Table,
+  Typography,
+  type TableProps,
+} from "antd";
+import { useState } from "react";
+import { ErrorState, EmptyState } from "../../components/ui/states";
 import { StatusBadge } from "../../components/ui/StatusBadge";
 import { api, ApiError } from "../../lib/api";
 import { useAuth } from "../../lib/auth";
@@ -46,13 +59,67 @@ export function UsersTab() {
 
   const users = usersQuery.data?.data ?? [];
   const total = usersQuery.data?.meta.total ?? 0;
-  const totalPages = Math.max(1, Math.ceil(total / pageSize));
+
+  const columns: TableProps<UserRow>["columns"] = [
+    {
+      title: "Name",
+      dataIndex: "full_name",
+      render: (name: string) => <Typography.Text strong>{name}</Typography.Text>,
+    },
+    { title: "Email", dataIndex: "email" },
+    {
+      title: "Roles",
+      responsive: ["lg"],
+      render: (_, user) => user.roles.map((r) => r.name).join(", ") || "—",
+    },
+    {
+      title: "Status",
+      dataIndex: "status",
+      render: (status: string) => <StatusBadge status={status} />,
+    },
+    ...(canManage
+      ? [
+          {
+            title: "Actions",
+            align: "right" as const,
+            render: (_: unknown, user: UserRow) => (
+              <Space>
+                <Button type="link" size="small" onClick={() => setEditingUser(user)}>
+                  Edit
+                </Button>
+                {user.id !== sessionUser?.id &&
+                  (user.status === "deactivated" ? (
+                    <Button
+                      type="link"
+                      size="small"
+                      onClick={() => activate.mutate(user.id)}
+                    >
+                      Activate
+                    </Button>
+                  ) : (
+                    <Popconfirm
+                      title={`Deactivate ${user.email}?`}
+                      okButtonProps={{ danger: true }}
+                      onConfirm={() => deactivate.mutate(user.id)}
+                    >
+                      <Button type="link" size="small" danger>
+                        Deactivate
+                      </Button>
+                    </Popconfirm>
+                  ))}
+              </Space>
+            ),
+          },
+        ]
+      : []),
+  ];
 
   return (
     <div>
-      <div className="flex items-center justify-between gap-4">
-        <input
-          type="search"
+      <Flex wrap gap="small" align="center" justify="space-between" className="mb-4">
+        <Input
+          allowClear
+          className="w-72"
           value={search}
           onChange={(e) => {
             setSearch(e.target.value);
@@ -60,116 +127,35 @@ export function UsersTab() {
           }}
           placeholder="Search by name or email…"
           aria-label="Search users"
-          className="w-72 rounded-md border border-slate-300 px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-slate-400"
+          prefix={<SearchOutlined className="text-slate-400" />}
         />
         {canManage && (
-          <button
-            type="button"
-            onClick={() => setCreateOpen(true)}
-            className="rounded-md bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-700"
-          >
+          <Button type="primary" icon={<PlusOutlined />} onClick={() => setCreateOpen(true)}>
             Add user
-          </button>
+          </Button>
         )}
-      </div>
+      </Flex>
 
-      {usersQuery.isLoading ? (
-        <Spinner label="Loading users…" />
-      ) : usersQuery.isError ? (
-        <p className="mt-6 text-sm text-red-600" role="alert">
-          Failed to load users.
-        </p>
-      ) : users.length === 0 ? (
-        <p className="mt-6 rounded-lg border border-dashed border-slate-300 bg-white p-8 text-center text-sm text-slate-500">
-          No users match your search.
-        </p>
+      {usersQuery.isError ? (
+        <ErrorState title="Failed to load users" onRetry={() => usersQuery.refetch()} />
       ) : (
-        <div className="mt-4 overflow-x-auto rounded-lg border border-slate-200 bg-white">
-          <table className="min-w-full divide-y divide-slate-200 text-sm">
-            <thead className="bg-slate-50 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
-              <tr>
-                <th className="px-4 py-3">Name</th>
-                <th className="px-4 py-3">Email</th>
-                <th className="px-4 py-3">Roles</th>
-                <th className="px-4 py-3">Status</th>
-                {canManage && <th className="px-4 py-3 text-right">Actions</th>}
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-100">
-              {users.map((u) => (
-                <tr key={u.id} className="hover:bg-slate-50">
-                  <td className="px-4 py-3 font-medium text-slate-800">{u.full_name}</td>
-                  <td className="px-4 py-3 text-slate-600">{u.email}</td>
-                  <td className="px-4 py-3 text-slate-600">
-                    {u.roles.map((r) => r.name).join(", ") || "—"}
-                  </td>
-                  <td className="px-4 py-3">
-                    <StatusBadge status={u.status} />
-                  </td>
-                  {canManage && (
-                    <td className="space-x-3 px-4 py-3 text-right">
-                      <button
-                        type="button"
-                        onClick={() => setEditingUser(u)}
-                        className="text-sm font-medium text-slate-600 hover:underline"
-                      >
-                        Edit
-                      </button>
-                      {u.id !== sessionUser?.id &&
-                        (u.status === "deactivated" ? (
-                          <button
-                            type="button"
-                            onClick={() => activate.mutate(u.id)}
-                            className="text-sm font-medium text-emerald-700 hover:underline"
-                          >
-                            Activate
-                          </button>
-                        ) : (
-                          <button
-                            type="button"
-                            onClick={() => {
-                              if (window.confirm(`Deactivate ${u.email}?`)) {
-                                deactivate.mutate(u.id);
-                              }
-                            }}
-                            className="text-sm font-medium text-red-600 hover:underline"
-                          >
-                            Deactivate
-                          </button>
-                        ))}
-                    </td>
-                  )}
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      )}
-
-      {totalPages > 1 && (
-        <div className="mt-4 flex items-center justify-between text-sm text-slate-600">
-          <span>
-            Page {page} of {totalPages} · {total} users
-          </span>
-          <div className="space-x-2">
-            <button
-              type="button"
-              disabled={page <= 1}
-              onClick={() => setPage((p) => p - 1)}
-              className="rounded-md border border-slate-300 px-3 py-1.5 disabled:opacity-40"
-            >
-              Previous
-            </button>
-            <button
-              type="button"
-              disabled={page >= totalPages}
-              onClick={() => setPage((p) => p + 1)}
-              className="rounded-md border border-slate-300 px-3 py-1.5 disabled:opacity-40"
-            >
-              Next
-            </button>
-          </div>
-        </div>
+        <Table<UserRow>
+          size="middle"
+          rowKey="id"
+          columns={columns}
+          dataSource={users}
+          loading={usersQuery.isLoading}
+          scroll={{ x: "max-content" }}
+          locale={{ emptyText: <EmptyState title="No users match your search" /> }}
+          pagination={{
+            current: page,
+            pageSize,
+            total,
+            showSizeChanger: false,
+            showTotal: (t) => `${t} users`,
+            onChange: setPage,
+          }}
+        />
       )}
 
       <CreateUserModal
@@ -193,34 +179,6 @@ export function UsersTab() {
   );
 }
 
-function RoleChecklist({
-  roles,
-  selected,
-  onToggle,
-}: {
-  roles: Role[];
-  selected: string[];
-  onToggle: (id: string, checked: boolean) => void;
-}) {
-  return (
-    <fieldset>
-      <legend className="text-sm font-medium text-slate-700">Roles</legend>
-      <div className="mt-2 max-h-40 space-y-1 overflow-y-auto rounded-md border border-slate-200 p-2">
-        {roles.map((role) => (
-          <label key={role.id} className="flex items-center gap-2 text-sm text-slate-700">
-            <input
-              type="checkbox"
-              checked={selected.includes(role.id)}
-              onChange={(e) => onToggle(role.id, e.target.checked)}
-            />
-            {role.name}
-          </label>
-        ))}
-      </div>
-    </fieldset>
-  );
-}
-
 function EditUserModal({
   user,
   roles,
@@ -232,63 +190,58 @@ function EditUserModal({
   onClose: () => void;
   onSaved: () => void;
 }) {
-  const [fullName, setFullName] = useState(user.full_name);
-  const [roleIds, setRoleIds] = useState<string[]>(user.roles.map((r) => r.id));
+  const [form] = Form.useForm<{ full_name: string; role_ids: string[] }>();
   const [error, setError] = useState<string | null>(null);
 
   const save = useMutation({
-    mutationFn: () =>
-      api.patch(`/users/${user.id}`, { full_name: fullName, role_ids: roleIds }),
+    mutationFn: (values: { full_name: string; role_ids: string[] }) =>
+      api.patch(`/users/${user.id}`, {
+        full_name: values.full_name,
+        role_ids: values.role_ids,
+      }),
     onSuccess: onSaved,
     onError: (err) =>
       setError(err instanceof ApiError ? err.message : "Failed to update user"),
   });
 
-  function onSubmit(e: FormEvent) {
-    e.preventDefault();
-    setError(null);
-    save.mutate();
-  }
-
   return (
-    <Modal title={`Edit user: ${user.email}`} open onClose={onClose}>
-      <form className="space-y-4" onSubmit={onSubmit}>
-        <FormField
-          id="edit-user-name"
+    <Modal
+      title={`Edit user: ${user.email}`}
+      open
+      onCancel={onClose}
+      okText="Save"
+      confirmLoading={save.isPending}
+      onOk={() => form.submit()}
+    >
+      <Form
+        form={form}
+        layout="vertical"
+        initialValues={{
+          full_name: user.full_name,
+          role_ids: user.roles.map((r) => r.id),
+        }}
+        onFinish={(values) => {
+          setError(null);
+          save.mutate(values);
+        }}
+      >
+        <Form.Item
+          name="full_name"
           label="Full name"
-          required
-          value={fullName}
-          onChange={(e) => setFullName(e.target.value)}
-        />
-        <RoleChecklist
-          roles={roles}
-          selected={roleIds}
-          onToggle={(id, checked) =>
-            setRoleIds((ids) => (checked ? [...ids, id] : ids.filter((i) => i !== id)))
-          }
-        />
-        {error && (
-          <p className="rounded-md bg-red-50 px-3 py-2 text-sm text-red-700" role="alert">
-            {error}
-          </p>
-        )}
-        <div className="flex justify-end gap-2">
-          <button
-            type="button"
-            onClick={onClose}
-            className="rounded-md border border-slate-300 px-4 py-2 text-sm font-medium text-slate-600"
-          >
-            Cancel
-          </button>
-          <button
-            type="submit"
-            disabled={save.isPending}
-            className="rounded-md bg-slate-900 px-4 py-2 text-sm font-medium text-white disabled:opacity-50"
-          >
-            {save.isPending ? "Saving…" : "Save"}
-          </button>
-        </div>
-      </form>
+          rules={[{ required: true, message: "Full name is required" }]}
+        >
+          <Input />
+        </Form.Item>
+        <Form.Item name="role_ids" label="Roles">
+          <Select
+            mode="multiple"
+            placeholder="Select roles…"
+            aria-label="Roles"
+            options={roles.map((role) => ({ value: role.id, label: role.name }))}
+          />
+        </Form.Item>
+        {error && <Alert type="error" message={error} showIcon role="alert" />}
+      </Form>
     </Modal>
   );
 }
@@ -304,94 +257,89 @@ function CreateUserModal({
   roles: Role[];
   onCreated: () => void;
 }) {
-  const [email, setEmail] = useState("");
-  const [fullName, setFullName] = useState("");
-  const [password, setPassword] = useState("");
-  const [roleIds, setRoleIds] = useState<string[]>([]);
+  const [form] = Form.useForm<{
+    email: string;
+    full_name: string;
+    password?: string;
+    role_ids: string[];
+  }>();
   const [error, setError] = useState<string | null>(null);
 
   const create = useMutation({
-    mutationFn: () =>
+    mutationFn: (values: {
+      email: string;
+      full_name: string;
+      password?: string;
+      role_ids: string[];
+    }) =>
       api.post("/users", {
-        email,
-        full_name: fullName,
-        password: password || null,
-        role_ids: roleIds,
+        email: values.email,
+        full_name: values.full_name,
+        password: values.password || null,
+        role_ids: values.role_ids,
       }),
     onSuccess: () => {
       onCreated();
       onClose();
-      setEmail("");
-      setFullName("");
-      setPassword("");
-      setRoleIds([]);
+      form.resetFields();
       setError(null);
     },
     onError: (err) =>
       setError(err instanceof ApiError ? err.message : "Failed to create user"),
   });
 
-  function onSubmit(e: FormEvent) {
-    e.preventDefault();
-    setError(null);
-    create.mutate();
-  }
-
   return (
-    <Modal title="Add user" open={open} onClose={onClose}>
-      <form className="space-y-4" onSubmit={onSubmit}>
-        <FormField
-          id="new-user-email"
+    <Modal
+      title="Add user"
+      open={open}
+      onCancel={onClose}
+      okText="Create user"
+      confirmLoading={create.isPending}
+      onOk={() => form.submit()}
+    >
+      <Form
+        form={form}
+        layout="vertical"
+        initialValues={{ role_ids: [] }}
+        onFinish={(values) => {
+          setError(null);
+          create.mutate(values);
+        }}
+      >
+        <Form.Item
+          name="email"
           label="Email"
-          type="email"
-          required
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-        />
-        <FormField
-          id="new-user-name"
+          rules={[
+            { required: true, message: "Email is required" },
+            { type: "email", message: "Enter a valid email" },
+          ]}
+        >
+          <Input type="email" />
+        </Form.Item>
+        <Form.Item
+          name="full_name"
           label="Full name"
-          required
-          value={fullName}
-          onChange={(e) => setFullName(e.target.value)}
-        />
-        <FormField
-          id="new-user-password"
+          rules={[{ required: true, message: "Full name is required" }]}
+        >
+          <Input />
+        </Form.Item>
+        <Form.Item
+          name="password"
           label="Password (leave empty to invite)"
-          type="password"
-          minLength={8}
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-        />
-        <RoleChecklist
-          roles={roles}
-          selected={roleIds}
-          onToggle={(id, checked) =>
-            setRoleIds((ids) => (checked ? [...ids, id] : ids.filter((i) => i !== id)))
-          }
-        />
-        {error && (
-          <p className="rounded-md bg-red-50 px-3 py-2 text-sm text-red-700" role="alert">
-            {error}
-          </p>
-        )}
-        <div className="flex justify-end gap-2">
-          <button
-            type="button"
-            onClick={onClose}
-            className="rounded-md border border-slate-300 px-4 py-2 text-sm font-medium text-slate-600"
-          >
-            Cancel
-          </button>
-          <button
-            type="submit"
-            disabled={create.isPending}
-            className="rounded-md bg-slate-900 px-4 py-2 text-sm font-medium text-white disabled:opacity-50"
-          >
-            {create.isPending ? "Creating…" : "Create user"}
-          </button>
-        </div>
-      </form>
+          rules={[{ min: 8, message: "At least 8 characters" }]}
+        >
+          <Input.Password autoComplete="new-password" />
+        </Form.Item>
+        <Form.Item name="role_ids" label="Roles">
+          <Select
+            mode="multiple"
+            placeholder="Select roles…"
+            aria-label="Roles"
+            options={roles.map((role) => ({ value: role.id, label: role.name }))}
+          />
+        </Form.Item>
+        {error && <Alert type="error" message={error} showIcon role="alert" />}
+      </Form>
     </Modal>
   );
 }

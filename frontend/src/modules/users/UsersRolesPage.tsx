@@ -1,4 +1,6 @@
+import { Tabs } from "antd";
 import { useState } from "react";
+import { PageHeader } from "../../components/ui/PageHeader";
 import { MembersTab } from "./MembersTab";
 import { RolesTab } from "./RolesTab";
 import { UsersTab } from "./UsersTab";
@@ -9,27 +11,19 @@ export function UsersRolesPage() {
 
   return (
     <div>
-      <h1 className="text-xl font-semibold text-slate-900">Users &amp; Roles</h1>
-      <div className="mt-4 border-b border-slate-200" role="tablist">
-        {(["users", "roles", "members"] as const).map((t) => (
-          <button
-            key={t}
-            role="tab"
-            aria-selected={tab === t}
-            onClick={() => setTab(t)}
-            className={`-mb-px border-b-2 px-4 py-2 text-sm font-medium capitalize ${
-              tab === t
-                ? "border-slate-900 text-slate-900"
-                : "border-transparent text-slate-500 hover:text-slate-700"
-            }`}
-          >
-            {t}
-          </button>
-        ))}
-      </div>
-      <div className="mt-4">
-        {tab === "users" ? <UsersTab /> : tab === "roles" ? <RolesTab /> : <MembersTab />}
-      </div>
+      <PageHeader
+        title="Users & Roles"
+        description="Manage who can sign in, what they can do, and organization membership."
+      />
+      <Tabs
+        activeKey={tab}
+        onChange={(key) => setTab(key as typeof tab)}
+        items={[
+          { key: "users", label: "Users", children: <UsersTab /> },
+          { key: "roles", label: "Roles", children: <RolesTab /> },
+          { key: "members", label: "Members", children: <MembersTab /> },
+        ]}
+      />
     </div>
   );
 }

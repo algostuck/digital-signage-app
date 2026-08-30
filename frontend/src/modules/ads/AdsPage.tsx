@@ -1,5 +1,27 @@
+import { PlusOutlined } from "@ant-design/icons";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useState, type FormEvent } from "react";
+import {
+  Alert,
+  Button,
+  Card,
+  DatePicker,
+  Form,
+  Input,
+  InputNumber,
+  Popconfirm,
+  Select,
+  Space,
+  Table,
+  Tabs,
+  TimePicker,
+  Typography,
+  type TableProps,
+} from "antd";
+import dayjs, { type Dayjs } from "dayjs";
+import { useState } from "react";
+import { PageHeader } from "../../components/ui/PageHeader";
+import { EmptyState } from "../../components/ui/states";
+import { StatusBadge } from "../../components/ui/StatusBadge";
 import { api, ApiError } from "../../lib/api";
 import { useAuth } from "../../lib/auth";
 
@@ -27,12 +49,21 @@ interface BookingRow {
   links: number;
 }
 
-const STATUS_STYLE: Record<string, string> = {
-  pending: "bg-sky-100 text-sky-700",
-  confirmed: "bg-emerald-100 text-emerald-700",
-  cancelled: "bg-slate-100 text-slate-500",
-  completed: "bg-slate-200 text-slate-700",
-};
+interface InventoryFormValues {
+  name: string;
+  device_id: string;
+  start: Dayjs;
+  end: Dayjs;
+}
+
+interface BookingFormValues {
+  inventory_id: string;
+  campaign_id: string;
+  advertiser: string;
+  units: number;
+  start: Dayjs;
+  end: Dayjs;
+}
 
 /** P3-09/10 Ad Inventory + Bookings. Delivery rides existing campaigns;
  * bookings route through the shared Approvals inbox before confirming. */
@@ -42,6 +73,8 @@ export function AdsPage() {
   const queryClient = useQueryClient();
   const [tab, setTab] = useState<"inventory" | "bookings">("inventory");
   const [error, setError] = useState<string | null>(null);
+  const [invForm] = Form.useForm<InventoryFormValues>();
+  const [bookForm] = Form.useForm<BookingFormValues>();
 
   const inventoryQuery = useQuery({
     queryKey: ["ad-inventory"],
@@ -69,35 +102,33 @@ export function AdsPage() {
   const onError = (err: unknown) =>
     setError(err instanceof ApiError ? err.message : "Action failed");
 
-  const [invForm, setInvForm] = useState({ name: "", device_id: "", start: "09:00", end: "21:00" });
   const createInventory = useMutation({
-    mutationFn: () =>
+    mutationFn: (values: InventoryFormValues) =>
       api.post("/ad-inventory", {
-        name: invForm.name,
-        device_id: invForm.device_id || null,
-        operating_hours: { start: invForm.start, end: invForm.end },
+        name: values.name,
+        device_id: values.device_id || null,
+        operating_hours: {
+          start: values.start.format("HH:mm"),
+          end: values.end.format("HH:mm"),
+        },
       }),
     onSuccess: () => {
       refresh();
       setError(null);
-      setInvForm({ name: "", device_id: "", start: "09:00", end: "21:00" });
+      invForm.resetFields();
     },
     onError,
   });
 
-  const [bookForm, setBookForm] = useState({
-    inventory_id: "", campaign_id: "", advertiser: "", units: "100",
-    start: "", end: "",
-  });
   const createBooking = useMutation({
-    mutationFn: () =>
+    mutationFn: (values: BookingFormValues) =>
       api.post("/ad-campaigns", {
-        inventory_id: bookForm.inventory_id,
-        campaign_id: bookForm.campaign_id,
-        advertiser_ref: bookForm.advertiser,
-        booked_units: Number(bookForm.units),
-        start_at: new Date(bookForm.start).toISOString(),
-        end_at: new Date(bookForm.end).toISOString(),
+        inventory_id: values.inventory_id,
+        campaign_id: values.campaign_id,
+        advertiser_ref: values.advertiser,
+        booked_units: Number(values.units),
+        start_at: values.start.toDate().toISOString(),
+        end_at: values.end.toDate().toISOString(),
       }),
     onSuccess: () => {
       refresh();
@@ -113,11 +144,16 @@ export function AdsPage() {
 
   if (inventoryQuery.isError)
     return (
-      <p className="rounded-md bg-amber-50 px-3 py-2 text-sm text-amber-800" role="alert">
-        {inventoryQuery.error instanceof ApiError
-          ? inventoryQuery.error.message
-          : "Advertising unavailable."}
-      </p>
+      <Alert
+        type="warning"
+        showIcon
+        role="alert"
+        message={
+          inventoryQuery.error instanceof ApiError
+            ? inventoryQuery.error.message
+            : "Advertising unavailable."
+        }
+      />
     );
 
   const inventory = inventoryQuery.data?.data ?? [];
@@ -127,279 +163,241 @@ export function AdsPage() {
   const inventoryName = (id: string) => inventory.find((i) => i.id === id)?.name ?? "—";
   const campaignName = (id: string) => campaigns.find((c) => c.id === id)?.name ?? "—";
 
-  function submit(e: FormEvent, mutate: () => void) {
-    e.preventDefault();
-    setError(null);
-    mutate();
-  }
+  const inventoryColumns: TableProps<InventoryRow>["columns"] = [
+    {
+      title: "Slot",
+      dataIndex: "name",
+      render: (name: string) => <Typography.Text strong>{name}</Typography.Text>,
+    },
+    { title: "Type", dataIndex: "slot_type", responsive: ["lg"] },
+    {
+      title: "Hours",
+      render: (_, slot) =>
+        `${slot.operating_hours.start}–${slot.operating_hours.end}`,
+    },
+    { title: "Bookings", dataIndex: "bookings", align: "right", width: 100 },
+    {
+      title: "Status",
+      render: (_, slot) => <StatusBadge status={slot.active ? "active" : "inactive"} />,
+    },
+  ];
+
+  const bookingColumns: NonNullable<TableProps<BookingRow>["columns"]> = [
+    {
+      title: "Advertiser",
+      dataIndex: "advertiser_ref",
+      render: (ref: string) => <Typography.Text strong>{ref}</Typography.Text>,
+    },
+    { title: "Slot", render: (_, b) => inventoryName(b.inventory_id) },
+    {
+      title: "Campaign",
+      responsive: ["lg"],
+      render: (_, b) => campaignName(b.campaign_id),
+    },
+    {
+      title: "Booked plays",
+      dataIndex: "booked_units",
+      align: "right",
+      responsive: ["lg"],
+    },
+    { title: "Delivered", dataIndex: "links", align: "right", responsive: ["xl"] },
+    { title: "Status", render: (_, b) => <StatusBadge status={b.status} /> },
+  ];
+  if (canManage)
+    bookingColumns.push({
+      title: "Actions",
+      render: (_, b) =>
+        (b.status === "pending" || b.status === "confirmed") && (
+          <Popconfirm
+            title={`Cancel booking for ${b.advertiser_ref}?`}
+            okButtonProps={{ danger: true }}
+            onConfirm={() => cancelBooking.mutate(b.id)}
+          >
+            <Button size="small" danger>
+              Cancel
+            </Button>
+          </Popconfirm>
+        ),
+    });
+
+  const inventoryTab = (
+    <Space orientation="vertical" size="middle" className="w-full">
+      {canManage && (
+        <Card size="small">
+          <Form
+            form={invForm}
+            layout="inline"
+            className="gap-y-2"
+            initialValues={{
+              start: dayjs("09:00", "HH:mm"),
+              end: dayjs("21:00", "HH:mm"),
+            }}
+            onFinish={(values) => {
+              setError(null);
+              createInventory.mutate(values);
+            }}
+          >
+            <Form.Item
+              name="name"
+              label="Slot name"
+              rules={[{ required: true, message: "Slot name is required." }]}
+            >
+              <Input className="w-52" />
+            </Form.Item>
+            <Form.Item
+              name="device_id"
+              label="Device"
+              rules={[{ required: true, message: "Select a device." }]}
+            >
+              <Select
+                className="w-44"
+                placeholder="Select…"
+                options={devices.map((d) => ({ value: d.id, label: d.name }))}
+              />
+            </Form.Item>
+            <Form.Item
+              name="start"
+              label="From"
+              rules={[{ required: true, message: "Required." }]}
+            >
+              <TimePicker format="HH:mm" allowClear={false} />
+            </Form.Item>
+            <Form.Item
+              name="end"
+              label="To"
+              rules={[{ required: true, message: "Required." }]}
+            >
+              <TimePicker format="HH:mm" allowClear={false} />
+            </Form.Item>
+            <Form.Item>
+              <Button
+                type="primary"
+                htmlType="submit"
+                icon={<PlusOutlined />}
+                loading={createInventory.isPending}
+              >
+                Add slot
+              </Button>
+            </Form.Item>
+          </Form>
+        </Card>
+      )}
+      <Table<InventoryRow>
+        size="middle"
+        rowKey="id"
+        columns={inventoryColumns}
+        dataSource={inventory}
+        loading={inventoryQuery.isLoading}
+        scroll={{ x: "max-content" }}
+        locale={{ emptyText: <EmptyState title="No inventory yet" /> }}
+      />
+    </Space>
+  );
+
+  const bookingsTab = (
+    <Space orientation="vertical" size="middle" className="w-full">
+      {canManage && (
+        <Card size="small">
+          <Form
+            form={bookForm}
+            layout="inline"
+            className="gap-y-2"
+            initialValues={{ units: 100 }}
+            onFinish={(values) => {
+              setError(null);
+              createBooking.mutate(values);
+            }}
+          >
+            <Form.Item
+              name="inventory_id"
+              label="Slot"
+              rules={[{ required: true, message: "Select a slot." }]}
+            >
+              <Select
+                className="w-44"
+                placeholder="Select…"
+                options={inventory.map((i) => ({ value: i.id, label: i.name }))}
+              />
+            </Form.Item>
+            <Form.Item
+              name="campaign_id"
+              label="Campaign"
+              rules={[{ required: true, message: "Select a campaign." }]}
+            >
+              <Select
+                className="w-44"
+                placeholder="Select…"
+                options={campaigns.map((c) => ({ value: c.id, label: c.name }))}
+              />
+            </Form.Item>
+            <Form.Item
+              name="advertiser"
+              label="Advertiser"
+              rules={[{ required: true, message: "Advertiser is required." }]}
+            >
+              <Input className="w-44" />
+            </Form.Item>
+            <Form.Item name="units" label="Units (plays)">
+              <InputNumber min={1} className="w-28" />
+            </Form.Item>
+            <Form.Item
+              name="start"
+              label="From"
+              rules={[{ required: true, message: "Required." }]}
+            >
+              <DatePicker showTime format="YYYY-MM-DD HH:mm" />
+            </Form.Item>
+            <Form.Item
+              name="end"
+              label="To"
+              rules={[{ required: true, message: "Required." }]}
+            >
+              <DatePicker showTime format="YYYY-MM-DD HH:mm" />
+            </Form.Item>
+            <Form.Item>
+              <Button
+                type="primary"
+                htmlType="submit"
+                icon={<PlusOutlined />}
+                loading={createBooking.isPending}
+              >
+                Book
+              </Button>
+            </Form.Item>
+          </Form>
+        </Card>
+      )}
+      <Typography.Text type="secondary" className="text-xs">
+        New bookings await approval in the Approvals inbox before confirming.
+      </Typography.Text>
+      <Table<BookingRow>
+        size="middle"
+        rowKey="id"
+        columns={bookingColumns}
+        dataSource={bookings}
+        loading={bookingsQuery.isLoading}
+        scroll={{ x: "max-content" }}
+        locale={{ emptyText: <EmptyState title="No bookings yet" /> }}
+      />
+    </Space>
+  );
 
   return (
     <div>
-      <h1 className="text-xl font-semibold text-slate-900">Advertising</h1>
-      <p className="mt-1 text-sm text-slate-500">
-        Sell screen time: inventory slots, bookings against existing
-        campaigns, and billing-ready proof-of-play reconciliation (see
-        Reports → Ads).
-      </p>
-      <div className="mt-4 border-b border-slate-200" role="tablist">
-        {(["inventory", "bookings"] as const).map((t) => (
-          <button
-            key={t}
-            role="tab"
-            aria-selected={tab === t}
-            onClick={() => setTab(t)}
-            className={`-mb-px border-b-2 px-4 py-2 text-sm font-medium capitalize ${
-              tab === t
-                ? "border-slate-900 text-slate-900"
-                : "border-transparent text-slate-500 hover:text-slate-700"
-            }`}
-          >
-            {t}
-          </button>
-        ))}
-      </div>
-
-      {tab === "inventory" && (
-        <div className="mt-4 space-y-4">
-          {canManage && (
-            <form
-              className="flex flex-wrap items-end gap-3 rounded-lg border border-slate-200 bg-white p-4"
-              onSubmit={(e) => submit(e, () => createInventory.mutate())}
-            >
-              <label className="block text-sm">
-                <span className="block text-xs text-slate-500">Slot name</span>
-                <input
-                  required
-                  value={invForm.name}
-                  onChange={(e) => setInvForm((p) => ({ ...p, name: e.target.value }))}
-                  className="mt-0.5 w-52 rounded-md border border-slate-300 px-2 py-1.5"
-                />
-              </label>
-              <label className="block text-sm">
-                <span className="block text-xs text-slate-500">Device</span>
-                <select
-                  required
-                  value={invForm.device_id}
-                  onChange={(e) => setInvForm((p) => ({ ...p, device_id: e.target.value }))}
-                  className="mt-0.5 rounded-md border border-slate-300 px-2 py-1.5"
-                >
-                  <option value="">Select…</option>
-                  {devices.map((d) => (
-                    <option key={d.id} value={d.id}>
-                      {d.name}
-                    </option>
-                  ))}
-                </select>
-              </label>
-              <label className="block text-sm">
-                <span className="block text-xs text-slate-500">Hours</span>
-                <span className="flex items-center gap-1">
-                  <input
-                    type="time"
-                    value={invForm.start}
-                    onChange={(e) => setInvForm((p) => ({ ...p, start: e.target.value }))}
-                    className="mt-0.5 rounded-md border border-slate-300 px-2 py-1.5"
-                  />
-                  –
-                  <input
-                    type="time"
-                    value={invForm.end}
-                    onChange={(e) => setInvForm((p) => ({ ...p, end: e.target.value }))}
-                    className="mt-0.5 rounded-md border border-slate-300 px-2 py-1.5"
-                  />
-                </span>
-              </label>
-              <button
-                type="submit"
-                disabled={createInventory.isPending}
-                className="rounded-md bg-slate-900 px-4 py-2 text-sm font-medium text-white disabled:opacity-50"
-              >
-                Add slot
-              </button>
-            </form>
-          )}
-          <section className="rounded-lg border border-slate-200 bg-white p-4">
-            <table className="w-full text-left text-sm">
-              <tbody>
-                {inventory.length === 0 && (
-                  <tr>
-                    <td className="py-3 text-sm text-slate-400">No inventory yet.</td>
-                  </tr>
-                )}
-                {inventory.map((slot) => (
-                  <tr key={slot.id} className="border-t border-slate-100">
-                    <td className="py-2 pr-4 font-medium text-slate-800">{slot.name}</td>
-                    <td className="py-2 pr-4 text-xs text-slate-500">
-                      {slot.slot_type} · {slot.operating_hours.start}–
-                      {slot.operating_hours.end} · {slot.bookings} booking
-                      {slot.bookings === 1 ? "" : "s"}
-                    </td>
-                    <td className="py-2">
-                      <span
-                        className={`rounded-full px-2 py-0.5 text-xs font-medium ${
-                          slot.active
-                            ? "bg-emerald-100 text-emerald-700"
-                            : "bg-slate-100 text-slate-500"
-                        }`}
-                      >
-                        {slot.active ? "active" : "inactive"}
-                      </span>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </section>
-        </div>
-      )}
-
-      {tab === "bookings" && (
-        <div className="mt-4 space-y-4">
-          {canManage && (
-            <form
-              className="grid grid-cols-2 items-end gap-3 rounded-lg border border-slate-200 bg-white p-4 sm:grid-cols-3 lg:grid-cols-6"
-              onSubmit={(e) => submit(e, () => createBooking.mutate())}
-            >
-              <label className="block text-sm">
-                <span className="block text-xs text-slate-500">Slot</span>
-                <select
-                  required
-                  value={bookForm.inventory_id}
-                  onChange={(e) =>
-                    setBookForm((p) => ({ ...p, inventory_id: e.target.value }))
-                  }
-                  className="mt-0.5 w-full rounded-md border border-slate-300 px-2 py-1.5"
-                >
-                  <option value="">Select…</option>
-                  {inventory.map((i) => (
-                    <option key={i.id} value={i.id}>
-                      {i.name}
-                    </option>
-                  ))}
-                </select>
-              </label>
-              <label className="block text-sm">
-                <span className="block text-xs text-slate-500">Campaign</span>
-                <select
-                  required
-                  value={bookForm.campaign_id}
-                  onChange={(e) =>
-                    setBookForm((p) => ({ ...p, campaign_id: e.target.value }))
-                  }
-                  className="mt-0.5 w-full rounded-md border border-slate-300 px-2 py-1.5"
-                >
-                  <option value="">Select…</option>
-                  {campaigns.map((c) => (
-                    <option key={c.id} value={c.id}>
-                      {c.name}
-                    </option>
-                  ))}
-                </select>
-              </label>
-              <label className="block text-sm">
-                <span className="block text-xs text-slate-500">Advertiser</span>
-                <input
-                  required
-                  value={bookForm.advertiser}
-                  onChange={(e) =>
-                    setBookForm((p) => ({ ...p, advertiser: e.target.value }))
-                  }
-                  className="mt-0.5 w-full rounded-md border border-slate-300 px-2 py-1.5"
-                />
-              </label>
-              <label className="block text-sm">
-                <span className="block text-xs text-slate-500">Units (plays)</span>
-                <input
-                  type="number"
-                  min={1}
-                  value={bookForm.units}
-                  onChange={(e) => setBookForm((p) => ({ ...p, units: e.target.value }))}
-                  className="mt-0.5 w-full rounded-md border border-slate-300 px-2 py-1.5"
-                />
-              </label>
-              <label className="block text-sm">
-                <span className="block text-xs text-slate-500">From</span>
-                <input
-                  required
-                  type="datetime-local"
-                  value={bookForm.start}
-                  onChange={(e) => setBookForm((p) => ({ ...p, start: e.target.value }))}
-                  className="mt-0.5 w-full rounded-md border border-slate-300 px-2 py-1.5"
-                />
-              </label>
-              <label className="block text-sm">
-                <span className="block text-xs text-slate-500">To</span>
-                <input
-                  required
-                  type="datetime-local"
-                  value={bookForm.end}
-                  onChange={(e) => setBookForm((p) => ({ ...p, end: e.target.value }))}
-                  className="mt-0.5 w-full rounded-md border border-slate-300 px-2 py-1.5"
-                />
-              </label>
-              <button
-                type="submit"
-                disabled={createBooking.isPending}
-                className="rounded-md bg-slate-900 px-4 py-2 text-sm font-medium text-white disabled:opacity-50"
-              >
-                Book
-              </button>
-            </form>
-          )}
-          <section className="rounded-lg border border-slate-200 bg-white p-4">
-            <p className="text-xs text-slate-400">
-              New bookings await approval in the Approvals inbox before
-              confirming.
-            </p>
-            <table className="mt-2 w-full text-left text-sm">
-              <tbody>
-                {bookings.length === 0 && (
-                  <tr>
-                    <td className="py-3 text-sm text-slate-400">No bookings yet.</td>
-                  </tr>
-                )}
-                {bookings.map((b) => (
-                  <tr key={b.id} className="border-t border-slate-100">
-                    <td className="py-2 pr-4 font-medium text-slate-800">
-                      {b.advertiser_ref}
-                    </td>
-                    <td className="py-2 pr-4 text-xs text-slate-500">
-                      {inventoryName(b.inventory_id)} · {campaignName(b.campaign_id)} ·{" "}
-                      {b.booked_units} plays · {b.links} delivered
-                    </td>
-                    <td className="py-2 pr-4">
-                      <span
-                        className={`rounded-full px-2 py-0.5 text-xs font-medium ${
-                          STATUS_STYLE[b.status] ?? ""
-                        }`}
-                      >
-                        {b.status}
-                      </span>
-                    </td>
-                    <td className="py-2">
-                      {canManage &&
-                        (b.status === "pending" || b.status === "confirmed") && (
-                          <button
-                            type="button"
-                            onClick={() => cancelBooking.mutate(b.id)}
-                            className="rounded-md border border-red-300 px-2 py-1 text-xs font-medium text-red-600"
-                          >
-                            Cancel
-                          </button>
-                        )}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </section>
-        </div>
-      )}
-
+      <PageHeader
+        title="Advertising"
+        description="Sell screen time: inventory slots, bookings against existing campaigns, and billing-ready proof-of-play reconciliation (see Reports → Ads)."
+      />
+      <Tabs
+        activeKey={tab}
+        onChange={(key) => setTab(key as "inventory" | "bookings")}
+        items={[
+          { key: "inventory", label: "Inventory", children: inventoryTab },
+          { key: "bookings", label: "Bookings", children: bookingsTab },
+        ]}
+      />
       {error && (
-        <p role="alert" className="mt-4 rounded-md bg-red-50 px-3 py-2 text-sm text-red-700">
-          {error}
-        </p>
+        <Alert type="error" showIcon role="alert" message={error} className="mt-4" />
       )}
     </div>
   );

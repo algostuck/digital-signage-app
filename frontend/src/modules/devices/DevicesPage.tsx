@@ -1,13 +1,34 @@
+import {
+  CheckOutlined,
+  CloseOutlined,
+  KeyOutlined,
+  SaveOutlined,
+  SearchOutlined,
+} from "@ant-design/icons";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import {
+  App,
+  Button,
+  Input,
+  Popconfirm,
+  Select,
+  Space,
+  Table,
+  Tabs,
+  Typography,
+  type TableProps,
+} from "antd";
 import { useState } from "react";
-import { Spinner } from "../../components/ui/Spinner";
+import { FilterBar } from "../../components/ui/FilterBar";
+import { PageHeader } from "../../components/ui/PageHeader";
+import { EmptyState } from "../../components/ui/states";
 import { StatusBadge } from "../../components/ui/StatusBadge";
 import { api, ApiError } from "../../lib/api";
 import { useAuth } from "../../lib/auth";
 import type { LocationNode } from "../locations/types";
+import { BundlesTab } from "./BundlesTab";
 import { DeviceDetailModal } from "./DeviceDetailModal";
 import { GroupsTab } from "./GroupsTab";
-import { BundlesTab } from "./BundlesTab";
 import { WallsTab } from "./WallsTab";
 import { timeAgo, type Device, type DeviceGroup } from "./types";
 
@@ -22,6 +43,7 @@ interface SavedViewRow {
 /** SCR-08 Device List + SCR-10 Groups (tabs); SCR-09 details in modal. */
 export function DevicesPage() {
   const { hasPermission } = useAuth();
+  const { message } = App.useApp();
   const canManage = hasPermission("devices.manage");
   const queryClient = useQueryClient();
 
@@ -85,13 +107,13 @@ export function DevicesPage() {
       queryClient.invalidateQueries({ queryKey: ["saved-views", "devices"] });
       setSavingView(false);
       setViewName("");
+      message.success("View saved");
     },
-    onError: (err) => window.alert(err instanceof ApiError ? err.message : "Save failed"),
+    onError: (err) => message.error(err instanceof ApiError ? err.message : "Save failed"),
   });
   const deleteView = useMutation({
     mutationFn: (id: string) => api.delete(`/saved-views/${id}`),
-    onSuccess: () =>
-      queryClient.invalidateQueries({ queryKey: ["saved-views", "devices"] }),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["saved-views", "devices"] }),
   });
   const bulkApply = useMutation({
     mutationFn: () => {
@@ -108,383 +130,325 @@ export function DevicesPage() {
       setBulkGroup("");
       setBulkLocation("");
       setBulkTag("");
+      message.success("Bulk update applied");
       invalidate();
     },
     onError: (err) =>
-      window.alert(err instanceof ApiError ? err.message : "Bulk update failed"),
+      message.error(err instanceof ApiError ? err.message : "Bulk update failed"),
   });
-
-  function toggleSelected(id: string) {
-    setSelected((prev) => {
-      const next = new Set(prev);
-      if (next.has(id)) next.delete(id);
-      else next.add(id);
-      return next;
-    });
-  }
 
   const lifecycle = useMutation({
     mutationFn: ({ id, verb }: { id: string; verb: string }) =>
       api.post(`/devices/${id}/${verb}`),
     onSuccess: invalidate,
-    onError: (err) => window.alert(err instanceof ApiError ? err.message : "Action failed"),
+    onError: (err) => message.error(err instanceof ApiError ? err.message : "Action failed"),
   });
 
   const devices = devicesQuery.data?.data ?? [];
   const total = devicesQuery.data?.meta.total ?? 0;
-  const totalPages = Math.max(1, Math.ceil(total / pageSize));
+  const views = viewsQuery.data?.data ?? [];
+
+  const columns: TableProps<Device>["columns"] = [
+    {
+      title: "Name",
+      dataIndex: "name",
+      fixed: "left",
+      render: (_, device) => (
+        <Typography.Link onClick={() => setDetailId(device.id)}>{device.name}</Typography.Link>
+      ),
+    },
+    {
+      title: "Serial",
+      dataIndex: "serial_no",
+      responsive: ["lg"],
+      render: (serial: string) => (
+        <Typography.Text code className="text-xs">
+          {serial}
+        </Typography.Text>
+      ),
+    },
+    {
+      title: "Platform",
+      responsive: ["xl"],
+      render: (_, device) =>
+        `${device.manufacturer ?? "—"}${device.platform ? ` · ${device.platform}` : ""}`,
+    },
+    {
+      title: "Group",
+      responsive: ["lg"],
+      render: (_, device) => device.group?.name ?? "—",
+    },
+    {
+      title: "Lifecycle",
+      dataIndex: "status",
+      render: (status: string) => <StatusBadge status={status} />,
+    },
+    {
+      title: "Connection",
+      dataIndex: "connection_status",
+      render: (status: string) => <StatusBadge status={status} />,
+    },
+    {
+      title: "Last heartbeat",
+      responsive: ["md"],
+      render: (_, device) => timeAgo(device.last_heartbeat_at),
+    },
+    ...(canManage
+      ? [
+          {
+            title: "Actions",
+            align: "right" as const,
+            render: (_: unknown, device: Device) =>
+              device.status === "pending" ? (
+                <Space>
+                  <Button
+                    size="small"
+                    type="primary"
+                    icon={<CheckOutlined />}
+                    onClick={() => lifecycle.mutate({ id: device.id, verb: "approve" })}
+                  >
+                    Approve
+                  </Button>
+                  <Button
+                    size="small"
+                    danger
+                    icon={<CloseOutlined />}
+                    onClick={() => lifecycle.mutate({ id: device.id, verb: "reject" })}
+                  >
+                    Reject
+                  </Button>
+                </Space>
+              ) : null,
+          },
+        ]
+      : []),
+  ];
+
+  const devicesTab = (
+    <div>
+      <FilterBar
+        onReset={
+          search || statusFilter
+            ? () => {
+                setSearch("");
+                setStatusFilter("");
+                setPage(1);
+              }
+            : undefined
+        }
+      >
+        <Input
+          allowClear
+          className="w-72"
+          value={search}
+          onChange={(e) => {
+            setSearch(e.target.value);
+            setPage(1);
+          }}
+          placeholder="Search name, serial, model…"
+          aria-label="Search devices"
+          prefix={<SearchOutlined className="text-slate-400" />}
+        />
+        <Select
+          className="w-44"
+          value={statusFilter}
+          aria-label="Filter by status"
+          onChange={(value) => {
+            setStatusFilter(value);
+            setPage(1);
+          }}
+          options={STATUS_FILTERS.map((s) => ({
+            value: s,
+            label: s ? s.charAt(0).toUpperCase() + s.slice(1) : "All statuses",
+          }))}
+        />
+        <Select
+          className="w-44"
+          value={undefined}
+          placeholder="Saved views…"
+          aria-label="Saved views"
+          onChange={(id: string) => {
+            const view = views.find((v) => v.id === id);
+            if (view) {
+              setSearch(view.filter_json.q ?? "");
+              setStatusFilter(view.filter_json.status ?? "");
+              setPage(1);
+            }
+          }}
+          options={views.map((view) => ({ value: view.id, label: view.name }))}
+          notFoundContent="No saved views"
+        />
+        {savingView ? (
+          <Space.Compact>
+            <Input
+              autoFocus
+              className="w-36"
+              value={viewName}
+              onChange={(e) => setViewName(e.target.value)}
+              placeholder="View name"
+              aria-label="View name"
+              onPressEnter={() => viewName.trim() && saveView.mutate()}
+            />
+            <Button
+              type="primary"
+              disabled={!viewName.trim()}
+              loading={saveView.isPending}
+              onClick={() => saveView.mutate()}
+            >
+              Save
+            </Button>
+            <Button aria-label="Cancel saving view" icon={<CloseOutlined />} onClick={() => setSavingView(false)} />
+          </Space.Compact>
+        ) : (
+          <Button icon={<SaveOutlined />} onClick={() => setSavingView(true)}>
+            Save view
+          </Button>
+        )}
+        {views.some(
+          (v) => v.filter_json.q === search && (v.filter_json.status ?? "") === statusFilter,
+        ) && (
+          <Popconfirm
+            title="Delete the saved view matching the current filters?"
+            onConfirm={() => {
+              const target = views.find(
+                (v) =>
+                  v.filter_json.q === search && (v.filter_json.status ?? "") === statusFilter,
+              );
+              if (target) deleteView.mutate(target.id);
+            }}
+          >
+            <Button type="link" danger size="small">
+              Delete current view
+            </Button>
+          </Popconfirm>
+        )}
+      </FilterBar>
+
+      {canManage && selected.size > 0 && (
+        <div
+          className="mb-3 flex flex-wrap items-center gap-2 rounded-lg border border-blue-200 bg-blue-50 px-3 py-2"
+          role="region"
+          aria-live="polite"
+          aria-label="Bulk actions"
+        >
+          <Typography.Text strong>{selected.size} selected</Typography.Text>
+          <Select
+            className="w-40"
+            value={bulkGroup || undefined}
+            placeholder="Assign group"
+            aria-label="Bulk assign group"
+            allowClear
+            onChange={(v) => setBulkGroup(v ?? "")}
+            options={(groupsQuery.data?.data ?? []).map((group) => ({
+              value: group.id,
+              label: group.name,
+            }))}
+          />
+          <Select
+            className="w-40"
+            value={bulkLocation || undefined}
+            placeholder="Assign location"
+            aria-label="Bulk assign location"
+            allowClear
+            onChange={(v) => setBulkLocation(v ?? "")}
+            options={(locationsQuery.data?.data ?? []).map((location) => ({
+              value: location.id,
+              label: location.name,
+            }))}
+          />
+          <Input
+            className="w-36"
+            value={bulkTag}
+            onChange={(e) => setBulkTag(e.target.value)}
+            placeholder="tag key=value"
+            aria-label="Bulk add tag"
+          />
+          <Button
+            type="primary"
+            disabled={!bulkGroup && !bulkLocation && !bulkTag.trim()}
+            loading={bulkApply.isPending}
+            onClick={() => bulkApply.mutate()}
+          >
+            Apply to selected
+          </Button>
+          <Button type="link" size="small" onClick={() => setSelected(new Set())}>
+            Clear selection
+          </Button>
+        </div>
+      )}
+
+      <Table<Device>
+        size="middle"
+        rowKey="id"
+        columns={columns}
+        dataSource={devices}
+        loading={devicesQuery.isLoading}
+        scroll={{ x: "max-content" }}
+        rowSelection={
+          canManage
+            ? {
+                selectedRowKeys: Array.from(selected),
+                onChange: (keys) => setSelected(new Set(keys as string[])),
+                getCheckboxProps: (device) => ({
+                  "aria-label": `Select ${device.name}`,
+                }),
+              }
+            : undefined
+        }
+        locale={{
+          emptyText: (
+            <EmptyState
+              title="No devices found"
+              description="Players register using the enrollment key and appear here for approval."
+            />
+          ),
+        }}
+        pagination={{
+          current: page,
+          pageSize,
+          total,
+          showSizeChanger: false,
+          showTotal: (t) => `${t} devices`,
+          onChange: setPage,
+        }}
+      />
+    </div>
+  );
 
   return (
     <div>
-      <div className="flex items-center justify-between">
-        <h1 className="text-xl font-semibold text-slate-900">Devices</h1>
-        {canManage && tab === "devices" && (
-          <div className="text-right">
-            <button
-              type="button"
-              onClick={() => setKeyVisible((v) => !v)}
-              className="rounded-md border border-slate-300 px-3 py-1.5 text-sm font-medium text-slate-600"
-            >
+      <PageHeader
+        title="Devices"
+        description="Enroll, organize and operate your display fleet."
+        actions={
+          canManage &&
+          tab === "devices" && (
+            <Button icon={<KeyOutlined />} onClick={() => setKeyVisible((v) => !v)}>
               {keyVisible ? "Hide enrollment key" : "Show enrollment key"}
-            </button>
-            {keyVisible && keyQuery.data?.data && (
-              <p className="mt-1 rounded bg-slate-100 px-2 py-1 font-mono text-xs text-slate-700">
-                {keyQuery.data.data.enrollment_key}
-              </p>
-            )}
-          </div>
-        )}
-      </div>
+            </Button>
+          )
+        }
+      />
 
-      <div className="mt-4 border-b border-slate-200" role="tablist">
-        {(["devices", "groups", "walls", "bundles"] as const).map((t) => (
-          <button
-            key={t}
-            role="tab"
-            aria-selected={tab === t}
-            onClick={() => setTab(t)}
-            className={`-mb-px border-b-2 px-4 py-2 text-sm font-medium capitalize ${
-              tab === t
-                ? "border-slate-900 text-slate-900"
-                : "border-transparent text-slate-500 hover:text-slate-700"
-            }`}
-          >
-            {t}
-          </button>
-        ))}
-      </div>
-
-      {tab === "bundles" ? (
-        <div className="mt-4">
-          <BundlesTab />
-        </div>
-      ) : tab === "walls" ? (
-        <div className="mt-4">
-          <WallsTab />
-        </div>
-      ) : tab === "groups" ? (
-        <div className="mt-4">
-          <GroupsTab />
-        </div>
-      ) : (
-        <div className="mt-4">
-          <div className="flex flex-wrap items-center gap-3">
-            <input
-              type="search"
-              value={search}
-              onChange={(e) => {
-                setSearch(e.target.value);
-                setPage(1);
-              }}
-              placeholder="Search name, serial, model…"
-              aria-label="Search devices"
-              className="w-72 rounded-md border border-slate-300 px-3 py-2 text-sm shadow-sm"
-            />
-            <select
-              value={statusFilter}
-              onChange={(e) => {
-                setStatusFilter(e.target.value);
-                setPage(1);
-              }}
-              aria-label="Filter by status"
-              className="rounded-md border border-slate-300 px-3 py-2 text-sm shadow-sm capitalize"
-            >
-              {STATUS_FILTERS.map((s) => (
-                <option key={s} value={s}>
-                  {s || "All statuses"}
-                </option>
-              ))}
-            </select>
-
-            <select
-              value=""
-              onChange={(e) => {
-                const view = (viewsQuery.data?.data ?? []).find(
-                  (v) => v.id === e.target.value,
-                );
-                if (view) {
-                  setSearch(view.filter_json.q ?? "");
-                  setStatusFilter(view.filter_json.status ?? "");
-                  setPage(1);
-                }
-              }}
-              aria-label="Saved views"
-              className="rounded-md border border-slate-300 px-3 py-2 text-sm shadow-sm"
-            >
-              <option value="">Saved views…</option>
-              {(viewsQuery.data?.data ?? []).map((view) => (
-                <option key={view.id} value={view.id}>
-                  {view.name}
-                </option>
-              ))}
-            </select>
-            {savingView ? (
-              <span className="flex items-center gap-1">
-                <input
-                  value={viewName}
-                  onChange={(e) => setViewName(e.target.value)}
-                  placeholder="View name"
-                  aria-label="View name"
-                  className="w-36 rounded-md border border-slate-300 px-2 py-2 text-sm"
-                />
-                <button
-                  type="button"
-                  disabled={!viewName.trim() || saveView.isPending}
-                  onClick={() => saveView.mutate()}
-                  className="rounded-md bg-slate-900 px-3 py-2 text-sm font-medium text-white disabled:opacity-50"
-                >
-                  Save
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setSavingView(false)}
-                  className="px-2 text-sm text-slate-500"
-                >
-                  ✕
-                </button>
-              </span>
-            ) : (
-              <button
-                type="button"
-                onClick={() => setSavingView(true)}
-                className="rounded-md border border-slate-300 px-3 py-2 text-sm font-medium text-slate-600"
-              >
-                Save view
-              </button>
-            )}
-            {(viewsQuery.data?.data ?? []).length > 0 && (
-              <button
-                type="button"
-                onClick={() => {
-                  const views = viewsQuery.data?.data ?? [];
-                  const target = views.find(
-                    (v) => v.filter_json.q === search && (v.filter_json.status ?? "") === statusFilter,
-                  );
-                  if (target && window.confirm(`Delete saved view "${target.name}"?`)) {
-                    deleteView.mutate(target.id);
-                  }
-                }}
-                className="text-xs text-slate-400 underline"
-                title="Deletes the saved view matching the current filters"
-              >
-                Delete current view
-              </button>
-            )}
-          </div>
-
-          {canManage && selected.size > 0 && (
-            <div className="mt-3 flex flex-wrap items-center gap-2 rounded-md border border-slate-300 bg-slate-50 px-3 py-2 text-sm">
-              <span className="font-medium text-slate-700">{selected.size} selected</span>
-              <select
-                value={bulkGroup}
-                onChange={(e) => setBulkGroup(e.target.value)}
-                aria-label="Bulk assign group"
-                className="rounded-md border border-slate-300 px-2 py-1.5"
-              >
-                <option value="">— group —</option>
-                {(groupsQuery.data?.data ?? []).map((group) => (
-                  <option key={group.id} value={group.id}>
-                    {group.name}
-                  </option>
-                ))}
-              </select>
-              <select
-                value={bulkLocation}
-                onChange={(e) => setBulkLocation(e.target.value)}
-                aria-label="Bulk assign location"
-                className="rounded-md border border-slate-300 px-2 py-1.5"
-              >
-                <option value="">— location —</option>
-                {(locationsQuery.data?.data ?? []).map((location) => (
-                  <option key={location.id} value={location.id}>
-                    {location.name}
-                  </option>
-                ))}
-              </select>
-              <input
-                value={bulkTag}
-                onChange={(e) => setBulkTag(e.target.value)}
-                placeholder="tag key=value"
-                aria-label="Bulk add tag"
-                className="w-36 rounded-md border border-slate-300 px-2 py-1.5"
-              />
-              <button
-                type="button"
-                disabled={
-                  bulkApply.isPending || (!bulkGroup && !bulkLocation && !bulkTag.trim())
-                }
-                onClick={() => bulkApply.mutate()}
-                className="rounded-md bg-slate-900 px-3 py-1.5 text-sm font-medium text-white disabled:opacity-50"
-              >
-                {bulkApply.isPending ? "Applying…" : "Apply to selected"}
-              </button>
-              <button
-                type="button"
-                onClick={() => setSelected(new Set())}
-                className="text-xs text-slate-500 underline"
-              >
-                Clear selection
-              </button>
-            </div>
-          )}
-
-          {devicesQuery.isLoading ? (
-            <Spinner label="Loading devices…" />
-          ) : devices.length === 0 ? (
-            <p className="mt-6 rounded-lg border border-dashed border-slate-300 bg-white p-10 text-center text-sm text-slate-500">
-              No devices found. Players register using the enrollment key and appear
-              here for approval.
-            </p>
-          ) : (
-            <div className="mt-4 overflow-x-auto rounded-lg border border-slate-200 bg-white">
-              <table className="min-w-full divide-y divide-slate-200 text-sm">
-                <thead className="bg-slate-50 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
-                  <tr>
-                    {canManage && (
-                      <th className="px-3 py-3">
-                        <input
-                          type="checkbox"
-                          aria-label="Select all on page"
-                          checked={
-                            devices.length > 0 && devices.every((d) => selected.has(d.id))
-                          }
-                          onChange={(e) => {
-                            setSelected((prev) => {
-                              const next = new Set(prev);
-                              for (const d of devices) {
-                                if (e.target.checked) next.add(d.id);
-                                else next.delete(d.id);
-                              }
-                              return next;
-                            });
-                          }}
-                        />
-                      </th>
-                    )}
-                    <th className="px-4 py-3">Name</th>
-                    <th className="px-4 py-3">Serial</th>
-                    <th className="px-4 py-3">Platform</th>
-                    <th className="px-4 py-3">Group</th>
-                    <th className="px-4 py-3">Lifecycle</th>
-                    <th className="px-4 py-3">Connection</th>
-                    <th className="px-4 py-3">Last heartbeat</th>
-                    {canManage && <th className="px-4 py-3 text-right">Actions</th>}
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-100">
-                  {devices.map((device) => (
-                    <tr key={device.id} className="hover:bg-slate-50">
-                      {canManage && (
-                        <td className="px-3 py-3">
-                          <input
-                            type="checkbox"
-                            aria-label={`Select ${device.name}`}
-                            checked={selected.has(device.id)}
-                            onChange={() => toggleSelected(device.id)}
-                          />
-                        </td>
-                      )}
-                      <td className="px-4 py-3">
-                        <button
-                          type="button"
-                          onClick={() => setDetailId(device.id)}
-                          className="font-medium text-slate-800 hover:underline"
-                        >
-                          {device.name}
-                        </button>
-                      </td>
-                      <td className="px-4 py-3 font-mono text-xs text-slate-500">
-                        {device.serial_no}
-                      </td>
-                      <td className="px-4 py-3 text-slate-600">
-                        {device.manufacturer ?? "—"} {device.platform ? `· ${device.platform}` : ""}
-                      </td>
-                      <td className="px-4 py-3 text-slate-600">{device.group?.name ?? "—"}</td>
-                      <td className="px-4 py-3">
-                        <StatusBadge status={device.status} />
-                      </td>
-                      <td className="px-4 py-3">
-                        <StatusBadge status={device.connection_status} />
-                      </td>
-                      <td className="px-4 py-3 text-slate-600">
-                        {timeAgo(device.last_heartbeat_at)}
-                      </td>
-                      {canManage && (
-                        <td className="space-x-3 px-4 py-3 text-right">
-                          {device.status === "pending" && (
-                            <>
-                              <button
-                                type="button"
-                                onClick={() => lifecycle.mutate({ id: device.id, verb: "approve" })}
-                                className="text-sm font-medium text-emerald-700 hover:underline"
-                              >
-                                Approve
-                              </button>
-                              <button
-                                type="button"
-                                onClick={() => lifecycle.mutate({ id: device.id, verb: "reject" })}
-                                className="text-sm font-medium text-red-600 hover:underline"
-                              >
-                                Reject
-                              </button>
-                            </>
-                          )}
-                        </td>
-                      )}
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
-
-          {totalPages > 1 && (
-            <div className="mt-4 flex items-center justify-between text-sm text-slate-600">
-              <span>
-                Page {page} of {totalPages} · {total} devices
-              </span>
-              <div className="space-x-2">
-                <button
-                  type="button"
-                  disabled={page <= 1}
-                  onClick={() => setPage((p) => p - 1)}
-                  className="rounded-md border border-slate-300 px-3 py-1.5 disabled:opacity-40"
-                >
-                  Previous
-                </button>
-                <button
-                  type="button"
-                  disabled={page >= totalPages}
-                  onClick={() => setPage((p) => p + 1)}
-                  className="rounded-md border border-slate-300 px-3 py-1.5 disabled:opacity-40"
-                >
-                  Next
-                </button>
-              </div>
-            </div>
-          )}
-        </div>
+      {keyVisible && keyQuery.data?.data && (
+        <Typography.Paragraph className="-mt-3 mb-4">
+          <Typography.Text type="secondary">Enrollment key: </Typography.Text>
+          <Typography.Text code copyable>
+            {keyQuery.data.data.enrollment_key}
+          </Typography.Text>
+        </Typography.Paragraph>
       )}
+
+      <Tabs
+        activeKey={tab}
+        onChange={(key) => setTab(key as typeof tab)}
+        items={[
+          { key: "devices", label: "Devices", children: devicesTab },
+          { key: "groups", label: "Groups", children: <GroupsTab /> },
+          { key: "walls", label: "Video Walls", children: <WallsTab /> },
+          { key: "bundles", label: "Edge Bundles", children: <BundlesTab /> },
+        ]}
+      />
 
       {detailId && (
         <DeviceDetailModal

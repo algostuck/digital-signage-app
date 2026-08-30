@@ -1,8 +1,24 @@
+import { PlusOutlined, ThunderboltOutlined } from "@ant-design/icons";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useState, type FormEvent } from "react";
-import { FormField } from "../../components/ui/FormField";
-import { Modal } from "../../components/ui/Modal";
-import { Spinner } from "../../components/ui/Spinner";
+import {
+  Alert,
+  App,
+  Button,
+  Card,
+  Col,
+  Flex,
+  Input,
+  Modal,
+  Popconfirm,
+  Radio,
+  Row,
+  Select,
+  Space,
+  Tag,
+  Typography,
+} from "antd";
+import { useState } from "react";
+import { EmptyState, LoadingState } from "../../components/ui/states";
 import { api, ApiError } from "../../lib/api";
 import { useAuth } from "../../lib/auth";
 import type { LocationNode } from "../locations/types";
@@ -28,6 +44,7 @@ interface GroupRow extends DeviceGroup {
 /** P2-04 Device Group Builder: static + dynamic rules with preview. */
 export function GroupsTab() {
   const { hasPermission } = useAuth();
+  const { message } = App.useApp();
   const canManage = hasPermission("devices.manage");
   const canControl = hasPermission("devices.control");
   const queryClient = useQueryClient();
@@ -46,7 +63,7 @@ export function GroupsTab() {
     mutationFn: (id: string) => api.delete(`/device-groups/${id}`),
     onSuccess: invalidate,
     onError: (err) =>
-      window.alert(err instanceof ApiError ? err.message : "Failed to delete group"),
+      message.error(err instanceof ApiError ? err.message : "Failed to delete group"),
   });
   const runAction = useMutation({
     mutationFn: ({ id, command_type }: { id: string; command_type: string }) =>
@@ -54,81 +71,83 @@ export function GroupsTab() {
         command_type,
       }),
     onSuccess: (envelope) => {
-      window.alert(
+      message.success(
         `Queued for ${envelope.data!.queued} device(s)` +
           (envelope.data!.skipped ? ` (${envelope.data!.skipped} inactive skipped)` : ""),
       );
       setActionGroup(null);
     },
     onError: (err) =>
-      window.alert(err instanceof ApiError ? err.message : "Bulk action failed"),
+      message.error(err instanceof ApiError ? err.message : "Bulk action failed"),
   });
 
-  if (groupsQuery.isLoading) return <Spinner label="Loading groups…" />;
+  if (groupsQuery.isLoading) return <LoadingState rows={4} />;
   const groups = groupsQuery.data?.data ?? [];
 
   return (
     <div>
       {canManage && (
-        <div className="flex justify-end">
-          <button
-            type="button"
-            onClick={() => setCreateOpen(true)}
-            className="rounded-md bg-slate-900 px-4 py-2 text-sm font-medium text-white"
-          >
+        <Flex justify="flex-end" className="mb-3">
+          <Button type="primary" icon={<PlusOutlined />} onClick={() => setCreateOpen(true)}>
             Add group
-          </button>
-        </div>
+          </Button>
+        </Flex>
       )}
       {groups.length === 0 ? (
-        <p className="mt-4 rounded-lg border border-dashed border-slate-300 bg-white p-8 text-center text-sm text-slate-500">
-          No device groups yet. Static groups hold assigned devices; dynamic groups
-          match rules like manufacturer or location subtree.
-        </p>
+        <Card>
+          <EmptyState
+            title="No device groups yet"
+            description="Static groups hold assigned devices; dynamic groups match rules like manufacturer or location subtree."
+          />
+        </Card>
       ) : (
-        <ul className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+        <Row gutter={[12, 12]}>
           {groups.map((group) => (
-            <li key={group.id} className="rounded-lg border border-slate-200 bg-white p-4">
-              <div className="flex items-start justify-between">
-                <div>
-                  <p className="font-medium text-slate-800">{group.name}</p>
-                  <p className="mt-0.5 text-sm text-slate-500">
-                    <span
-                      className={`mr-2 rounded-full px-2 py-0.5 text-xs font-medium ${
-                        group.group_type === "dynamic"
-                          ? "bg-sky-100 text-sky-700"
-                          : "bg-slate-100 text-slate-600"
-                      }`}
+            <Col key={group.id} xs={24} sm={12} lg={8}>
+              <Card size="small">
+                <Flex justify="space-between" align="flex-start" gap="small">
+                  <div className="min-w-0">
+                    <Typography.Text strong ellipsis className="block">
+                      {group.name}
+                    </Typography.Text>
+                    <Space size="small" className="mt-1">
+                      <Tag
+                        variant="filled"
+                        color={group.group_type === "dynamic" ? "blue" : "default"}
+                      >
+                        {group.group_type}
+                      </Tag>
+                      <Typography.Text type="secondary" className="text-sm">
+                        {group.member_count} device{group.member_count === 1 ? "" : "s"}
+                      </Typography.Text>
+                    </Space>
+                  </div>
+                  {canManage && (
+                    <Popconfirm
+                      title={`Delete group "${group.name}"?`}
+                      onConfirm={() => remove.mutate(group.id)}
+                      okButtonProps={{ danger: true }}
                     >
-                      {group.group_type}
-                    </span>
-                    {group.member_count} device{group.member_count === 1 ? "" : "s"}
-                  </p>
-                </div>
-                {canManage && (
-                  <button
-                    type="button"
-                    onClick={() => {
-                      if (window.confirm(`Delete group "${group.name}"?`)) remove.mutate(group.id);
-                    }}
-                    className="text-sm font-medium text-red-600 hover:underline"
+                      <Button type="link" danger size="small">
+                        Delete
+                      </Button>
+                    </Popconfirm>
+                  )}
+                </Flex>
+                {canControl && group.member_count > 0 && (
+                  <Button
+                    className="mt-3"
+                    size="small"
+                    icon={<ThunderboltOutlined />}
+                    onClick={() => setActionGroup(group)}
                   >
-                    Delete
-                  </button>
+                    Bulk action…
+                  </Button>
                 )}
-              </div>
-              {canControl && group.member_count > 0 && (
-                <button
-                  type="button"
-                  onClick={() => setActionGroup(group)}
-                  className="mt-3 rounded-md border border-slate-300 px-3 py-1.5 text-sm font-medium text-slate-600"
-                >
-                  Bulk action…
-                </button>
-              )}
-            </li>
+              </Card>
+            </Col>
           ))}
-        </ul>
+        </Row>
       )}
 
       {createOpen && (
@@ -141,44 +160,27 @@ export function GroupsTab() {
         />
       )}
       {actionGroup && (
-        <Modal title={`Bulk action: ${actionGroup.name}`} open onClose={() => setActionGroup(null)}>
-          <div className="space-y-4">
-            <p className="text-sm text-slate-500">
-              Queue a remote command for all {actionGroup.member_count} active member
-              device(s).
-            </p>
-            <select
+        <Modal
+          title={`Bulk action: ${actionGroup.name}`}
+          open
+          onCancel={() => setActionGroup(null)}
+          okText="Queue command"
+          confirmLoading={runAction.isPending}
+          onOk={() => runAction.mutate({ id: actionGroup.id, command_type: command })}
+          destroyOnHidden
+        >
+          <Space orientation="vertical" size="middle" className="w-full">
+            <Typography.Text type="secondary">
+              Queue a remote command for all {actionGroup.member_count} active member device(s).
+            </Typography.Text>
+            <Select
+              className="w-full"
               value={command}
-              onChange={(e) => setCommand(e.target.value)}
+              onChange={setCommand}
               aria-label="Command"
-              className="block w-full rounded-md border border-slate-300 px-3 py-2 text-sm"
-            >
-              {BULK_COMMANDS.map((c) => (
-                <option key={c} value={c}>
-                  {c}
-                </option>
-              ))}
-            </select>
-            <div className="flex justify-end gap-2">
-              <button
-                type="button"
-                onClick={() => setActionGroup(null)}
-                className="rounded-md border border-slate-300 px-4 py-2 text-sm font-medium text-slate-600"
-              >
-                Cancel
-              </button>
-              <button
-                type="button"
-                disabled={runAction.isPending}
-                onClick={() =>
-                  runAction.mutate({ id: actionGroup.id, command_type: command })
-                }
-                className="rounded-md bg-slate-900 px-4 py-2 text-sm font-medium text-white disabled:opacity-50"
-              >
-                {runAction.isPending ? "Queuing…" : "Queue command"}
-              </button>
-            </div>
-          </div>
+              options={BULK_COMMANDS.map((c) => ({ value: c, label: c }))}
+            />
+          </Space>
         </Modal>
       )}
     </div>
@@ -251,195 +253,181 @@ function GroupBuilderModal({
     setPreview(null);
   }
 
-  function onSubmit(e: FormEvent) {
-    e.preventDefault();
-    setError(null);
-    create.mutate();
-  }
-
   return (
-    <Modal title="New device group" open onClose={onClose}>
-      <form className="space-y-4" onSubmit={onSubmit}>
-        <FormField
-          id="group-name"
-          label="Name"
-          required
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-        />
-        <div className="flex gap-2" role="radiogroup" aria-label="Group type">
-          {(["static", "dynamic"] as const).map((t) => (
-            <button
-              key={t}
-              type="button"
-              role="radio"
-              aria-checked={groupType === t}
-              onClick={() => setGroupType(t)}
-              className={`rounded-md px-3 py-1.5 text-sm font-medium capitalize ${
-                groupType === t
-                  ? "bg-slate-900 text-white"
-                  : "border border-slate-300 text-slate-600"
-              }`}
-            >
-              {t}
-            </button>
-          ))}
+    <Modal
+      title="New device group"
+      open
+      onCancel={onClose}
+      okText="Create group"
+      okButtonProps={{ disabled: !name.trim() }}
+      confirmLoading={create.isPending}
+      onOk={() => {
+        setError(null);
+        create.mutate();
+      }}
+      destroyOnHidden
+    >
+      <Space orientation="vertical" size="middle" className="w-full">
+        <div>
+          <Typography.Text type="secondary" className="text-xs font-medium uppercase tracking-wide">
+            Name
+          </Typography.Text>
+          <Input
+            className="mt-1"
+            required
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            aria-label="Name"
+            autoFocus
+          />
+        </div>
+        <div role="radiogroup" aria-label="Group type">
+          <Radio.Group
+            value={groupType}
+            onChange={(e) => setGroupType(e.target.value as "static" | "dynamic")}
+            optionType="button"
+            buttonStyle="solid"
+            options={[
+              { value: "static", label: "Static" },
+              { value: "dynamic", label: "Dynamic" },
+            ]}
+          />
         </div>
 
         {groupType === "dynamic" && (
-          <div className="space-y-2 rounded-md border border-slate-200 p-3">
-            <div className="flex items-center gap-2 text-sm text-slate-600">
-              Match
-              <select
-                value={match}
-                onChange={(e) => setMatch(e.target.value as "all" | "any")}
-                className="rounded-md border border-slate-300 px-2 py-1"
-              >
-                <option value="all">all</option>
-                <option value="any">any</option>
-              </select>
-              of the conditions:
-            </div>
-            {conditions.map((condition, index) => (
-              <div key={index} className="flex flex-wrap items-center gap-2 text-sm">
-                <select
-                  value={condition.field}
-                  onChange={(e) =>
-                    updateCondition(index, {
-                      field: e.target.value as RuleCondition["field"],
-                      operator: e.target.value === "location" ? "in_subtree" : "eq",
-                      value: "",
-                    })
-                  }
-                  className="rounded-md border border-slate-300 px-2 py-1"
-                >
-                  {RULE_FIELDS.map((f) => (
-                    <option key={f} value={f}>
-                      {f}
-                    </option>
-                  ))}
-                </select>
-                <select
-                  value={condition.operator}
-                  onChange={(e) => updateCondition(index, { operator: e.target.value })}
-                  className="rounded-md border border-slate-300 px-2 py-1"
-                >
-                  {(condition.field === "location"
-                    ? ["in_subtree", "eq"]
-                    : condition.field === "tag"
-                      ? ["eq", "ne"]
-                      : ["eq", "ne", "contains"]
-                  ).map((op) => (
-                    <option key={op} value={op}>
-                      {op}
-                    </option>
-                  ))}
-                </select>
-                {condition.field === "location" ? (
-                  <select
-                    value={condition.value}
-                    onChange={(e) => updateCondition(index, { value: e.target.value })}
-                    className="min-w-36 rounded-md border border-slate-300 px-2 py-1"
-                  >
-                    <option value="">— location —</option>
-                    {(locationsQuery.data?.data ?? []).map((loc) => (
-                      <option key={loc.id} value={loc.id}>
-                        {loc.name}
-                      </option>
-                    ))}
-                  </select>
-                ) : condition.field === "tag" ? (
-                  <>
-                    <input
-                      placeholder="key"
-                      value={condition.tagKey ?? ""}
-                      onChange={(e) => updateCondition(index, { tagKey: e.target.value })}
-                      className="w-24 rounded-md border border-slate-300 px-2 py-1"
-                    />
-                    <input
-                      placeholder="value"
-                      value={condition.tagValue ?? ""}
-                      onChange={(e) => updateCondition(index, { tagValue: e.target.value })}
-                      className="w-24 rounded-md border border-slate-300 px-2 py-1"
-                    />
-                  </>
-                ) : (
-                  <input
-                    placeholder="value"
-                    value={condition.value}
-                    onChange={(e) => updateCondition(index, { value: e.target.value })}
-                    className="w-32 rounded-md border border-slate-300 px-2 py-1"
+          <Card size="small">
+            <Space orientation="vertical" size="small" className="w-full">
+              <Space size="small" align="center">
+                <Typography.Text type="secondary">Match</Typography.Text>
+                <Select
+                  size="small"
+                  value={match}
+                  onChange={(value) => setMatch(value)}
+                  aria-label="Match mode"
+                  options={[
+                    { value: "all", label: "all" },
+                    { value: "any", label: "any" },
+                  ]}
+                />
+                <Typography.Text type="secondary">of the conditions:</Typography.Text>
+              </Space>
+              {conditions.map((condition, index) => (
+                <Space key={index} size="small" wrap>
+                  <Select
+                    size="small"
+                    className="w-32"
+                    value={condition.field}
+                    aria-label="Condition field"
+                    onChange={(value) =>
+                      updateCondition(index, {
+                        field: value as RuleCondition["field"],
+                        operator: value === "location" ? "in_subtree" : "eq",
+                        value: "",
+                      })
+                    }
+                    options={RULE_FIELDS.map((f) => ({ value: f, label: f }))}
                   />
-                )}
-                {conditions.length > 1 && (
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setConditions((prev) => prev.filter((_, i) => i !== index));
-                      setPreview(null);
-                    }}
-                    className="text-xs text-red-600 hover:underline"
-                  >
-                    remove
-                  </button>
-                )}
-              </div>
-            ))}
-            <div className="flex items-center gap-3">
-              <button
-                type="button"
-                onClick={() =>
-                  setConditions((prev) => [
-                    ...prev,
-                    { field: "platform", operator: "eq", value: "" },
-                  ])
-                }
-                className="text-sm font-medium text-slate-600 hover:underline"
-              >
-                + condition
-              </button>
-              <button
-                type="button"
-                onClick={() => previewMutation.mutate()}
-                disabled={previewMutation.isPending}
-                className="rounded-md border border-slate-300 px-3 py-1 text-sm font-medium text-slate-600 disabled:opacity-50"
-              >
-                {previewMutation.isPending ? "Previewing…" : "Preview matches"}
-              </button>
-              {preview && (
-                <span className="text-sm text-slate-600">
-                  {preview.count} device{preview.count === 1 ? "" : "s"}
-                  {preview.sample.length > 0 && (
-                    <span className="text-slate-400"> — {preview.sample.join(", ")}</span>
+                  <Select
+                    size="small"
+                    className="w-28"
+                    value={condition.operator}
+                    aria-label="Condition operator"
+                    onChange={(value) => updateCondition(index, { operator: value })}
+                    options={(condition.field === "location"
+                      ? ["in_subtree", "eq"]
+                      : condition.field === "tag"
+                        ? ["eq", "ne"]
+                        : ["eq", "ne", "contains"]
+                    ).map((op) => ({ value: op, label: op }))}
+                  />
+                  {condition.field === "location" ? (
+                    <Select
+                      size="small"
+                      className="min-w-36"
+                      value={condition.value || undefined}
+                      placeholder="— location —"
+                      aria-label="Location"
+                      onChange={(value) => updateCondition(index, { value: value ?? "" })}
+                      options={(locationsQuery.data?.data ?? []).map((loc) => ({
+                        value: loc.id,
+                        label: loc.name,
+                      }))}
+                    />
+                  ) : condition.field === "tag" ? (
+                    <>
+                      <Input
+                        size="small"
+                        className="w-24"
+                        placeholder="key"
+                        value={condition.tagKey ?? ""}
+                        onChange={(e) => updateCondition(index, { tagKey: e.target.value })}
+                      />
+                      <Input
+                        size="small"
+                        className="w-24"
+                        placeholder="value"
+                        value={condition.tagValue ?? ""}
+                        onChange={(e) => updateCondition(index, { tagValue: e.target.value })}
+                      />
+                    </>
+                  ) : (
+                    <Input
+                      size="small"
+                      className="w-32"
+                      placeholder="value"
+                      value={condition.value}
+                      onChange={(e) => updateCondition(index, { value: e.target.value })}
+                    />
                   )}
-                </span>
-              )}
-            </div>
-          </div>
+                  {conditions.length > 1 && (
+                    <Button
+                      type="link"
+                      danger
+                      size="small"
+                      onClick={() => {
+                        setConditions((prev) => prev.filter((_, i) => i !== index));
+                        setPreview(null);
+                      }}
+                    >
+                      remove
+                    </Button>
+                  )}
+                </Space>
+              ))}
+              <Space size="small" wrap align="center">
+                <Button
+                  type="link"
+                  size="small"
+                  icon={<PlusOutlined />}
+                  onClick={() =>
+                    setConditions((prev) => [
+                      ...prev,
+                      { field: "platform", operator: "eq", value: "" },
+                    ])
+                  }
+                >
+                  condition
+                </Button>
+                <Button
+                  size="small"
+                  loading={previewMutation.isPending}
+                  onClick={() => previewMutation.mutate()}
+                >
+                  Preview matches
+                </Button>
+                {preview && (
+                  <Typography.Text type="secondary">
+                    {preview.count} device{preview.count === 1 ? "" : "s"}
+                    {preview.sample.length > 0 && ` — ${preview.sample.join(", ")}`}
+                  </Typography.Text>
+                )}
+              </Space>
+            </Space>
+          </Card>
         )}
 
-        {error && (
-          <p className="rounded-md bg-red-50 px-3 py-2 text-sm text-red-700" role="alert">
-            {error}
-          </p>
-        )}
-        <div className="flex justify-end gap-2">
-          <button
-            type="button"
-            onClick={onClose}
-            className="rounded-md border border-slate-300 px-4 py-2 text-sm font-medium text-slate-600"
-          >
-            Cancel
-          </button>
-          <button
-            type="submit"
-            disabled={create.isPending}
-            className="rounded-md bg-slate-900 px-4 py-2 text-sm font-medium text-white disabled:opacity-50"
-          >
-            {create.isPending ? "Creating…" : "Create group"}
-          </button>
-        </div>
-      </form>
+        {error && <Alert type="error" message={error} showIcon role="alert" />}
+      </Space>
     </Modal>
   );
 }

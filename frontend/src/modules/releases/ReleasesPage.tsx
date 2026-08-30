@@ -1,7 +1,26 @@
+import { PlusOutlined, RollbackOutlined, UploadOutlined } from "@ant-design/icons";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import {
+  Alert,
+  Button,
+  Card,
+  Flex,
+  Form,
+  Input,
+  InputNumber,
+  List,
+  Modal,
+  Popconfirm,
+  Progress,
+  Result,
+  Select,
+  Space,
+  Typography,
+  Upload,
+} from "antd";
 import { useState } from "react";
-import { Modal } from "../../components/ui/Modal";
-import { Spinner } from "../../components/ui/Spinner";
+import { PageHeader } from "../../components/ui/PageHeader";
+import { EmptyState, LoadingState } from "../../components/ui/states";
 import { StatusBadge } from "../../components/ui/StatusBadge";
 import { api, ApiError } from "../../lib/api";
 import { useAuth } from "../../lib/auth";
@@ -77,39 +96,42 @@ export function ReleasesPage() {
 
   if (!canManage) {
     return (
-      <p className="mt-6 text-sm text-slate-500">
-        You need the releases.manage permission to use the Update Center.
-      </p>
+      <Result
+        status="403"
+        title="Update Center unavailable"
+        subTitle="You need the releases.manage permission to use the Update Center."
+      />
     );
   }
 
   return (
     <div>
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-xl font-semibold text-slate-900">Player Update Center</h1>
-          <p className="mt-1 text-sm text-slate-500">
-            Upload player packages and roll them out in staged rings with
-            stop-on-failure protection.
-          </p>
-        </div>
-        <button
-          type="button"
-          onClick={() => setShowCreate(true)}
-          className="rounded-md bg-slate-900 px-4 py-2 text-sm font-medium text-white"
-        >
-          New release
-        </button>
-      </div>
+      <PageHeader
+        title="Player Update Center"
+        description="Upload player packages and roll them out in staged rings with stop-on-failure protection."
+        actions={
+          <Button type="primary" icon={<PlusOutlined />} onClick={() => setShowCreate(true)}>
+            New release
+          </Button>
+        }
+      />
 
       {releasesQuery.isLoading ? (
-        <Spinner label="Loading releases…" />
+        <LoadingState rows={5} />
       ) : releases.length === 0 ? (
-        <p className="mt-6 rounded-lg border border-dashed border-slate-300 bg-white p-10 text-center text-sm text-slate-500">
-          No player releases yet. Upload a package to get started.
-        </p>
+        <Card>
+          <EmptyState
+            title="No player releases yet"
+            description="Upload a package to get started."
+            action={
+              <Button type="primary" icon={<PlusOutlined />} onClick={() => setShowCreate(true)}>
+                New release
+              </Button>
+            }
+          />
+        </Card>
       ) : (
-        <ul className="mt-6 space-y-4">
+        <Space orientation="vertical" size="middle" className="w-full">
           {releases.map((release) => (
             <ReleaseCard
               key={release.id}
@@ -118,7 +140,7 @@ export function ReleasesPage() {
               onChanged={refresh}
             />
           ))}
-        </ul>
+        </Space>
       )}
 
       {showCreate && (
@@ -148,64 +170,54 @@ function ReleaseCard({
   const rollback = useMutation({
     mutationFn: () => api.post(`/player-releases/${release.id}/rollback`),
     onSuccess: onChanged,
-    onError: (err) =>
-      setError(err instanceof ApiError ? err.message : "Rollback failed"),
+    onError: (err) => setError(err instanceof ApiError ? err.message : "Rollback failed"),
   });
   const hasRollout = release.rollout.length > 0;
 
   return (
-    <li className="rounded-lg border border-slate-200 bg-white p-4">
-      <div className="flex flex-wrap items-center gap-3">
-        <span className="font-mono text-sm font-semibold text-slate-900">
+    <Card size="small">
+      <Flex wrap align="center" gap="small">
+        <Typography.Text strong code>
           {release.version}
-        </span>
+        </Typography.Text>
         <StatusBadge status={release.state} />
-        <span className="text-xs text-slate-500">
+        <Typography.Text type="secondary" className="text-xs">
           {formatBytes(release.size_bytes)} · created {timeAgo(release.created_at)}
-        </span>
-        <span className="ml-auto space-x-2">
+        </Typography.Text>
+        <Space className="ms-auto">
           {!hasRollout && release.state !== "rolled_back" && (
-            <button
-              type="button"
-              onClick={onStartRollout}
-              className="rounded-md bg-slate-900 px-3 py-1.5 text-sm font-medium text-white"
-            >
+            <Button type="primary" size="small" onClick={onStartRollout}>
               Start rollout
-            </button>
+            </Button>
           )}
           {release.state === "active" && (
-            <button
-              type="button"
-              onClick={() => {
-                if (
-                  window.confirm(
-                    `Roll back ${release.version}? The rollout halts and the update is withdrawn.`,
-                  )
-                ) {
-                  rollback.mutate();
-                }
-              }}
-              className="rounded-md border border-red-200 px-3 py-1.5 text-sm font-medium text-red-600"
+            <Popconfirm
+              title={`Roll back ${release.version}?`}
+              description="The rollout halts and the update is withdrawn."
+              onConfirm={() => rollback.mutate()}
+              okButtonProps={{ danger: true }}
             >
-              Roll back
-            </button>
+              <Button size="small" danger icon={<RollbackOutlined />}>
+                Roll back
+              </Button>
+            </Popconfirm>
           )}
-        </span>
-      </div>
-      {release.notes && <p className="mt-1 text-sm text-slate-500">{release.notes}</p>}
-      {error && (
-        <p className="mt-2 rounded-md bg-red-50 px-3 py-2 text-sm text-red-700" role="alert">
-          {error}
-        </p>
+        </Space>
+      </Flex>
+      {release.notes && (
+        <Typography.Paragraph type="secondary" className="!mb-0 !mt-1">
+          {release.notes}
+        </Typography.Paragraph>
       )}
+      {error && <Alert type="error" message={error} showIcon className="mt-2" role="alert" />}
       {hasRollout && (
-        <div className="mt-3 space-y-2 border-t border-slate-100 pt-3">
+        <Space orientation="vertical" size="small" className="mt-3 w-full">
           {release.rollout.map((ring) => (
             <RingRow key={ring.id} ring={ring} />
           ))}
-        </div>
+        </Space>
       )}
-    </li>
+    </Card>
   );
 }
 
@@ -217,56 +229,58 @@ function RingRow({ ring }: { ring: Ring }) {
     enabled: expanded,
   });
   const done = ring.devices.succeeded + ring.devices.failed;
-  const progressPct = ring.devices.total
-    ? Math.round((done / ring.devices.total) * 100)
-    : 0;
+  const progressPct = ring.devices.total ? Math.round((done / ring.devices.total) * 100) : 0;
 
   return (
     <div>
-      <button
-        type="button"
+      <Flex
+        wrap
+        align="center"
+        gap="small"
+        component="button"
         onClick={() => setExpanded((v) => !v)}
-        className="flex w-full flex-wrap items-center gap-3 text-left"
+        className="w-full cursor-pointer border-0 bg-transparent p-0 text-left"
+        aria-expanded={expanded}
       >
-        <span className="text-sm font-medium text-slate-700">
+        <Typography.Text strong>
           Ring {ring.ring_no} · {ring.percentage}%
-        </span>
+        </Typography.Text>
         <StatusBadge status={ring.state} />
-        <span className="text-xs text-slate-500">
+        <Typography.Text type="secondary" className="text-xs">
           {ring.devices.succeeded}/{ring.devices.total} succeeded
-          {ring.devices.failed > 0 && (
-            <span className="text-red-600"> · {ring.devices.failed} failed</span>
-          )}
+          {ring.devices.failed > 0 && ` · ${ring.devices.failed} failed`}
           {" · "}threshold {ring.failure_threshold_pct}%
-        </span>
-        <span className="ml-auto h-1.5 w-32 overflow-hidden rounded bg-slate-100">
-          <span
-            className={`block h-full ${
-              ring.state === "stopped" ? "bg-red-500" : "bg-emerald-500"
-            }`}
-            style={{ width: `${progressPct}%` }}
-          />
-        </span>
-      </button>
-      {expanded && (
-        <div className="mt-2 rounded-md bg-slate-50 px-3 py-2">
-          {devicesQuery.isLoading ? (
-            <Spinner label="Loading devices…" />
-          ) : (
-            <ul className="space-y-1 text-sm text-slate-600">
-              {(devicesQuery.data?.data ?? []).map((row) => (
-                <li key={row.device_id} className="flex items-center gap-2">
-                  <span>{row.device_name}</span>
+        </Typography.Text>
+        <Progress
+          percent={progressPct}
+          size="small"
+          className="ms-auto max-w-36"
+          status={ring.state === "stopped" ? "exception" : undefined}
+        />
+      </Flex>
+      {expanded &&
+        (devicesQuery.isLoading ? (
+          <LoadingState rows={2} />
+        ) : (
+          <List
+            size="small"
+            className="mt-2"
+            dataSource={devicesQuery.data?.data ?? []}
+            renderItem={(row) => (
+              <List.Item className="!px-0 !py-1">
+                <Space size="small">
+                  <Typography.Text>{row.device_name}</Typography.Text>
                   <StatusBadge status={row.state} />
                   {row.failure_reason && (
-                    <span className="text-xs text-red-600">{row.failure_reason}</span>
+                    <Typography.Text type="danger" className="text-xs">
+                      {row.failure_reason}
+                    </Typography.Text>
                   )}
-                </li>
-              ))}
-            </ul>
-          )}
-        </div>
-      )}
+                </Space>
+              </List.Item>
+            )}
+          />
+        ))}
     </div>
   );
 }
@@ -278,15 +292,14 @@ function CreateReleaseModal({
   onClose: () => void;
   onCreated: () => void;
 }) {
-  const [version, setVersion] = useState("");
-  const [notes, setNotes] = useState("");
+  const [form] = Form.useForm<{ version: string; notes?: string }>();
   const [file, setFile] = useState<File | null>(null);
   const [phase, setPhase] = useState<"idle" | "uploading" | "creating">("idle");
   const [error, setError] = useState<string | null>(null);
 
-  async function submit() {
-    if (!file || !version.trim()) {
-      setError("A version and a package file are required.");
+  async function submit(values: { version: string; notes?: string }) {
+    if (!file) {
+      setError("A package file is required.");
       return;
     }
     setError(null);
@@ -296,7 +309,7 @@ function CreateReleaseModal({
         filename: file.name,
         mime_type: file.type || "application/zip",
         size_bytes: file.size,
-        name: `Player package ${version.trim()}`,
+        name: `Player package ${values.version.trim()}`,
       });
       const session = envelope.data!;
       const put = await fetch(session.upload_url, {
@@ -309,9 +322,9 @@ function CreateReleaseModal({
 
       setPhase("creating");
       await api.post("/player-releases", {
-        version: version.trim(),
+        version: values.version.trim(),
         package_asset_id: session.asset_id,
-        notes: notes.trim() || null,
+        notes: values.notes?.trim() || null,
       });
       onCreated();
       onClose();
@@ -326,71 +339,44 @@ function CreateReleaseModal({
   }
 
   return (
-    <Modal title="New player release" open onClose={onClose}>
-      <div className="space-y-4">
-        <div>
-          <label htmlFor="release-version" className="block text-sm font-medium text-slate-700">
-            Version
-          </label>
-          <input
-            id="release-version"
-            value={version}
-            onChange={(e) => setVersion(e.target.value)}
-            placeholder="e.g. 2.5.0"
-            className="mt-1 block w-full rounded-md border border-slate-300 px-3 py-2 text-sm"
-          />
-        </div>
-        <div>
-          <label htmlFor="release-package" className="block text-sm font-medium text-slate-700">
-            Package (.zip)
-          </label>
-          <input
-            id="release-package"
-            type="file"
+    <Modal
+      title="New player release"
+      open
+      onCancel={onClose}
+      okText={phase === "uploading" ? "Uploading…" : phase === "creating" ? "Creating…" : "Create release"}
+      confirmLoading={phase !== "idle"}
+      onOk={() => form.submit()}
+      destroyOnHidden
+    >
+      {error && <Alert type="error" message={error} showIcon className="mb-4" role="alert" />}
+      <Form form={form} layout="vertical" onFinish={submit}>
+        <Form.Item
+          name="version"
+          label="Version"
+          rules={[{ required: true, message: "Version is required." }]}
+        >
+          <Input placeholder="e.g. 2.5.0" autoFocus />
+        </Form.Item>
+        <Form.Item label="Package (.zip)" required>
+          <Upload.Dragger
             accept=".zip,application/zip"
-            onChange={(e) => setFile(e.target.files?.[0] ?? null)}
-            className="mt-1 block w-full text-sm text-slate-600"
-          />
-        </div>
-        <div>
-          <label htmlFor="release-notes" className="block text-sm font-medium text-slate-700">
-            Notes (optional)
-          </label>
-          <textarea
-            id="release-notes"
-            value={notes}
-            onChange={(e) => setNotes(e.target.value)}
-            rows={2}
-            className="mt-1 block w-full rounded-md border border-slate-300 px-3 py-2 text-sm"
-          />
-        </div>
-        {error && (
-          <p className="rounded-md bg-red-50 px-3 py-2 text-sm text-red-700" role="alert">
-            {error}
-          </p>
-        )}
-        <div className="flex justify-end gap-2">
-          <button
-            type="button"
-            onClick={onClose}
-            className="rounded-md border border-slate-300 px-4 py-2 text-sm font-medium text-slate-600"
+            maxCount={1}
+            beforeUpload={(f) => {
+              setFile(f);
+              return false;
+            }}
+            onRemove={() => setFile(null)}
           >
-            Cancel
-          </button>
-          <button
-            type="button"
-            disabled={phase !== "idle"}
-            onClick={submit}
-            className="rounded-md bg-slate-900 px-4 py-2 text-sm font-medium text-white disabled:opacity-50"
-          >
-            {phase === "uploading"
-              ? "Uploading…"
-              : phase === "creating"
-                ? "Creating…"
-                : "Create release"}
-          </button>
-        </div>
-      </div>
+            <p className="ant-upload-drag-icon">
+              <UploadOutlined />
+            </p>
+            <p className="ant-upload-text">Click or drag the package file here</p>
+          </Upload.Dragger>
+        </Form.Item>
+        <Form.Item name="notes" label="Notes (optional)">
+          <Input.TextArea rows={2} />
+        </Form.Item>
+      </Form>
     </Modal>
   );
 }
@@ -404,9 +390,7 @@ function StartRolloutModal({
   onClose: () => void;
   onStarted: () => void;
 }) {
-  const [groupId, setGroupId] = useState("");
-  const [rings, setRings] = useState("10, 50, 100");
-  const [threshold, setThreshold] = useState("5");
+  const [form] = Form.useForm<{ group_id?: string; rings: string; threshold: number }>();
   const [error, setError] = useState<string | null>(null);
 
   const groupsQuery = useQuery({
@@ -415,15 +399,15 @@ function StartRolloutModal({
   });
 
   const start = useMutation({
-    mutationFn: () => {
-      const parsed = rings
+    mutationFn: (values: { group_id?: string; rings: string; threshold: number }) => {
+      const parsed = values.rings
         .split(",")
         .map((part) => Number.parseInt(part.trim(), 10))
         .filter((n) => !Number.isNaN(n));
       return api.post(`/player-releases/${release.id}/rollouts`, {
-        group_id: groupId || null,
+        group_id: values.group_id || null,
         rings: parsed,
-        failure_threshold_pct: Number.parseInt(threshold, 10) || 0,
+        failure_threshold_pct: values.threshold || 0,
       });
     },
     onSuccess: () => {
@@ -435,82 +419,54 @@ function StartRolloutModal({
   });
 
   return (
-    <Modal title={`Roll out ${release.version}`} open onClose={onClose}>
-      <div className="space-y-4">
-        <div>
-          <label htmlFor="rollout-group" className="block text-sm font-medium text-slate-700">
-            Target
-          </label>
-          <select
-            id="rollout-group"
-            value={groupId}
-            onChange={(e) => setGroupId(e.target.value)}
-            className="mt-1 block w-full rounded-md border border-slate-300 px-2 py-1.5 text-sm"
+    <Modal
+      title={`Roll out ${release.version}`}
+      open
+      onCancel={onClose}
+      okText="Start rollout"
+      confirmLoading={start.isPending}
+      onOk={() => form.submit()}
+      destroyOnHidden
+    >
+      {error && <Alert type="error" message={error} showIcon className="mb-4" role="alert" />}
+      <Form
+        form={form}
+        layout="vertical"
+        initialValues={{ rings: "10, 50, 100", threshold: 5 }}
+        onFinish={(values) => {
+          setError(null);
+          start.mutate(values);
+        }}
+      >
+        <Form.Item name="group_id" label="Target">
+          <Select
+            allowClear
+            placeholder="All active devices"
+            options={(groupsQuery.data?.data ?? []).map((group) => ({
+              value: group.id,
+              label: group.name,
+            }))}
+          />
+        </Form.Item>
+        <Flex gap="middle">
+          <Form.Item
+            name="rings"
+            label="Rings (cumulative %)"
+            className="flex-1"
+            extra="Comma-separated, increasing, ending at 100."
           >
-            <option value="">All active devices</option>
-            {(groupsQuery.data?.data ?? []).map((group) => (
-              <option key={group.id} value={group.id}>
-                {group.name}
-              </option>
-            ))}
-          </select>
-        </div>
-        <div className="grid grid-cols-2 gap-3">
-          <div>
-            <label htmlFor="rollout-rings" className="block text-sm font-medium text-slate-700">
-              Rings (cumulative %)
-            </label>
-            <input
-              id="rollout-rings"
-              value={rings}
-              onChange={(e) => setRings(e.target.value)}
-              className="mt-1 block w-full rounded-md border border-slate-300 px-3 py-2 text-sm"
-            />
-            <p className="mt-1 text-xs text-slate-400">
-              Comma-separated, increasing, ending at 100.
-            </p>
-          </div>
-          <div>
-            <label htmlFor="rollout-threshold" className="block text-sm font-medium text-slate-700">
-              Failure threshold %
-            </label>
-            <input
-              id="rollout-threshold"
-              type="number"
-              min={0}
-              max={100}
-              value={threshold}
-              onChange={(e) => setThreshold(e.target.value)}
-              className="mt-1 block w-full rounded-md border border-slate-300 px-3 py-2 text-sm"
-            />
-            <p className="mt-1 text-xs text-slate-400">
-              A ring exceeding this failure share stops the rollout.
-            </p>
-          </div>
-        </div>
-        {error && (
-          <p className="rounded-md bg-red-50 px-3 py-2 text-sm text-red-700" role="alert">
-            {error}
-          </p>
-        )}
-        <div className="flex justify-end gap-2">
-          <button
-            type="button"
-            onClick={onClose}
-            className="rounded-md border border-slate-300 px-4 py-2 text-sm font-medium text-slate-600"
+            <Input />
+          </Form.Item>
+          <Form.Item
+            name="threshold"
+            label="Failure threshold %"
+            className="flex-1"
+            extra="A ring exceeding this failure share stops the rollout."
           >
-            Cancel
-          </button>
-          <button
-            type="button"
-            disabled={start.isPending}
-            onClick={() => start.mutate()}
-            className="rounded-md bg-slate-900 px-4 py-2 text-sm font-medium text-white disabled:opacity-50"
-          >
-            {start.isPending ? "Starting…" : "Start rollout"}
-          </button>
-        </div>
-      </div>
+            <InputNumber min={0} max={100} className="w-full" />
+          </Form.Item>
+        </Flex>
+      </Form>
     </Modal>
   );
 }

@@ -1,5 +1,21 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import {
+  Alert,
+  Button,
+  Card,
+  Descriptions,
+  Input,
+  List,
+  Select,
+  Space,
+  Table,
+  Tag,
+  Typography,
+  type TableProps,
+} from "antd";
 import { useState, type FormEvent } from "react";
+import { EmptyState } from "../../components/ui/states";
+import { StatusBadge } from "../../components/ui/StatusBadge";
 import { api, ApiError } from "../../lib/api";
 import { useAuth } from "../../lib/auth";
 
@@ -26,10 +42,10 @@ interface AnomalyRow {
 const SIGNALS = ["heartbeat_gaps", "playback_failures", "error_events"];
 const REMEDIATIONS = ["restart", "clear_cache", "refresh_content"];
 
-const STATE_STYLE: Record<string, string> = {
-  open: "bg-red-100 text-red-700",
-  acknowledged: "bg-amber-100 text-amber-800",
-  resolved: "bg-emerald-100 text-emerald-700",
+const STATE_COLOR: Record<string, string> = {
+  open: "error",
+  acknowledged: "warning",
+  resolved: "success",
 };
 
 /** P3-14/15 Fleet Intelligence: deterministic anomaly detection with
@@ -100,11 +116,16 @@ export function IntelligenceTab() {
 
   if (rulesQuery.isError)
     return (
-      <p className="rounded-md bg-amber-50 px-3 py-2 text-sm text-amber-800" role="alert">
-        {rulesQuery.error instanceof ApiError
-          ? rulesQuery.error.message
-          : "Fleet intelligence unavailable."}
-      </p>
+      <Alert
+        type="warning"
+        showIcon
+        role="alert"
+        message={
+          rulesQuery.error instanceof ApiError
+            ? rulesQuery.error.message
+            : "Fleet intelligence unavailable."
+        }
+      />
     );
 
   const rules = rulesQuery.data?.data ?? [];
@@ -118,183 +139,176 @@ export function IntelligenceTab() {
     createRule.mutate();
   }
 
+  const ruleColumns: TableProps<RuleRow>["columns"] = [
+    {
+      title: "Rule",
+      dataIndex: "name",
+      render: (name: string) => <Typography.Text strong>{name}</Typography.Text>,
+    },
+    {
+      title: "Signal",
+      render: (_, rule) => (
+        <Typography.Text className="font-mono text-xs">
+          {rule.signal_type} · {JSON.stringify(rule.threshold)} · {rule.window_hours}h
+        </Typography.Text>
+      ),
+    },
+    {
+      title: "Status",
+      dataIndex: "active",
+      render: (active: boolean) => <StatusBadge status={active ? "active" : "inactive"} />,
+    },
+    ...(canRules
+      ? [
+          {
+            title: "Actions",
+            align: "right" as const,
+            render: (_: unknown, rule: RuleRow) => (
+              <Button
+                size="small"
+                onClick={() => toggleRule.mutate({ id: rule.id, active: !rule.active })}
+              >
+                {rule.active ? "Disable" : "Enable"}
+              </Button>
+            ),
+          },
+        ]
+      : []),
+  ];
+
   return (
-    <div className="space-y-6">
-      <p className="text-xs text-slate-400">
+    <Space orientation="vertical" size="middle" className="w-full">
+      <Typography.Text type="secondary" className="text-xs">
         Anomalies are explainable statistics over existing telemetry — every
         score shows its evidence, recommendations never auto-execute, and
         remediation is limited to whitelisted, non-destructive commands.
-      </p>
+      </Typography.Text>
 
-      <section className="rounded-lg border border-slate-200 bg-white p-4">
-        <div className="flex items-center justify-between">
-          <h2 className="text-sm font-semibold uppercase tracking-wide text-slate-400">
-            Detection rules
-          </h2>
-          {canRules && (
-            <form className="flex items-center gap-2" onSubmit={onCreate}>
-              <input
-                required
-                value={ruleForm.name}
-                onChange={(e) => setRuleForm((p) => ({ ...p, name: e.target.value }))}
-                placeholder="Rule name"
-                className="rounded-md border border-slate-300 px-2 py-1.5 text-sm"
-              />
-              <select
-                value={ruleForm.signal_type}
-                onChange={(e) =>
-                  setRuleForm((p) => ({ ...p, signal_type: e.target.value }))
-                }
-                className="rounded-md border border-slate-300 px-2 py-1.5 text-sm"
-              >
-                {SIGNALS.map((s) => (
-                  <option key={s} value={s}>
-                    {s.replace(/_/g, " ")}
-                  </option>
-                ))}
-              </select>
-              <button
-                type="submit"
-                disabled={createRule.isPending}
-                className="rounded-md bg-slate-900 px-3 py-1.5 text-sm font-medium text-white disabled:opacity-50"
-              >
-                Add rule
-              </button>
+      <Card
+        size="small"
+        title="Detection rules"
+        extra={
+          canRules && (
+            <form onSubmit={onCreate}>
+              <Space size="small">
+                <Input
+                  required
+                  value={ruleForm.name}
+                  onChange={(e) => setRuleForm((p) => ({ ...p, name: e.target.value }))}
+                  placeholder="Rule name"
+                  aria-label="Rule name"
+                />
+                <Select
+                  value={ruleForm.signal_type}
+                  onChange={(value) => setRuleForm((p) => ({ ...p, signal_type: value }))}
+                  aria-label="Signal type"
+                  options={SIGNALS.map((s) => ({ value: s, label: s.replace(/_/g, " ") }))}
+                  className="w-44"
+                />
+                <Button type="primary" htmlType="submit" loading={createRule.isPending}>
+                  Add rule
+                </Button>
+              </Space>
             </form>
-          )}
-        </div>
-        <table className="mt-2 w-full text-left text-sm">
-          <tbody>
-            {rules.length === 0 && (
-              <tr>
-                <td className="py-3 text-sm text-slate-400">
-                  No detection rules yet — anomalies appear once a rule is
-                  active (hourly scan).
-                </td>
-              </tr>
-            )}
-            {rules.map((rule) => (
-              <tr key={rule.id} className="border-t border-slate-100">
-                <td className="py-2 pr-4 font-medium text-slate-800">{rule.name}</td>
-                <td className="py-2 pr-4 font-mono text-xs">
-                  {rule.signal_type} · {JSON.stringify(rule.threshold)} ·{" "}
-                  {rule.window_hours}h
-                </td>
-                <td className="py-2 pr-4">
-                  <span
-                    className={`rounded-full px-2 py-0.5 text-xs font-medium ${
-                      rule.active
-                        ? "bg-emerald-100 text-emerald-700"
-                        : "bg-slate-100 text-slate-500"
-                    }`}
-                  >
-                    {rule.active ? "active" : "inactive"}
-                  </span>
-                </td>
-                {canRules && (
-                  <td className="py-2">
-                    <button
-                      type="button"
-                      onClick={() => toggleRule.mutate({ id: rule.id, active: !rule.active })}
-                      className="rounded-md border border-slate-300 px-2 py-1 text-xs text-slate-600"
-                    >
-                      {rule.active ? "Disable" : "Enable"}
-                    </button>
-                  </td>
-                )}
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </section>
+          )
+        }
+      >
+        <Table<RuleRow>
+          size="middle"
+          rowKey="id"
+          columns={ruleColumns}
+          dataSource={rules}
+          loading={rulesQuery.isLoading}
+          pagination={false}
+          scroll={{ x: "max-content" }}
+          locale={{
+            emptyText: (
+              <EmptyState
+                title="No detection rules yet"
+                description="Anomalies appear once a rule is active (hourly scan)."
+              />
+            ),
+          }}
+        />
+      </Card>
 
-      <section className="rounded-lg border border-slate-200 bg-white p-4">
-        <h2 className="text-sm font-semibold uppercase tracking-wide text-slate-400">
-          Anomalies
-        </h2>
-        <table className="mt-2 w-full text-left text-sm">
-          <tbody>
-            {anomalies.length === 0 && (
-              <tr>
-                <td className="py-3 text-sm text-slate-400">No anomalies detected.</td>
-              </tr>
-            )}
-            {anomalies.map((a) => (
-              <tr key={a.id} className="border-t border-slate-100 align-top">
-                <td className="py-2 pr-4 font-medium text-slate-800">
-                  {deviceName(a.device_id)}
-                </td>
-                <td className="py-2 pr-4">
-                  <span
-                    className={`rounded-full px-2 py-0.5 text-xs font-semibold ${
-                      a.score >= 2 ? "bg-red-100 text-red-700" : "bg-amber-100 text-amber-800"
-                    }`}
-                  >
-                    score {a.score}
-                  </span>
-                </td>
-                <td className="py-2 pr-4">
-                  <span
-                    className={`rounded-full px-2 py-0.5 text-xs font-medium ${
-                      STATE_STYLE[a.state] ?? ""
-                    }`}
-                  >
+      <Card size="small" title="Anomalies">
+        <List
+          dataSource={anomalies}
+          loading={anomaliesQuery.isLoading}
+          locale={{ emptyText: <EmptyState title="No anomalies detected." /> }}
+          renderItem={(a) => (
+            <List.Item>
+              <Space orientation="vertical" size="small" className="w-full">
+                <Space size="small" wrap>
+                  <Typography.Text strong>{deviceName(a.device_id)}</Typography.Text>
+                  <Tag color={a.score >= 2 ? "error" : "warning"}>score {a.score}</Tag>
+                  <Tag color={STATE_COLOR[a.state] ?? "default"} variant="filled">
                     {a.state}
-                  </span>
-                </td>
-                <td className="py-2">
-                  <div className="flex flex-wrap items-center gap-1.5">
-                    <button
-                      type="button"
-                      onClick={() => setExpanded(expanded === a.id ? null : a.id)}
-                      className="rounded-md border border-slate-300 px-2 py-1 text-xs text-slate-600"
-                    >
-                      Evidence
-                    </button>
-                    {canAck && a.state === "open" && (
-                      <button
-                        type="button"
-                        onClick={() => acknowledge.mutate(a.id)}
-                        className="rounded-md border border-slate-300 px-2 py-1 text-xs text-slate-600"
-                      >
-                        Acknowledge
-                      </button>
-                    )}
-                    {canRemediate &&
-                      a.state !== "resolved" &&
-                      REMEDIATIONS.map((action) => (
-                        <button
-                          key={action}
-                          type="button"
-                          onClick={() => remediate.mutate({ id: a.id, action })}
-                          className="rounded-md bg-slate-900 px-2 py-1 text-xs font-medium text-white"
-                        >
-                          {action.replace(/_/g, " ")}
-                        </button>
-                      ))}
-                  </div>
-                  {expanded === a.id && (
-                    <div className="mt-2 max-w-lg rounded-md bg-slate-50 p-2">
-                      {a.recommendation && (
-                        <p className="text-xs text-slate-600">{a.recommendation}</p>
-                      )}
-                      <pre className="mt-1 max-h-32 overflow-auto font-mono text-xs text-slate-500">
-                        {JSON.stringify(a.evidence, null, 2)}
-                      </pre>
-                    </div>
+                  </Tag>
+                </Space>
+                <Space size="small" wrap>
+                  <Button
+                    size="small"
+                    onClick={() => setExpanded(expanded === a.id ? null : a.id)}
+                  >
+                    Evidence
+                  </Button>
+                  {canAck && a.state === "open" && (
+                    <Button size="small" onClick={() => acknowledge.mutate(a.id)}>
+                      Acknowledge
+                    </Button>
                   )}
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </section>
+                  {canRemediate &&
+                    a.state !== "resolved" &&
+                    REMEDIATIONS.map((action) => (
+                      <Button
+                        key={action}
+                        size="small"
+                        type="primary"
+                        onClick={() => remediate.mutate({ id: a.id, action })}
+                      >
+                        {action.replace(/_/g, " ")}
+                      </Button>
+                    ))}
+                </Space>
+                {expanded === a.id && (
+                  <Card size="small" type="inner">
+                    <Descriptions
+                      size="small"
+                      column={1}
+                      items={[
+                        ...(a.recommendation
+                          ? [
+                              {
+                                key: "recommendation",
+                                label: "Recommendation",
+                                children: a.recommendation,
+                              },
+                            ]
+                          : []),
+                        {
+                          key: "evidence",
+                          label: "Evidence",
+                          children: (
+                            <Typography.Paragraph className="!mb-0">
+                              <pre className="max-h-32 overflow-auto text-xs">
+                                {JSON.stringify(a.evidence, null, 2)}
+                              </pre>
+                            </Typography.Paragraph>
+                          ),
+                        },
+                      ]}
+                    />
+                  </Card>
+                )}
+              </Space>
+            </List.Item>
+          )}
+        />
+      </Card>
 
-      {error && (
-        <p role="alert" className="rounded-md bg-red-50 px-3 py-2 text-sm text-red-700">
-          {error}
-        </p>
-      )}
-    </div>
+      {error && <Alert type="error" message={error} showIcon role="alert" />}
+    </Space>
   );
 }

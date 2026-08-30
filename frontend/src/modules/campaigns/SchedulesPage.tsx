@@ -1,7 +1,30 @@
+import { LeftOutlined, PlusOutlined, RightOutlined, StopOutlined } from "@ant-design/icons";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useState, type FormEvent } from "react";
-import { Modal } from "../../components/ui/Modal";
-import { Spinner } from "../../components/ui/Spinner";
+import {
+  Alert,
+  App,
+  Button,
+  Card,
+  DatePicker,
+  Flex,
+  Form,
+  Input,
+  InputNumber,
+  Modal,
+  Popconfirm,
+  Segmented,
+  Select,
+  Space,
+  Table,
+  Tag,
+  TimePicker,
+  Typography,
+  type TableProps,
+} from "antd";
+import type { Dayjs } from "dayjs";
+import { useState } from "react";
+import { PageHeader } from "../../components/ui/PageHeader";
+import { EmptyState, LoadingState } from "../../components/ui/states";
 import { api, ApiError } from "../../lib/api";
 import { useAuth } from "../../lib/auth";
 import {
@@ -32,6 +55,7 @@ function addDays(base: Date, days: number): Date {
  * recurrence exceptions, conflict indicators. */
 export function SchedulesPage() {
   const { hasPermission } = useAuth();
+  const { message } = App.useApp();
   const canManage = hasPermission("schedules.manage");
   const queryClient = useQueryClient();
   const [weekStart, setWeekStart] = useState(() => startOfWeek(new Date()));
@@ -67,76 +91,149 @@ export function SchedulesPage() {
 
   const removeSchedule = useMutation({
     mutationFn: (id: string) => api.delete(`/schedules/${id}`),
-    onSuccess: refresh,
-    onError: (err) => window.alert(err instanceof ApiError ? err.message : "Delete failed"),
+    onSuccess: () => {
+      refresh();
+      message.success("Schedule deleted");
+    },
+    onError: (err) => message.error(err instanceof ApiError ? err.message : "Delete failed"),
   });
 
   const calendar = calendarQuery.data?.data ?? null;
+  const schedules = schedulesQuery.data?.data ?? [];
   const campaignsById = new Map(
     (campaignsQuery.data?.data ?? []).map((c) => [c.id, c] as const),
   );
 
+  const scheduleColumns: TableProps<Schedule>["columns"] = [
+    {
+      title: "Campaign",
+      render: (_, schedule) => (
+        <Space size="small">
+          <Typography.Text strong>
+            {campaignsById.get(schedule.campaign_id)?.name ?? "…"}
+          </Typography.Text>
+          {schedule.kind === "blackout" && (
+            <Tag icon={<StopOutlined />} color="default">
+              Blackout
+            </Tag>
+          )}
+          {schedule.expired && <Tag>Expired</Tag>}
+        </Space>
+      ),
+    },
+    { title: "Label", responsive: ["lg"], render: (_, s) => s.name ?? "—" },
+    {
+      title: "Window",
+      render: (_, s) =>
+        `${s.start_date ?? "∞"} → ${s.end_date ?? "∞"} · ${s.start_time?.slice(0, 5) ?? "00:00"}–${s.end_time?.slice(0, 5) ?? "24:00"}`,
+    },
+    {
+      title: "Recurrence",
+      responsive: ["xl"],
+      render: (_, s) => (
+        <Space size="small" wrap>
+          {s.days_of_week && (
+            <Typography.Text type="secondary">
+              {s.days_of_week.map((d) => WEEKDAYS[d]).join(" ")}
+            </Typography.Text>
+          )}
+          {s.recurrence_json?.days_of_month && (
+            <Typography.Text type="secondary">
+              monthly: {s.recurrence_json.days_of_month.join(", ")}
+            </Typography.Text>
+          )}
+          {(s.exception_dates_json?.length ?? 0) > 0 && (
+            <Typography.Text type="secondary">
+              {s.exception_dates_json!.length} exception
+              {s.exception_dates_json!.length === 1 ? "" : "s"}
+            </Typography.Text>
+          )}
+          {s.timezone && <Typography.Text type="secondary">{s.timezone}</Typography.Text>}
+        </Space>
+      ),
+    },
+    {
+      title: "Priority",
+      align: "right",
+      width: 90,
+      render: (_, s) => s.priority,
+    },
+    ...(canManage
+      ? [
+          {
+            title: "Actions",
+            align: "right" as const,
+            width: 100,
+            render: (_: unknown, s: Schedule) => (
+              <Popconfirm
+                title="Delete this schedule?"
+                onConfirm={() => removeSchedule.mutate(s.id)}
+                okButtonProps={{ danger: true }}
+              >
+                <Button type="link" danger size="small">
+                  Delete
+                </Button>
+              </Popconfirm>
+            ),
+          },
+        ]
+      : []),
+  ];
+
   return (
     <div>
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <h1 className="text-xl font-semibold text-slate-900">Schedule Calendar</h1>
-        <div className="flex items-center gap-2">
-          <div className="flex overflow-hidden rounded-md border border-slate-300" role="tablist">
-            {(["week", "month"] as const).map((mode) => (
-              <button
-                key={mode}
-                type="button"
-                role="tab"
-                aria-selected={view === mode}
-                onClick={() => setView(mode)}
-                className={`px-3 py-1.5 text-sm capitalize ${
-                  view === mode ? "bg-slate-900 text-white" : "text-slate-600"
-                }`}
-              >
-                {mode}
-              </button>
-            ))}
-          </div>
-          <button
-            type="button"
-            onClick={() => setWeekStart((w) => addDays(w, view === "week" ? -7 : -28))}
-            className="rounded-md border border-slate-300 px-3 py-1.5 text-sm text-slate-600"
-          >
-            ← Prev
-          </button>
-          <span className="text-sm text-slate-600">
-            {isoDate(rangeStart)} — {isoDate(rangeEnd)}
-          </span>
-          <button
-            type="button"
-            onClick={() => setWeekStart((w) => addDays(w, view === "week" ? 7 : 28))}
-            className="rounded-md border border-slate-300 px-3 py-1.5 text-sm text-slate-600"
-          >
-            Next →
-          </button>
-          {canManage && (
-            <button
-              type="button"
-              onClick={() => setCreateOpen(true)}
-              className="rounded-md bg-slate-900 px-4 py-2 text-sm font-medium text-white"
-            >
-              New schedule
-            </button>
-          )}
-        </div>
-      </div>
+      <PageHeader
+        title="Schedule Calendar"
+        description="When campaigns play — recurring windows, blackouts, conflict checks."
+        actions={
+          <Space wrap>
+            <Segmented
+              value={view}
+              onChange={(v) => setView(v as "week" | "month")}
+              options={[
+                { value: "week", label: "Week" },
+                { value: "month", label: "Month" },
+              ]}
+            />
+            <Button
+              icon={<LeftOutlined />}
+              aria-label="Previous period"
+              onClick={() => setWeekStart((w) => addDays(w, view === "week" ? -7 : -28))}
+            />
+            <Typography.Text type="secondary">
+              {isoDate(rangeStart)} — {isoDate(rangeEnd)}
+            </Typography.Text>
+            <Button
+              icon={<RightOutlined />}
+              aria-label="Next period"
+              onClick={() => setWeekStart((w) => addDays(w, view === "week" ? 7 : 28))}
+            />
+            {canManage && (
+              <Button type="primary" icon={<PlusOutlined />} onClick={() => setCreateOpen(true)}>
+                New schedule
+              </Button>
+            )}
+          </Space>
+        }
+      />
 
       {calendar && calendar.conflict_count > 0 && (
-        <p className="mt-2 rounded-md bg-amber-50 px-3 py-2 text-sm text-amber-800" role="alert">
-          {calendar.conflict_count} scheduling conflict{calendar.conflict_count === 1 ? "" : "s"}{" "}
-          this week: overlapping windows at equal campaign priority. Adjust priorities or times.
-        </p>
+        <Alert
+          type="warning"
+          showIcon
+          className="mb-4"
+          message={`${calendar.conflict_count} scheduling conflict${
+            calendar.conflict_count === 1 ? "" : "s"
+          } in this range`}
+          description="Overlapping windows at equal campaign priority. Adjust priorities or times."
+          role="alert"
+        />
       )}
 
       {calendarQuery.isLoading ? (
-        <Spinner label="Loading calendar…" />
+        <LoadingState rows={6} />
       ) : (
-        <div className="mt-4 grid grid-cols-7 gap-2">
+        <div className="grid grid-cols-7 gap-2">
           {Array.from({ length: view === "week" ? 7 : 42 }, (_, index) => {
             const day = addDays(rangeStart, index);
             const dayIso = isoDate(day);
@@ -145,34 +242,34 @@ export function SchedulesPage() {
               .filter((e) => e.date === dayIso)
               .sort((a, b) => a.start_minute - b.start_minute);
             return (
-              <div
+              <Card
                 key={dayIso}
-                className={`rounded-lg border border-slate-200 p-2 ${
-                  view === "week" ? "min-h-40" : "min-h-24"
-                } ${view === "month" && !inMonth ? "bg-slate-50 opacity-60" : "bg-white"}`}
+                size="small"
+                className={view === "month" && !inMonth ? "opacity-60" : undefined}
+                styles={{ body: { padding: 8, minHeight: view === "week" ? 160 : 96 } }}
               >
-                <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">
+                <Typography.Text type="secondary" className="text-xs font-semibold uppercase">
                   {WEEKDAYS[index % 7]} <span className="font-normal">{day.getDate()}</span>
-                </p>
-                <div className="mt-1 space-y-1">
+                </Typography.Text>
+                <Space orientation="vertical" size={4} className="mt-1 w-full">
                   {events.map((event) => (
-                    <div
+                    <Tag
                       key={`${event.schedule_id}-${event.date}`}
-                      className={`rounded px-1.5 py-1 text-xs ${
+                      color={
                         event.kind === "blackout"
-                          ? "bg-slate-800 text-slate-100"
+                          ? "default"
                           : event.conflict
-                            ? "border border-red-300 bg-red-50 text-red-800"
-                            : "bg-slate-100 text-slate-700"
-                      }`}
+                            ? "error"
+                            : "processing"
+                      }
+                      icon={event.kind === "blackout" ? <StopOutlined /> : undefined}
+                      bordered={event.conflict}
+                      className="!mr-0 w-full whitespace-normal"
                       title={`${event.campaign_name} · priority ${event.campaign_priority}${
                         event.timezone ? ` · ${event.timezone}` : ""
                       }${event.kind === "blackout" ? " · blackout window" : ""}`}
                     >
-                      <span className="font-medium">
-                        {event.kind === "blackout" ? "⛔ " : ""}
-                        {event.campaign_name}
-                      </span>
+                      <span className="font-medium">{event.campaign_name}</span>
                       {view === "week" && (
                         <>
                           <br />
@@ -180,77 +277,28 @@ export function SchedulesPage() {
                           {event.overnight ? "↦" : ""}
                         </>
                       )}
-                    </div>
+                    </Tag>
                   ))}
-                </div>
-              </div>
+                </Space>
+              </Card>
             );
           })}
         </div>
       )}
 
-      <h2 className="mt-6 text-sm font-semibold uppercase tracking-wide text-slate-400">
+      <Typography.Title level={5} className="!mt-6">
         All schedules
-      </h2>
-      {(schedulesQuery.data?.data ?? []).length === 0 ? (
-        <p className="mt-2 rounded-lg border border-dashed border-slate-300 bg-white p-6 text-center text-sm text-slate-500">
-          No schedules yet.
-        </p>
-      ) : (
-        <ul className="mt-2 space-y-1">
-          {(schedulesQuery.data?.data ?? []).map((schedule) => (
-            <li
-              key={schedule.id}
-              className="flex flex-wrap items-center gap-3 rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm"
-            >
-              <span className="font-medium text-slate-800">
-                {campaignsById.get(schedule.campaign_id)?.name ?? "…"}
-              </span>
-              {schedule.kind === "blackout" && (
-                <span className="rounded bg-slate-800 px-1.5 py-0.5 text-xs font-medium text-white">
-                  blackout
-                </span>
-              )}
-              {schedule.name && <span className="text-slate-500">{schedule.name}</span>}
-              <span className="text-slate-500">
-                {schedule.start_date ?? "∞"} → {schedule.end_date ?? "∞"} ·{" "}
-                {schedule.start_time?.slice(0, 5) ?? "00:00"}–
-                {schedule.end_time?.slice(0, 5) ?? "24:00"}
-              </span>
-              {schedule.days_of_week && (
-                <span className="text-slate-400">
-                  {schedule.days_of_week.map((d) => WEEKDAYS[d]).join(" ")}
-                </span>
-              )}
-              {schedule.recurrence_json?.days_of_month && (
-                <span className="text-slate-400">
-                  monthly: {schedule.recurrence_json.days_of_month.join(", ")}
-                </span>
-              )}
-              {(schedule.exception_dates_json?.length ?? 0) > 0 && (
-                <span className="text-slate-400">
-                  {schedule.exception_dates_json!.length} exception
-                  {schedule.exception_dates_json!.length === 1 ? "" : "s"}
-                </span>
-              )}
-              {schedule.timezone && <span className="text-slate-400">{schedule.timezone}</span>}
-              <span className="text-slate-400">p{schedule.priority}</span>
-              {schedule.expired && (
-                <span className="rounded bg-slate-200 px-1.5 text-xs text-slate-500">expired</span>
-              )}
-              {canManage && (
-                <button
-                  type="button"
-                  onClick={() => removeSchedule.mutate(schedule.id)}
-                  className="ml-auto text-xs font-medium text-red-600 hover:underline"
-                >
-                  Delete
-                </button>
-              )}
-            </li>
-          ))}
-        </ul>
-      )}
+      </Typography.Title>
+      <Table<Schedule>
+        size="middle"
+        rowKey="id"
+        columns={scheduleColumns}
+        dataSource={schedules}
+        loading={schedulesQuery.isLoading}
+        scroll={{ x: "max-content" }}
+        pagination={false}
+        locale={{ emptyText: <EmptyState title="No schedules yet" /> }}
+      />
 
       {createOpen && (
         <CreateScheduleModal
@@ -266,6 +314,19 @@ export function SchedulesPage() {
   );
 }
 
+interface ScheduleFormValues {
+  campaign_id?: string;
+  name?: string;
+  kind: "play" | "blackout";
+  priority: number;
+  date_range?: [Dayjs | null, Dayjs | null] | null;
+  start_time?: Dayjs | null;
+  end_time?: Dayjs | null;
+  month_days?: string;
+  exceptions?: string;
+  timezone?: string;
+}
+
 function CreateScheduleModal({
   campaigns,
   onClose,
@@ -275,60 +336,52 @@ function CreateScheduleModal({
   onClose: () => void;
   onCreated: () => void;
 }) {
-  const [campaignId, setCampaignId] = useState("");
-  const [name, setName] = useState("");
-  const [kind, setKind] = useState<"play" | "blackout">("play");
-  const [startDate, setStartDate] = useState("");
-  const [endDate, setEndDate] = useState("");
-  const [startTime, setStartTime] = useState("");
-  const [endTime, setEndTime] = useState("");
+  const [form] = Form.useForm<ScheduleFormValues>();
   const [days, setDays] = useState<number[]>([]);
-  const [monthDays, setMonthDays] = useState("");
-  const [exceptions, setExceptions] = useState("");
-  const [timezone, setTimezone] = useState("");
-  const [priority, setPriority] = useState("50");
   const [error, setError] = useState<string | null>(null);
   const [conflictResult, setConflictResult] = useState<{
     overlaps: ConflictOverlap[];
     conflict_count: number;
   } | null>(null);
 
-  function payload() {
-    const parsedMonthDays = monthDays
+  function payload(values: ScheduleFormValues) {
+    const parsedMonthDays = (values.month_days ?? "")
       .split(",")
       .map((part) => Number.parseInt(part.trim(), 10))
       .filter((n) => !Number.isNaN(n));
-    const parsedExceptions = exceptions
+    const parsedExceptions = (values.exceptions ?? "")
       .split(",")
       .map((part) => part.trim())
       .filter(Boolean);
+    const [start, end] = values.date_range ?? [null, null];
     return {
-      campaign_id: campaignId,
-      kind,
-      start_date: startDate || null,
-      end_date: endDate || null,
-      start_time: startTime || null,
-      end_time: endTime || null,
+      campaign_id: values.campaign_id,
+      kind: values.kind,
+      start_date: start ? start.format("YYYY-MM-DD") : null,
+      end_date: end ? end.format("YYYY-MM-DD") : null,
+      start_time: values.start_time ? values.start_time.format("HH:mm") : null,
+      end_time: values.end_time ? values.end_time.format("HH:mm") : null,
       days_of_week: days.length ? days : null,
       recurrence_json: parsedMonthDays.length ? { days_of_month: parsedMonthDays } : null,
       exception_dates_json: parsedExceptions.length ? parsedExceptions : null,
-      timezone: timezone || null,
-      priority: Number(priority) || 50,
+      timezone: values.timezone || null,
+      priority: values.priority || 50,
     };
   }
 
   const create = useMutation({
-    mutationFn: () => api.post("/schedules", { ...payload(), name: name || null }),
+    mutationFn: (values: ScheduleFormValues) =>
+      api.post("/schedules", { ...payload(values), name: values.name || null }),
     onSuccess: onCreated,
     onError: (err) =>
       setError(err instanceof ApiError ? err.message : "Failed to create schedule"),
   });
 
   const checkConflicts = useMutation({
-    mutationFn: () =>
+    mutationFn: (values: ScheduleFormValues) =>
       api.post<{ overlaps: ConflictOverlap[]; conflict_count: number }>(
         "/schedules/conflicts",
-        payload(),
+        payload(values),
       ),
     onSuccess: (envelope) => {
       setConflictResult(envelope.data!);
@@ -338,16 +391,6 @@ function CreateScheduleModal({
       setError(err instanceof ApiError ? err.message : "Conflict check failed"),
   });
 
-  function onSubmit(e: FormEvent) {
-    e.preventDefault();
-    if (!campaignId) {
-      setError("Choose a campaign");
-      return;
-    }
-    setError(null);
-    create.mutate();
-  }
-
   function toggleDay(day: number) {
     setDays((prev) =>
       prev.includes(day) ? prev.filter((d) => d !== day) : [...prev, day].sort(),
@@ -355,214 +398,142 @@ function CreateScheduleModal({
   }
 
   return (
-    <Modal title="New schedule" open onClose={onClose}>
-      <form className="space-y-3" onSubmit={onSubmit}>
-        <div>
-          <label htmlFor="schedule-campaign" className="block text-sm font-medium text-slate-700">
-            Campaign
-          </label>
-          <select
-            id="schedule-campaign"
-            value={campaignId}
-            onChange={(e) => setCampaignId(e.target.value)}
-            className="mt-1 block w-full rounded-md border border-slate-300 px-3 py-2 text-sm"
+    <Modal
+      title="New schedule"
+      open
+      width={640}
+      onCancel={onClose}
+      destroyOnHidden
+      footer={
+        <Flex justify="flex-end" gap="small">
+          <Button onClick={onClose}>Cancel</Button>
+          <Button
+            loading={checkConflicts.isPending}
+            onClick={async () => {
+              const values = await form.validateFields();
+              checkConflicts.mutate(values);
+            }}
           >
-            <option value="">— choose —</option>
-            {campaigns.map((c) => (
-              <option key={c.id} value={c.id}>
-                {c.name} (p{c.priority})
-              </option>
-            ))}
-          </select>
-        </div>
-        <div className="grid grid-cols-2 gap-3">
-          <Field label="Label (optional)">
-            <input
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              className="input-base"
+            Check conflicts
+          </Button>
+          <Button type="primary" loading={create.isPending} onClick={() => form.submit()}>
+            Create schedule
+          </Button>
+        </Flex>
+      }
+    >
+      {error && <Alert type="error" message={error} showIcon className="mb-4" role="alert" />}
+      <Form
+        form={form}
+        layout="vertical"
+        initialValues={{ kind: "play", priority: 50 }}
+        onFinish={(values) => {
+          setError(null);
+          create.mutate(values);
+        }}
+      >
+        <Form.Item
+          name="campaign_id"
+          label="Campaign"
+          rules={[{ required: true, message: "Choose a campaign." }]}
+        >
+          <Select
+            showSearch
+            optionFilterProp="label"
+            placeholder="— choose —"
+            options={campaigns.map((c) => ({ value: c.id, label: `${c.name} (p${c.priority})` }))}
+          />
+        </Form.Item>
+        <Flex gap="middle" wrap>
+          <Form.Item name="name" label="Label (optional)" className="min-w-48 flex-1">
+            <Input />
+          </Form.Item>
+          <Form.Item name="kind" label="Kind" className="min-w-48 flex-1">
+            <Select
+              options={[
+                { value: "play", label: "Play window" },
+                { value: "blackout", label: "Blackout (suppress campaign)" },
+              ]}
             />
-          </Field>
-          <div>
-            <label htmlFor="schedule-kind" className="block text-sm font-medium text-slate-700">
-              Kind
-            </label>
-            <select
-              id="schedule-kind"
-              value={kind}
-              onChange={(e) => setKind(e.target.value as "play" | "blackout")}
-              className="mt-1 block w-full rounded-md border border-slate-300 px-3 py-2 text-sm"
-            >
-              <option value="play">Play window</option>
-              <option value="blackout">Blackout (suppress campaign)</option>
-            </select>
-          </div>
-          <Field label="Priority">
-            <input
-              type="number"
-              min={1}
-              max={100}
-              value={priority}
-              onChange={(e) => setPriority(e.target.value)}
-              className="input-base"
-            />
-          </Field>
-          <Field label="Days of month (e.g. 1, 15 — empty = any)">
-            <input
-              value={monthDays}
-              onChange={(e) => setMonthDays(e.target.value)}
-              placeholder="1, 15"
-              className="input-base"
-            />
-          </Field>
-          <Field label="Start date">
-            <input
-              type="date"
-              value={startDate}
-              onChange={(e) => setStartDate(e.target.value)}
-              className="input-base"
-            />
-          </Field>
-          <Field label="End date">
-            <input
-              type="date"
-              value={endDate}
-              onChange={(e) => setEndDate(e.target.value)}
-              className="input-base"
-            />
-          </Field>
-          <Field label="Daily from">
-            <input
-              type="time"
-              value={startTime}
-              onChange={(e) => setStartTime(e.target.value)}
-              className="input-base"
-            />
-          </Field>
-          <Field label="Daily until">
-            <input
-              type="time"
-              value={endTime}
-              onChange={(e) => setEndTime(e.target.value)}
-              className="input-base"
-            />
-          </Field>
-        </div>
-        <div>
-          <span className="block text-sm font-medium text-slate-700">Days (empty = every day)</span>
-          <div className="mt-1 flex flex-wrap gap-1">
+          </Form.Item>
+          <Form.Item name="priority" label="Priority" className="w-28">
+            <InputNumber min={1} max={100} className="w-full" />
+          </Form.Item>
+        </Flex>
+        <Flex gap="middle" wrap>
+          <Form.Item name="date_range" label="Date range (empty = open-ended)" className="flex-1">
+            <DatePicker.RangePicker allowEmpty={[true, true]} className="w-full" />
+          </Form.Item>
+        </Flex>
+        <Flex gap="middle" wrap>
+          <Form.Item name="start_time" label="Daily from" className="flex-1">
+            <TimePicker format="HH:mm" className="w-full" />
+          </Form.Item>
+          <Form.Item name="end_time" label="Daily until" className="flex-1">
+            <TimePicker format="HH:mm" className="w-full" />
+          </Form.Item>
+        </Flex>
+        <Form.Item label="Days (empty = every day)">
+          <Space size={4} wrap>
             {WEEKDAYS.map((label, index) => (
-              <button
+              <Tag.CheckableTag
                 key={label}
-                type="button"
-                onClick={() => toggleDay(index)}
-                aria-pressed={days.includes(index)}
-                className={`rounded-md px-2.5 py-1 text-xs font-medium ${
-                  days.includes(index)
-                    ? "bg-slate-900 text-white"
-                    : "border border-slate-300 text-slate-600"
-                }`}
+                checked={days.includes(index)}
+                onChange={() => toggleDay(index)}
               >
                 {label}
-              </button>
+              </Tag.CheckableTag>
             ))}
-          </div>
-        </div>
-        <Field label="Exception dates (ISO, comma-separated — skipped days)">
-          <input
-            value={exceptions}
-            onChange={(e) => setExceptions(e.target.value)}
-            placeholder="2026-12-25, 2027-01-01"
-            className="input-base"
-          />
-        </Field>
-        <Field label="Timezone (IANA, empty = inherit device/location/org)">
-          <input
-            value={timezone}
-            onChange={(e) => setTimezone(e.target.value)}
-            placeholder="e.g. Asia/Kolkata"
-            className="input-base"
-          />
-        </Field>
-        {conflictResult && (
-          <div
-            className={`rounded-md px-3 py-2 text-sm ${
-              conflictResult.conflict_count > 0
-                ? "bg-red-50 text-red-800"
-                : "bg-emerald-50 text-emerald-800"
-            }`}
-          >
-            {conflictResult.overlaps.length === 0 ? (
-              "No overlaps with other campaigns in the checked range."
-            ) : (
-              <>
-                <p className="font-medium">
-                  {conflictResult.overlaps.length} overlap
-                  {conflictResult.overlaps.length === 1 ? "" : "s"}
-                  {conflictResult.conflict_count > 0 &&
-                    ` — ${conflictResult.conflict_count} at equal priority`}
-                </p>
-                <ul className="mt-1 space-y-0.5 text-xs">
-                  {conflictResult.overlaps.slice(0, 5).map((row, index) => (
-                    <li key={index}>
-                      {row.date} {minuteLabel(row.window[0])}–{minuteLabel(row.window[1])} vs{" "}
-                      {row.campaigns
-                        .map((c) => c.campaign_name)
-                        .filter((n, i, all) => all.indexOf(n) === i)
-                        .join(" / ")}{" "}
-                      → winner: <span className="font-medium">{row.winner_campaign_name}</span>
-                      {row.conflict ? " (conflict)" : ""}
-                    </li>
-                  ))}
-                  {conflictResult.overlaps.length > 5 && (
-                    <li>… and {conflictResult.overlaps.length - 5} more</li>
-                  )}
-                </ul>
-              </>
-            )}
-          </div>
-        )}
-        {error && (
-          <p className="rounded-md bg-red-50 px-3 py-2 text-sm text-red-700" role="alert">
-            {error}
-          </p>
-        )}
-        <div className="flex justify-end gap-2">
-          <button
-            type="button"
-            onClick={onClose}
-            className="rounded-md border border-slate-300 px-4 py-2 text-sm font-medium text-slate-600"
-          >
-            Cancel
-          </button>
-          <button
-            type="button"
-            disabled={checkConflicts.isPending || !campaignId}
-            onClick={() => checkConflicts.mutate()}
-            className="rounded-md border border-amber-300 bg-amber-50 px-4 py-2 text-sm font-medium text-amber-800 disabled:opacity-50"
-          >
-            {checkConflicts.isPending ? "Checking…" : "Check conflicts"}
-          </button>
-          <button
-            type="submit"
-            disabled={create.isPending}
-            className="rounded-md bg-slate-900 px-4 py-2 text-sm font-medium text-white disabled:opacity-50"
-          >
-            {create.isPending ? "Creating…" : "Create schedule"}
-          </button>
-        </div>
-      </form>
-    </Modal>
-  );
-}
+          </Space>
+        </Form.Item>
+        <Form.Item name="month_days" label="Days of month (e.g. 1, 15 — empty = any)">
+          <Input placeholder="1, 15" />
+        </Form.Item>
+        <Form.Item name="exceptions" label="Exception dates (ISO, comma-separated — skipped days)">
+          <Input placeholder="2026-12-25, 2027-01-01" />
+        </Form.Item>
+        <Form.Item name="timezone" label="Timezone (IANA, empty = inherit device/location/org)">
+          <Input placeholder="e.g. Asia/Kolkata" />
+        </Form.Item>
+      </Form>
 
-function Field({ label, children }: { label: string; children: React.ReactNode }) {
-  return (
-    <div>
-      <label className="block text-sm font-medium text-slate-700">{label}</label>
-      <div className="mt-1 [&>input]:block [&>input]:w-full [&>input]:rounded-md [&>input]:border [&>input]:border-slate-300 [&>input]:px-3 [&>input]:py-2 [&>input]:text-sm">
-        {children}
-      </div>
-    </div>
+      {conflictResult && (
+        <Alert
+          type={conflictResult.conflict_count > 0 ? "error" : "success"}
+          showIcon
+          message={
+            conflictResult.overlaps.length === 0
+              ? "No overlaps with other campaigns in the checked range."
+              : `${conflictResult.overlaps.length} overlap${
+                  conflictResult.overlaps.length === 1 ? "" : "s"
+                }${
+                  conflictResult.conflict_count > 0
+                    ? ` — ${conflictResult.conflict_count} at equal priority`
+                    : ""
+                }`
+          }
+          description={
+            conflictResult.overlaps.length > 0 && (
+              <ul className="mt-1 list-none space-y-0.5 p-0 text-xs">
+                {conflictResult.overlaps.slice(0, 5).map((row, index) => (
+                  <li key={index}>
+                    {row.date} {minuteLabel(row.window[0])}–{minuteLabel(row.window[1])} vs{" "}
+                    {row.campaigns
+                      .map((c) => c.campaign_name)
+                      .filter((n, i, all) => all.indexOf(n) === i)
+                      .join(" / ")}{" "}
+                    → winner: <strong>{row.winner_campaign_name}</strong>
+                    {row.conflict ? " (conflict)" : ""}
+                  </li>
+                ))}
+                {conflictResult.overlaps.length > 5 && (
+                  <li>… and {conflictResult.overlaps.length - 5} more</li>
+                )}
+              </ul>
+            )
+          }
+        />
+      )}
+    </Modal>
   );
 }

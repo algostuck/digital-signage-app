@@ -1,3 +1,10 @@
+/* antd renders its styles into the `antd` cascade layer (StyleProvider
+ * layer mode). Sandwich it between Tailwind's layers: antd beats the
+ * preflight reset (base), while Tailwind utility classes still beat antd
+ * component styles — no !important needed during the phased coexistence
+ * (docs/UI_UX_DESIGN_SYSTEM.md §3). */
+@layer theme, base, antd, components, utilities;
+
 @import "tailwindcss";
 
 :root {

@@ -1,9 +1,10 @@
+import { PlaySquareOutlined, PlusOutlined } from "@ant-design/icons";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useState, type FormEvent } from "react";
+import { Alert, Button, Card, Col, Flex, Form, Input, Modal, Row, Typography } from "antd";
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { FormField } from "../../components/ui/FormField";
-import { Modal } from "../../components/ui/Modal";
-import { Spinner } from "../../components/ui/Spinner";
+import { PageHeader } from "../../components/ui/PageHeader";
+import { EmptyState, LoadingState } from "../../components/ui/states";
 import { StatusBadge } from "../../components/ui/StatusBadge";
 import { api, ApiError } from "../../lib/api";
 import { useAuth } from "../../lib/auth";
@@ -25,47 +26,70 @@ export function PlaylistsPage() {
 
   return (
     <div>
-      <div className="flex items-center justify-between">
-        <h1 className="text-xl font-semibold text-slate-900">Playlists</h1>
-        {canManage && (
-          <button
-            type="button"
-            onClick={() => setCreateOpen(true)}
-            className="rounded-md bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-700"
-          >
-            New playlist
-          </button>
-        )}
-      </div>
+      <PageHeader
+        title="Playlists"
+        description="Ordered sequences of content and layouts, versioned for publishing."
+        actions={
+          canManage && (
+            <Button type="primary" icon={<PlusOutlined />} onClick={() => setCreateOpen(true)}>
+              New playlist
+            </Button>
+          )
+        }
+      />
 
       {playlistsQuery.isLoading ? (
-        <Spinner label="Loading playlists…" />
+        <LoadingState rows={5} />
       ) : playlists.length === 0 ? (
-        <p className="mt-6 rounded-lg border border-dashed border-slate-300 bg-white p-10 text-center text-sm text-slate-500">
-          No playlists yet. A playlist is an ordered sequence of content or layouts.
-        </p>
+        <Card>
+          <EmptyState
+            title="No playlists yet"
+            description="A playlist is an ordered sequence of content or layouts."
+            action={
+              canManage && (
+                <Button
+                  type="primary"
+                  icon={<PlusOutlined />}
+                  onClick={() => setCreateOpen(true)}
+                >
+                  New playlist
+                </Button>
+              )
+            }
+          />
+        </Card>
       ) : (
-        <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+        <Row gutter={[12, 12]}>
           {playlists.map((playlist) => (
-            <button
-              key={playlist.id}
-              type="button"
-              onClick={() => navigate(`/playlists/${playlist.id}`)}
-              className="rounded-lg border border-slate-200 bg-white p-4 text-left transition-shadow hover:shadow-md"
-            >
-              <div className="flex items-start justify-between">
-                <p className="font-medium text-slate-800">{playlist.name}</p>
-                <StatusBadge status={playlist.status} />
-              </div>
-              <p className="mt-1 text-sm text-slate-500">
-                {playlist.item_count} item{playlist.item_count === 1 ? "" : "s"} ·{" "}
-                {formatDuration(playlist.total_duration_ms)}
-                {playlist.loop_enabled ? " · loops" : ""}
-                {playlist.current_version_no ? ` · v${playlist.current_version_no}` : ""}
-              </p>
-            </button>
+            <Col key={playlist.id} xs={24} sm={12} lg={8}>
+              <Card
+                size="small"
+                hoverable
+                onClick={() => navigate(`/playlists/${playlist.id}`)}
+                tabIndex={0}
+                role="button"
+                aria-label={`Open playlist ${playlist.name}`}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" || e.key === " ") navigate(`/playlists/${playlist.id}`);
+                }}
+              >
+                <Flex justify="space-between" align="flex-start" gap="small">
+                  <Typography.Text strong ellipsis>
+                    <PlaySquareOutlined className="mr-2 text-slate-400" />
+                    {playlist.name}
+                  </Typography.Text>
+                  <StatusBadge status={playlist.status} />
+                </Flex>
+                <Typography.Paragraph type="secondary" className="!mb-0 !mt-1">
+                  {playlist.item_count} item{playlist.item_count === 1 ? "" : "s"} ·{" "}
+                  {formatDuration(playlist.total_duration_ms)}
+                  {playlist.loop_enabled ? " · loops" : ""}
+                  {playlist.current_version_no ? ` · v${playlist.current_version_no}` : ""}
+                </Typography.Paragraph>
+              </Card>
+            </Col>
           ))}
-        </div>
+        </Row>
       )}
 
       {createOpen && (
@@ -86,11 +110,12 @@ function CreatePlaylistModal({
   onCreated: (id: string) => void;
 }) {
   const queryClient = useQueryClient();
-  const [name, setName] = useState("");
+  const [form] = Form.useForm<{ name: string }>();
   const [error, setError] = useState<string | null>(null);
 
   const create = useMutation({
-    mutationFn: () => api.post<PlaylistDetail>("/playlists", { name }),
+    mutationFn: (values: { name: string }) =>
+      api.post<PlaylistDetail>("/playlists", { name: values.name }),
     onSuccess: (envelope) => {
       queryClient.invalidateQueries({ queryKey: ["playlists"] });
       onCreated(envelope.data!.id);
@@ -99,44 +124,33 @@ function CreatePlaylistModal({
       setError(err instanceof ApiError ? err.message : "Failed to create playlist"),
   });
 
-  function onSubmit(e: FormEvent) {
-    e.preventDefault();
-    setError(null);
-    create.mutate();
-  }
-
   return (
-    <Modal title="New playlist" open onClose={onClose}>
-      <form className="space-y-4" onSubmit={onSubmit}>
-        <FormField
-          id="playlist-name"
+    <Modal
+      title="New playlist"
+      open
+      onCancel={onClose}
+      okText="Create & open editor"
+      confirmLoading={create.isPending}
+      onOk={() => form.submit()}
+      destroyOnHidden
+    >
+      {error && <Alert type="error" message={error} showIcon className="mb-4" role="alert" />}
+      <Form
+        form={form}
+        layout="vertical"
+        onFinish={(values) => {
+          setError(null);
+          create.mutate(values);
+        }}
+      >
+        <Form.Item
+          name="name"
           label="Name"
-          required
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-        />
-        {error && (
-          <p className="rounded-md bg-red-50 px-3 py-2 text-sm text-red-700" role="alert">
-            {error}
-          </p>
-        )}
-        <div className="flex justify-end gap-2">
-          <button
-            type="button"
-            onClick={onClose}
-            className="rounded-md border border-slate-300 px-4 py-2 text-sm font-medium text-slate-600"
-          >
-            Cancel
-          </button>
-          <button
-            type="submit"
-            disabled={create.isPending}
-            className="rounded-md bg-slate-900 px-4 py-2 text-sm font-medium text-white disabled:opacity-50"
-          >
-            {create.isPending ? "Creating…" : "Create & open editor"}
-          </button>
-        </div>
-      </form>
+          rules={[{ required: true, message: "Give the playlist a name." }]}
+        >
+          <Input autoFocus />
+        </Form.Item>
+      </Form>
     </Modal>
   );
 }

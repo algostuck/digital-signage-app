@@ -1,5 +1,21 @@
+import { CaretRightOutlined, DeleteOutlined, PlusOutlined } from "@ant-design/icons";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useState, type FormEvent } from "react";
+import {
+  Alert,
+  Button,
+  Card,
+  Form,
+  Input,
+  Popconfirm,
+  Select,
+  Space,
+  Table,
+  Tag,
+  Typography,
+  type TableProps,
+} from "antd";
+import { useState } from "react";
+import { EmptyState } from "../../components/ui/states";
 import { api, ApiError } from "../../lib/api";
 import { useAuth } from "../../lib/auth";
 import { ExportButtons } from "./AnalyticsTabs";
@@ -34,7 +50,7 @@ export function ExportsTab() {
   const canExport = hasPermission("reports.export");
   const queryClient = useQueryClient();
   const [error, setError] = useState<string | null>(null);
-  const [form, setForm] = useState({ name: "", dataset: "playback_events" });
+  const [form] = Form.useForm<{ name: string; dataset: string }>();
 
   const exportsQuery = useQuery({
     queryKey: ["data-exports"],
@@ -46,11 +62,12 @@ export function ExportsTab() {
     setError(err instanceof ApiError ? err.message : "Action failed");
 
   const create = useMutation({
-    mutationFn: () => api.post("/data-exports", { name: form.name, dataset: form.dataset }),
+    mutationFn: (values: { name: string; dataset: string }) =>
+      api.post("/data-exports", { name: values.name, dataset: values.dataset }),
     onSuccess: () => {
       refresh();
       setError(null);
-      setForm({ name: "", dataset: "playback_events" });
+      form.resetFields();
     },
     onError,
   });
@@ -66,129 +83,185 @@ export function ExportsTab() {
   });
 
   if (!canExport)
-    return <p className="text-sm text-slate-500">Requires the reports.export permission.</p>;
+    return (
+      <Typography.Text type="secondary">
+        Requires the reports.export permission.
+      </Typography.Text>
+    );
 
   const rows = exportsQuery.data?.data ?? [];
 
-  function onCreate(e: FormEvent) {
-    e.preventDefault();
-    setError(null);
-    create.mutate();
-  }
+  const columns: TableProps<ExportRow>["columns"] = [
+    {
+      title: "Name",
+      dataIndex: "name",
+      render: (name: string) => <Typography.Text strong>{name}</Typography.Text>,
+    },
+    {
+      title: "Dataset",
+      dataIndex: "dataset",
+      render: (dataset: string) => (
+        <Typography.Text code className="text-xs">
+          {dataset}
+        </Typography.Text>
+      ),
+    },
+    {
+      title: "State",
+      dataIndex: "state",
+      render: (_, row) => (
+        <Space orientation="vertical" size={0}>
+          <Tag
+            variant="filled"
+            color={row.state === "idle" ? "success" : row.state === "error" ? "error" : "processing"}
+          >
+            {row.state}
+          </Tag>
+          {row.last_error && (
+            <Typography.Text type="danger" className="text-xs" ellipsis={{ tooltip: row.last_error }}>
+              {row.last_error}
+            </Typography.Text>
+          )}
+        </Space>
+      ),
+    },
+    {
+      title: "Last run",
+      dataIndex: "last_run_at",
+      responsive: ["lg"],
+      render: (_, row) => (
+        <Space orientation="vertical" size={0}>
+          <Typography.Text type="secondary" className="text-xs">
+            {row.last_run_at ? `last ${new Date(row.last_run_at).toLocaleString()}` : "never run"}
+          </Typography.Text>
+          {row.last_object_key && (
+            <Typography.Text
+              code
+              className="text-xs"
+              ellipsis={{ tooltip: row.last_object_key }}
+            >
+              {row.last_object_key}
+            </Typography.Text>
+          )}
+        </Space>
+      ),
+    },
+    {
+      title: "Actions",
+      align: "right",
+      render: (_, row) => (
+        <Space>
+          <Button
+            size="small"
+            icon={<CaretRightOutlined />}
+            loading={run.isPending && run.variables === row.id}
+            onClick={() => run.mutate(row.id)}
+          >
+            Run now
+          </Button>
+          <Popconfirm
+            title={`Delete export "${row.name}"?`}
+            okButtonProps={{ danger: true }}
+            onConfirm={() => remove.mutate(row.id)}
+          >
+            <Button size="small" danger icon={<DeleteOutlined />}>
+              Delete
+            </Button>
+          </Popconfirm>
+        </Space>
+      ),
+    },
+  ];
 
   return (
-    <div className="space-y-4">
-      <p className="text-xs text-slate-400">
+    <Space orientation="vertical" size="middle" className="w-full">
+      <Typography.Text type="secondary" className="text-xs">
         Scheduled exports run nightly for the previous day and land as CSV in
         the platform object storage — the hand-off point to your own
         warehouse. "Run now" exports yesterday's window immediately.
-      </p>
-      <form
-        className="flex flex-wrap items-end gap-3 rounded-lg border border-slate-200 bg-white p-4"
-        onSubmit={onCreate}
-      >
-        <label className="block text-sm">
-          <span className="block text-xs text-slate-500">Name</span>
-          <input
-            required
-            value={form.name}
-            onChange={(e) => setForm((p) => ({ ...p, name: e.target.value }))}
-            className="mt-0.5 w-56 rounded-md border border-slate-300 px-2 py-1.5"
-          />
-        </label>
-        <label className="block text-sm">
-          <span className="block text-xs text-slate-500">Dataset</span>
-          <select
-            value={form.dataset}
-            onChange={(e) => setForm((p) => ({ ...p, dataset: e.target.value }))}
-            className="mt-0.5 rounded-md border border-slate-300 px-2 py-1.5"
-          >
-            {DATASETS.map((d) => (
-              <option key={d} value={d}>
-                {d}
-              </option>
-            ))}
-          </select>
-        </label>
-        <button
-          type="submit"
-          disabled={create.isPending}
-          className="rounded-md bg-slate-900 px-4 py-2 text-sm font-medium text-white disabled:opacity-50"
+      </Typography.Text>
+
+      <Card size="small">
+        <Form
+          form={form}
+          layout="inline"
+          initialValues={{ name: "", dataset: "playback_events" }}
+          onFinish={(values) => {
+            setError(null);
+            create.mutate(values);
+          }}
         >
-          Create export
-        </button>
-      </form>
+          <Form.Item
+            name="name"
+            label="Name"
+            rules={[{ required: true, message: "Name is required" }]}
+          >
+            <Input className="w-56" />
+          </Form.Item>
+          <Form.Item name="dataset" label="Dataset">
+            <Select
+              className="w-52"
+              options={DATASETS.map((d) => ({ value: d, label: d }))}
+            />
+          </Form.Item>
+          <Form.Item>
+            <Button
+              type="primary"
+              htmlType="submit"
+              icon={<PlusOutlined />}
+              loading={create.isPending}
+            >
+              Create export
+            </Button>
+          </Form.Item>
+        </Form>
+      </Card>
 
-      <section className="rounded-lg border border-slate-200 bg-white p-4">
-        <table className="w-full text-left text-sm">
-          <tbody>
-            {rows.length === 0 && (
-              <tr>
-                <td className="py-3 text-sm text-slate-400">No scheduled exports yet.</td>
-              </tr>
-            )}
-            {rows.map((row) => (
-              <tr key={row.id} className="border-t border-slate-100 align-top">
-                <td className="py-2 pr-4 font-medium text-slate-800">{row.name}</td>
-                <td className="py-2 pr-4 font-mono text-xs">{row.dataset}</td>
-                <td className="py-2 pr-4">
-                  <span
-                    className={`rounded-full px-2 py-0.5 text-xs font-medium ${
-                      row.state === "idle"
-                        ? "bg-emerald-100 text-emerald-700"
-                        : row.state === "error"
-                          ? "bg-red-100 text-red-700"
-                          : "bg-sky-100 text-sky-700"
-                    }`}
-                  >
-                    {row.state}
-                  </span>
-                  {row.last_error && (
-                    <p className="mt-0.5 max-w-xs truncate text-xs text-red-500">
-                      {row.last_error}
-                    </p>
-                  )}
-                </td>
-                <td className="py-2 pr-4 text-xs text-slate-500">
-                  {row.last_run_at
-                    ? `last ${new Date(row.last_run_at).toLocaleString()}`
-                    : "never run"}
-                  {row.last_object_key && (
-                    <p className="max-w-xs truncate font-mono">{row.last_object_key}</p>
-                  )}
-                </td>
-                <td className="py-2">
-                  <div className="flex items-center gap-1.5">
-                    <button
-                      type="button"
-                      onClick={() => run.mutate(row.id)}
-                      className="rounded-md border border-slate-300 px-2 py-1 text-xs text-slate-600"
-                    >
-                      Run now
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => remove.mutate(row.id)}
-                      className="rounded-md border border-red-300 px-2 py-1 text-xs font-medium text-red-600"
-                    >
-                      Delete
-                    </button>
-                  </div>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </section>
+      <Table<ExportRow>
+        size="middle"
+        rowKey="id"
+        columns={columns}
+        dataSource={rows}
+        loading={exportsQuery.isLoading}
+        pagination={false}
+        scroll={{ x: "max-content" }}
+        locale={{ emptyText: <EmptyState title="No scheduled exports yet" /> }}
+      />
 
-      {error && (
-        <p role="alert" className="rounded-md bg-red-50 px-3 py-2 text-sm text-red-700">
-          {error}
-        </p>
-      )}
-    </div>
+      {error && <Alert type="error" message={error} showIcon role="alert" />}
+    </Space>
   );
 }
+
+const adColumns: TableProps<AdPerfRow>["columns"] = [
+  {
+    title: "Advertiser",
+    dataIndex: "advertiser",
+    render: (name: string) => <Typography.Text strong>{name}</Typography.Text>,
+  },
+  {
+    title: "Slot / campaign",
+    responsive: ["lg"],
+    render: (_, row) => (
+      <Typography.Text type="secondary" className="text-xs">
+        {row.inventory} · {row.campaign}
+      </Typography.Text>
+    ),
+  },
+  { title: "Status", dataIndex: "status" },
+  { title: "Booked", dataIndex: "booked_units", align: "right" },
+  { title: "Delivered (billable)", dataIndex: "delivered_billable", align: "right" },
+  {
+    title: "Fill rate",
+    dataIndex: "fill_rate_pct",
+    align: "right",
+    render: (pct: number) => (
+      <Typography.Text strong type={pct >= 100 ? "success" : "warning"}>
+        {pct}%
+      </Typography.Text>
+    ),
+  },
+];
 
 /** P3-11 Ad Performance: booked vs delivered vs fill rate (billing-ready). */
 export function AdsReportTab() {
@@ -199,59 +272,22 @@ export function AdsReportTab() {
   });
 
   if (reportQuery.isError)
-    return (
-      <p className="rounded-md bg-amber-50 px-3 py-2 text-sm text-amber-800" role="alert">
-        Ad performance unavailable.
-      </p>
-    );
+    return <Alert type="warning" message="Ad performance unavailable." showIcon role="alert" />;
 
   const rows = reportQuery.data?.data ?? [];
   return (
-    <div className="space-y-3">
+    <Space orientation="vertical" size="middle" className="w-full">
       <ExportButtons report="ad-performance" filters={{}} />
-      <section className="rounded-lg border border-slate-200 bg-white p-4">
-        <table className="w-full text-left text-sm">
-          <thead>
-            <tr className="text-xs uppercase text-slate-400">
-              <th className="py-1.5 pr-4">Advertiser</th>
-              <th className="py-1.5 pr-4">Slot / campaign</th>
-              <th className="py-1.5 pr-4">Status</th>
-              <th className="py-1.5 pr-4">Booked</th>
-              <th className="py-1.5 pr-4">Delivered (billable)</th>
-              <th className="py-1.5">Fill rate</th>
-            </tr>
-          </thead>
-          <tbody>
-            {rows.length === 0 && (
-              <tr>
-                <td colSpan={6} className="py-3 text-sm text-slate-400">
-                  No ad bookings yet.
-                </td>
-              </tr>
-            )}
-            {rows.map((row) => (
-              <tr key={row.booking_id} className="border-t border-slate-100">
-                <td className="py-1.5 pr-4 font-medium text-slate-800">{row.advertiser}</td>
-                <td className="py-1.5 pr-4 text-xs text-slate-500">
-                  {row.inventory} · {row.campaign}
-                </td>
-                <td className="py-1.5 pr-4 text-xs">{row.status}</td>
-                <td className="py-1.5 pr-4">{row.booked_units}</td>
-                <td className="py-1.5 pr-4">{row.delivered_billable}</td>
-                <td className="py-1.5 font-medium">
-                  <span
-                    className={
-                      row.fill_rate_pct >= 100 ? "text-emerald-600" : "text-amber-600"
-                    }
-                  >
-                    {row.fill_rate_pct}%
-                  </span>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </section>
-    </div>
+      <Table<AdPerfRow>
+        size="middle"
+        rowKey="booking_id"
+        columns={adColumns}
+        dataSource={rows}
+        loading={reportQuery.isLoading}
+        pagination={false}
+        scroll={{ x: "max-content" }}
+        locale={{ emptyText: <EmptyState title="No ad bookings yet" /> }}
+      />
+    </Space>
   );
 }

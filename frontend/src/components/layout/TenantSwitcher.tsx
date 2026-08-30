@@ -1,4 +1,5 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { Select } from "antd";
 import { useState } from "react";
 import { api } from "../../lib/api";
 import { useAuth } from "../../lib/auth";
@@ -43,19 +44,17 @@ export function TenantSwitcher() {
   }
 
   return (
-    <select
+    <Select
       value={activeId}
+      loading={switching}
       disabled={switching}
-      onChange={(e) => void onChange(e.target.value)}
+      onChange={onChange}
       aria-label="Active organization"
-      className="rounded-md border border-slate-300 bg-white px-2 py-1.5 text-sm text-slate-700 disabled:opacity-50"
-    >
-      {memberships.map((m) => (
-        <option key={m.organization_id} value={m.organization_id}>
-          {m.organization_name}
-          {m.is_home ? "" : ` (${m.role_name ?? "guest"})`}
-        </option>
-      ))}
-    </select>
+      className="w-48"
+      options={memberships.map((m) => ({
+        value: m.organization_id,
+        label: m.is_home ? m.organization_name : `${m.organization_name} (${m.role_name ?? "guest"})`,
+      }))}
+    />
   );
 }

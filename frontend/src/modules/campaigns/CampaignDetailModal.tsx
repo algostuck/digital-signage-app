@@ -1,6 +1,23 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import {
+  Alert,
+  Button,
+  Checkbox,
+  Descriptions,
+  Divider,
+  Drawer,
+  Flex,
+  Input,
+  InputNumber,
+  Popconfirm,
+  Select,
+  Space,
+  Steps,
+  Tag,
+  Typography,
+} from "antd";
 import { useState } from "react";
-import { Modal } from "../../components/ui/Modal";
+import { LoadingState } from "../../components/ui/states";
 import { StatusBadge } from "../../components/ui/StatusBadge";
 import { api, ApiError } from "../../lib/api";
 import { useAuth } from "../../lib/auth";
@@ -13,6 +30,23 @@ interface Props {
   onClose: () => void;
   onChanged: () => void;
 }
+
+const TARGET_TYPE_OPTIONS = [
+  { value: "location", label: "location" },
+  { value: "device", label: "device" },
+  { value: "group", label: "group" },
+  { value: "tag", label: "tag" },
+];
+
+/** Approval-stage progression shown at the top of the drawer. */
+const STEP_FOR_STATUS: Record<string, number> = {
+  draft: 0,
+  pending_approval: 1,
+  rejected: 1,
+  approved: 2,
+  published: 3,
+  paused: 3,
+};
 
 /** SCR-20 Campaign Editor: targeting, approval workflow, publish. */
 export function CampaignDetailModal({ campaignId, onClose, onChanged }: Props) {
@@ -138,9 +172,9 @@ export function CampaignDetailModal({ campaignId, onClose, onChanged }: Props) {
   const campaign = campaignQuery.data?.data ?? null;
   if (!campaign) {
     return (
-      <Modal title="Campaign" open onClose={onClose}>
-        <p className="text-sm text-slate-500">Loading…</p>
-      </Modal>
+      <Drawer title="Campaign" open onClose={onClose} size={640} placement="right">
+        <LoadingState rows={6} />
+      </Drawer>
     );
   }
 
@@ -205,282 +239,284 @@ export function CampaignDetailModal({ campaignId, onClose, onChanged }: Props) {
   const effectiveCount = effectiveQuery.data?.data?.length ?? 0;
 
   return (
-    <Modal title={campaign.name} open onClose={onClose}>
-      <div className="space-y-4">
-        <div className="flex flex-wrap items-center gap-2">
-          <StatusBadge status={status} />
-          <span className="text-sm text-slate-500">
-            Priority {campaign.priority} · {campaign.schedule_count} schedule
-            {campaign.schedule_count === 1 ? "" : "s"} · reaches {effectiveCount} device
-            {effectiveCount === 1 ? "" : "s"}
-          </span>
-        </div>
+    <Drawer
+      title={campaign.name}
+      open
+      onClose={onClose}
+      width={640}
+      placement="right"
+      extra={<StatusBadge status={status} />}
+      footer={
+        <Flex justify="flex-end" wrap gap="small">
+          {canManage && status === "draft" && (
+            <Button
+              onClick={() => transition.mutate("submit-approval")}
+              loading={transition.isPending}
+            >
+              Submit for approval
+            </Button>
+          )}
+          {canApprove && status === "pending_approval" && (
+            <>
+              <Button
+                type="primary"
+                onClick={() => transition.mutate("approve")}
+                loading={transition.isPending}
+              >
+                Approve
+              </Button>
+              <Popconfirm
+                title="Reject this campaign?"
+                onConfirm={() => transition.mutate("reject")}
+                okButtonProps={{ danger: true }}
+              >
+                <Button danger>Reject</Button>
+              </Popconfirm>
+            </>
+          )}
+          {canPublish && (status === "approved" || status === "published") && (
+            <Button
+              type="primary"
+              onClick={() => transition.mutate("publish")}
+              loading={transition.isPending}
+            >
+              {status === "published" ? "Republish" : "Publish"}
+            </Button>
+          )}
+          {canPublish && status === "published" && (
+            <Popconfirm
+              title="Pause this campaign?"
+              onConfirm={() => transition.mutate("pause")}
+            >
+              <Button>Pause</Button>
+            </Popconfirm>
+          )}
+          {canPublish && status === "paused" && (
+            <Button
+              type="primary"
+              onClick={() => transition.mutate("resume")}
+              loading={transition.isPending}
+            >
+              Resume
+            </Button>
+          )}
+        </Flex>
+      }
+    >
+      <Space orientation="vertical" size="middle" className="w-full">
+        {status !== "archived" && (
+          <Steps
+            size="small"
+            current={STEP_FOR_STATUS[status] ?? 0}
+            status={status === "rejected" ? "error" : undefined}
+            items={[
+              { title: "Draft" },
+              { title: status === "rejected" ? "Rejected" : "Approval" },
+              { title: "Approved" },
+              { title: status === "paused" ? "Paused" : "Published" },
+            ]}
+          />
+        )}
+
+        <Descriptions
+          size="small"
+          column={3}
+          items={[
+            { key: "priority", label: "Priority", children: campaign.priority },
+            {
+              key: "schedules",
+              label: "Schedules",
+              children: `${campaign.schedule_count} schedule${
+                campaign.schedule_count === 1 ? "" : "s"
+              }`,
+            },
+            {
+              key: "reach",
+              label: "Reach",
+              children: `${effectiveCount} device${effectiveCount === 1 ? "" : "s"}`,
+            },
+          ]}
+        />
 
         <div>
-          <h3 className="text-xs font-medium uppercase tracking-wide text-slate-400">Targets</h3>
+          <Divider titlePlacement="start" plain>
+            Targets
+          </Divider>
           {campaign.targets.length === 0 ? (
-            <p className="mt-1 text-sm text-slate-500">
+            <Typography.Text type="secondary">
               No targets yet — the campaign cannot publish without them.
-            </p>
+            </Typography.Text>
           ) : (
-            <ul className="mt-1 space-y-1 text-sm">
+            <Space orientation="vertical" size={4} className="w-full">
               {campaign.targets.map((target) => (
-                <li key={target.id} className="flex items-center gap-2">
-                  <span
-                    className={`rounded px-1.5 py-0.5 text-xs font-medium ${
-                      target.is_exclusion
-                        ? "bg-red-50 text-red-700"
-                        : "bg-slate-100 text-slate-600"
-                    }`}
-                  >
+                <Flex key={target.id} align="center" gap="small" wrap>
+                  <Tag color={target.is_exclusion ? "error" : "default"}>
                     {target.is_exclusion ? "exclude" : "include"} {target.target_type}
-                  </span>
-                  <span className="text-slate-700">{nameFor(target)}</span>
+                  </Tag>
+                  <Typography.Text>{nameFor(target)}</Typography.Text>
                   {target.target_type === "location" && target.include_descendants && (
-                    <span className="text-xs text-slate-400">+ descendants</span>
+                    <Typography.Text type="secondary" className="text-xs">
+                      + descendants
+                    </Typography.Text>
                   )}
                   {canManage && (
-                    <button
-                      type="button"
+                    <Button
+                      type="link"
+                      size="small"
+                      danger
                       onClick={() => removeTarget(target.id)}
-                      className="text-xs text-red-600 hover:underline"
                     >
                       remove
-                    </button>
+                    </Button>
                   )}
-                </li>
+                </Flex>
               ))}
-            </ul>
+            </Space>
           )}
           {canManage && (
-            <div className="mt-2 flex flex-wrap items-center gap-2 rounded-md border border-slate-200 p-2 text-sm">
-              <select
+            <Flex align="center" gap="small" wrap className="mt-2">
+              <Select
                 value={targetType}
-                onChange={(e) => {
-                  setTargetType(e.target.value as typeof targetType);
+                onChange={(value) => {
+                  setTargetType(value);
                   setTargetId("");
                 }}
                 aria-label="Target type"
-                className="rounded-md border border-slate-300 px-2 py-1"
-              >
-                <option value="location">location</option>
-                <option value="device">device</option>
-                <option value="group">group</option>
-                <option value="tag">tag</option>
-              </select>
-              <select
-                value={targetId}
-                onChange={(e) => setTargetId(e.target.value)}
+                options={TARGET_TYPE_OPTIONS}
+                className="w-28"
+              />
+              <Select
+                value={targetId || undefined}
+                onChange={(value) => setTargetId(value)}
                 aria-label="Target"
-                className="min-w-40 rounded-md border border-slate-300 px-2 py-1"
-              >
-                <option value="">— choose —</option>
-                {options.map((option) => (
-                  <option key={option.id} value={option.id}>
-                    {option.label}
-                  </option>
-                ))}
-              </select>
+                placeholder="— choose —"
+                showSearch
+                optionFilterProp="label"
+                options={options.map((option) => ({ value: option.id, label: option.label }))}
+                className="min-w-44 flex-1"
+              />
               {targetType === "location" && (
-                <label className="flex items-center gap-1 text-xs text-slate-600">
-                  <input
-                    type="checkbox"
-                    checked={descendants}
-                    onChange={(e) => setDescendants(e.target.checked)}
-                  />
+                <Checkbox
+                  checked={descendants}
+                  onChange={(e) => setDescendants(e.target.checked)}
+                >
                   descendants
-                </label>
+                </Checkbox>
               )}
-              <label className="flex items-center gap-1 text-xs text-slate-600">
-                <input
-                  type="checkbox"
-                  checked={exclusion}
-                  onChange={(e) => setExclusion(e.target.checked)}
-                />
+              <Checkbox checked={exclusion} onChange={(e) => setExclusion(e.target.checked)}>
                 exclusion
-              </label>
-              <button
-                type="button"
+              </Checkbox>
+              <Button
+                type="primary"
                 onClick={addTarget}
-                disabled={!targetId || saveTargets.isPending}
-                className="rounded-md bg-slate-900 px-3 py-1 text-xs font-medium text-white disabled:opacity-50"
+                disabled={!targetId}
+                loading={saveTargets.isPending}
               >
                 Add target
-              </button>
-            </div>
+              </Button>
+            </Flex>
           )}
         </div>
 
         <div>
-          <h3 className="text-xs font-medium uppercase tracking-wide text-slate-400">
+          <Divider titlePlacement="start" plain>
             Variants (audience-specific creative)
-          </h3>
+          </Divider>
           {(campaign.variants ?? []).length === 0 ? (
-            <p className="mt-1 text-sm text-slate-500">
+            <Typography.Text type="secondary">
               No variants — every device renders the base creative.
-            </p>
+            </Typography.Text>
           ) : (
-            <ul className="mt-1 space-y-1 text-sm">
+            <Space orientation="vertical" size={4} className="w-full">
               {campaign.variants.map((variant) => (
-                <li key={variant.id} className="flex flex-wrap items-center gap-2">
-                  <span className="rounded bg-indigo-50 px-1.5 py-0.5 text-xs font-medium text-indigo-700">
-                    variant p{variant.priority}
-                  </span>
-                  <span className="font-medium text-slate-700">{variant.name}</span>
-                  <span className="text-xs text-slate-500">
+                <Flex key={variant.id} align="center" gap="small" wrap>
+                  <Tag color="purple">variant p{variant.priority}</Tag>
+                  <Typography.Text strong>{variant.name}</Typography.Text>
+                  <Typography.Text type="secondary" className="text-xs">
                     for{" "}
                     {variant.targets
                       .map((t) => `${t.target_type}: ${nameFor(t)}`)
                       .join(", ")}
-                  </span>
+                  </Typography.Text>
                   {canManage && (
-                    <button
-                      type="button"
+                    <Button
+                      type="link"
+                      size="small"
+                      danger
                       onClick={() => removeVariant.mutate(variant.id)}
-                      className="text-xs text-red-600 hover:underline"
                     >
                       remove
-                    </button>
+                    </Button>
                   )}
-                </li>
+                </Flex>
               ))}
-            </ul>
+            </Space>
           )}
           {canManage && (
-            <div className="mt-2 flex flex-wrap items-center gap-2 rounded-md border border-slate-200 p-2 text-sm">
-              <input
+            <Flex align="center" gap="small" wrap className="mt-2">
+              <Input
                 value={variantName}
                 onChange={(e) => setVariantName(e.target.value)}
                 placeholder="Variant name"
                 aria-label="Variant name"
-                className="w-32 rounded-md border border-slate-300 px-2 py-1"
+                className="w-36"
               />
-              <select
-                value={variantPlaylist}
-                onChange={(e) => setVariantPlaylist(e.target.value)}
+              <Select
+                value={variantPlaylist || undefined}
+                onChange={(value) => setVariantPlaylist(value)}
                 aria-label="Variant playlist"
-                className="rounded-md border border-slate-300 px-2 py-1"
-              >
-                <option value="">— playlist —</option>
-                {(playlistsQuery.data?.data ?? []).map((p) => (
-                  <option key={p.id} value={p.id}>
-                    {p.name}
-                  </option>
-                ))}
-              </select>
-              <select
+                placeholder="— playlist —"
+                options={(playlistsQuery.data?.data ?? []).map((p) => ({
+                  value: p.id,
+                  label: p.name,
+                }))}
+                className="min-w-36"
+              />
+              <Select
                 value={variantTargetType}
-                onChange={(e) => {
-                  setVariantTargetType(e.target.value as typeof variantTargetType);
+                onChange={(value) => {
+                  setVariantTargetType(value);
                   setVariantTargetId("");
                 }}
                 aria-label="Variant target type"
-                className="rounded-md border border-slate-300 px-2 py-1"
-              >
-                <option value="location">location</option>
-                <option value="device">device</option>
-                <option value="group">group</option>
-                <option value="tag">tag</option>
-              </select>
-              <select
-                value={variantTargetId}
-                onChange={(e) => setVariantTargetId(e.target.value)}
+                options={TARGET_TYPE_OPTIONS}
+                className="w-28"
+              />
+              <Select
+                value={variantTargetId || undefined}
+                onChange={(value) => setVariantTargetId(value)}
                 aria-label="Variant target"
-                className="min-w-32 rounded-md border border-slate-300 px-2 py-1"
-              >
-                <option value="">— choose —</option>
-                {optionsFor(variantTargetType).map((option) => (
-                  <option key={option.id} value={option.id}>
-                    {option.label}
-                  </option>
-                ))}
-              </select>
-              <input
-                type="number"
+                placeholder="— choose —"
+                showSearch
+                optionFilterProp="label"
+                options={optionsFor(variantTargetType).map((option) => ({
+                  value: option.id,
+                  label: option.label,
+                }))}
+                className="min-w-36"
+              />
+              <InputNumber
                 min={1}
                 max={100}
-                value={variantPriority}
-                onChange={(e) => setVariantPriority(e.target.value)}
+                value={variantPriority === "" ? null : Number(variantPriority)}
+                onChange={(value) => setVariantPriority(value == null ? "" : String(value))}
                 aria-label="Variant priority"
-                className="w-16 rounded-md border border-slate-300 px-2 py-1"
+                className="w-20"
               />
-              <button
-                type="button"
+              <Button
+                type="primary"
                 onClick={() => addVariant.mutate()}
-                disabled={
-                  !variantName || !variantPlaylist || !variantTargetId || addVariant.isPending
-                }
-                className="rounded-md bg-slate-900 px-3 py-1 text-xs font-medium text-white disabled:opacity-50"
+                disabled={!variantName || !variantPlaylist || !variantTargetId}
+                loading={addVariant.isPending}
               >
                 Add variant
-              </button>
-            </div>
+              </Button>
+            </Flex>
           )}
         </div>
 
-        {error && (
-          <p className="rounded-md bg-red-50 px-3 py-2 text-sm text-red-700" role="alert">
-            {error}
-          </p>
-        )}
-
-        <div className="flex flex-wrap justify-end gap-2 border-t border-slate-200 pt-4">
-          {canManage && status === "draft" && (
-            <ActionButton onClick={() => transition.mutate("submit-approval")}>
-              Submit for approval
-            </ActionButton>
-          )}
-          {canApprove && status === "pending_approval" && (
-            <>
-              <ActionButton onClick={() => transition.mutate("approve")} tone="primary">
-                Approve
-              </ActionButton>
-              <ActionButton onClick={() => transition.mutate("reject")} tone="danger">
-                Reject
-              </ActionButton>
-            </>
-          )}
-          {canPublish && (status === "approved" || status === "published") && (
-            <ActionButton onClick={() => transition.mutate("publish")} tone="primary">
-              {status === "published" ? "Republish" : "Publish"}
-            </ActionButton>
-          )}
-          {canPublish && status === "published" && (
-            <ActionButton onClick={() => transition.mutate("pause")}>Pause</ActionButton>
-          )}
-          {canPublish && status === "paused" && (
-            <ActionButton onClick={() => transition.mutate("resume")} tone="primary">
-              Resume
-            </ActionButton>
-          )}
-        </div>
-      </div>
-    </Modal>
-  );
-}
-
-function ActionButton({
-  onClick,
-  children,
-  tone = "neutral",
-}: {
-  onClick: () => void;
-  children: React.ReactNode;
-  tone?: "neutral" | "primary" | "danger";
-}) {
-  const cls =
-    tone === "primary"
-      ? "bg-emerald-600 text-white"
-      : tone === "danger"
-        ? "border border-red-200 text-red-600"
-        : "border border-slate-300 text-slate-600";
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      className={`rounded-md px-3 py-1.5 text-sm font-medium ${cls}`}
-    >
-      {children}
-    </button>
+        {error && <Alert type="error" message={error} showIcon role="alert" />}
+      </Space>
+    </Drawer>
   );
 }

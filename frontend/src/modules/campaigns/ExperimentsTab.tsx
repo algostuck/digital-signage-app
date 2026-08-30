@@ -1,5 +1,25 @@
+import { PlusOutlined } from "@ant-design/icons";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useState, type FormEvent } from "react";
+import {
+  Alert,
+  Button,
+  Card,
+  Flex,
+  Form,
+  Input,
+  InputNumber,
+  Modal,
+  Popconfirm,
+  Select,
+  Space,
+  Table,
+  Tag,
+  Typography,
+  type TableProps,
+} from "antd";
+import { useState } from "react";
+import { EmptyState } from "../../components/ui/states";
+import { StatusBadge } from "../../components/ui/StatusBadge";
 import { api, ApiError } from "../../lib/api";
 import { useAuth } from "../../lib/auth";
 import type { CampaignSummary } from "./types";
@@ -32,12 +52,6 @@ interface CampaignDetail {
   variants: VariantRow[];
 }
 
-const STATUS_STYLE: Record<string, string> = {
-  draft: "bg-slate-100 text-slate-600",
-  running: "bg-emerald-100 text-emerald-700",
-  completed: "bg-sky-100 text-sky-700",
-};
-
 /** P3-06 Experiment Manager: A/B arms over campaign variants with stable
  * per-device assignment and per-arm results. */
 export function ExperimentsTab() {
@@ -45,6 +59,7 @@ export function ExperimentsTab() {
   const canManage = hasPermission("campaigns.manage");
   const queryClient = useQueryClient();
   const [error, setError] = useState<string | null>(null);
+  const [createOpen, setCreateOpen] = useState(false);
   const [form, setForm] = useState({ campaign_id: "", name: "", variant_id: "", pct: "50" });
   const [resultsFor, setResultsFor] = useState<string | null>(null);
 
@@ -86,6 +101,7 @@ export function ExperimentsTab() {
       refresh();
       setError(null);
       setForm({ campaign_id: "", name: "", variant_id: "", pct: "50" });
+      setCreateOpen(false);
     },
     onError,
   });
@@ -103,11 +119,17 @@ export function ExperimentsTab() {
 
   if (experimentsQuery.isError)
     return (
-      <p className="mt-4 rounded-md bg-amber-50 px-3 py-2 text-sm text-amber-800" role="alert">
-        {experimentsQuery.error instanceof ApiError
-          ? experimentsQuery.error.message
-          : "Experiments unavailable."}
-      </p>
+      <Alert
+        type="warning"
+        showIcon
+        role="alert"
+        className="mt-4"
+        message={
+          experimentsQuery.error instanceof ApiError
+            ? experimentsQuery.error.message
+            : "Experiments unavailable."
+        }
+      />
     );
 
   const experiments = experimentsQuery.data?.data ?? [];
@@ -115,188 +137,182 @@ export function ExperimentsTab() {
   const variants = campaignDetailQuery.data?.data?.variants ?? [];
   const campaignName = (id: string) => campaigns.find((c) => c.id === id)?.name ?? id.slice(0, 8);
 
-  function onCreate(e: FormEvent) {
-    e.preventDefault();
+  function onCreate() {
     setError(null);
     create.mutate();
   }
 
-  return (
-    <div className="mt-4 space-y-6">
-      <p className="text-xs text-slate-400">
-        An experiment A/B-tests a campaign's variants: each device lands in a
-        stable arm (same device, same arm, always); the remainder plays the
-        base creative as control. Stopping reverts every device instantly.
-      </p>
-
-      {canManage && (
-        <form
-          className="flex flex-wrap items-end gap-3 rounded-lg border border-slate-200 bg-white p-4"
-          onSubmit={onCreate}
-        >
-          <label className="block text-sm">
-            <span className="block text-xs text-slate-500">Campaign</span>
-            <select
-              required
-              value={form.campaign_id}
-              onChange={(e) =>
-                setForm((p) => ({ ...p, campaign_id: e.target.value, variant_id: "" }))
-              }
-              className="mt-0.5 rounded-md border border-slate-300 px-2 py-1.5"
+  const columns: TableProps<ExperimentRow>["columns"] = [
+    {
+      title: "Experiment",
+      dataIndex: "name",
+      render: (name: string) => <Typography.Text strong>{name}</Typography.Text>,
+    },
+    {
+      title: "Campaign",
+      dataIndex: "campaign_id",
+      render: (campaign_id: string, exp) => (
+        <Space size="small">
+          {campaignName(campaign_id)}
+          <Tag>control {exp.control_pct}%</Tag>
+        </Space>
+      ),
+    },
+    {
+      title: "Status",
+      dataIndex: "status",
+      render: (status: string) => <StatusBadge status={status} />,
+    },
+    {
+      title: "Actions",
+      align: "right" as const,
+      render: (_, exp) => (
+        <Space size="small">
+          {canManage && exp.status === "draft" && (
+            <Button
+              size="small"
+              type="primary"
+              onClick={() => transition.mutate({ id: exp.id, action: "start" })}
             >
-              <option value="">Select…</option>
-              {campaigns.map((c) => (
-                <option key={c.id} value={c.id}>
-                  {c.name}
-                </option>
-              ))}
-            </select>
-          </label>
-          <label className="block text-sm">
-            <span className="block text-xs text-slate-500">Variant (arm B)</span>
-            <select
-              required
-              value={form.variant_id}
-              onChange={(e) => setForm((p) => ({ ...p, variant_id: e.target.value }))}
-              className="mt-0.5 rounded-md border border-slate-300 px-2 py-1.5"
+              Start
+            </Button>
+          )}
+          {canManage && exp.status === "running" && (
+            <Popconfirm
+              title="Stop this experiment?"
+              description="Every device reverts to the base creative instantly."
+              onConfirm={() => transition.mutate({ id: exp.id, action: "stop" })}
             >
-              <option value="">Select…</option>
-              {variants.map((v) => (
-                <option key={v.id} value={v.id}>
-                  {v.name}
-                </option>
-              ))}
-            </select>
-          </label>
-          <label className="block text-sm">
-            <span className="block text-xs text-slate-500">Allocation %</span>
-            <input
-              type="number"
-              min={1}
-              max={100}
-              value={form.pct}
-              onChange={(e) => setForm((p) => ({ ...p, pct: e.target.value }))}
-              className="mt-0.5 w-20 rounded-md border border-slate-300 px-2 py-1.5"
-            />
-          </label>
-          <label className="block text-sm">
-            <span className="block text-xs text-slate-500">Name</span>
-            <input
-              required
-              value={form.name}
-              onChange={(e) => setForm((p) => ({ ...p, name: e.target.value }))}
-              className="mt-0.5 w-48 rounded-md border border-slate-300 px-2 py-1.5"
-            />
-          </label>
-          <button
-            type="submit"
-            disabled={create.isPending}
-            className="rounded-md bg-slate-900 px-4 py-2 text-sm font-medium text-white disabled:opacity-50"
+              <Button size="small">Stop</Button>
+            </Popconfirm>
+          )}
+          <Button
+            size="small"
+            onClick={() => setResultsFor(resultsFor === exp.id ? null : exp.id)}
           >
-            Create experiment
-          </button>
-        </form>
-      )}
+            Results
+          </Button>
+          {canManage && exp.status !== "running" && (
+            <Popconfirm
+              title={`Delete experiment "${exp.name}"?`}
+              onConfirm={() => remove.mutate(exp.id)}
+              okButtonProps={{ danger: true }}
+            >
+              <Button size="small" danger>
+                Delete
+              </Button>
+            </Popconfirm>
+          )}
+        </Space>
+      ),
+    },
+  ];
 
-      <section className="rounded-lg border border-slate-200 bg-white p-4">
-        <h2 className="text-sm font-semibold uppercase tracking-wide text-slate-400">
-          Experiments
-        </h2>
-        <table className="mt-2 w-full text-left text-sm">
-          <tbody>
-            {experiments.length === 0 && (
-              <tr>
-                <td className="py-3 text-sm text-slate-400">No experiments yet.</td>
-              </tr>
-            )}
-            {experiments.map((exp) => (
-              <tr key={exp.id} className="border-t border-slate-100">
-                <td className="py-2 pr-4 font-medium text-slate-800">{exp.name}</td>
-                <td className="py-2 pr-4 text-xs text-slate-500">
-                  {campaignName(exp.campaign_id)} · control {exp.control_pct}%
-                </td>
-                <td className="py-2 pr-4">
-                  <span
-                    className={`rounded-full px-2 py-0.5 text-xs font-medium ${
-                      STATUS_STYLE[exp.status] ?? ""
-                    }`}
-                  >
-                    {exp.status}
-                  </span>
-                </td>
-                <td className="py-2">
-                  <div className="flex items-center gap-1.5">
-                    {canManage && exp.status === "draft" && (
-                      <button
-                        type="button"
-                        onClick={() => transition.mutate({ id: exp.id, action: "start" })}
-                        className="rounded-md bg-emerald-600 px-2 py-1 text-xs font-medium text-white"
-                      >
-                        Start
-                      </button>
-                    )}
-                    {canManage && exp.status === "running" && (
-                      <button
-                        type="button"
-                        onClick={() => transition.mutate({ id: exp.id, action: "stop" })}
-                        className="rounded-md border border-amber-400 px-2 py-1 text-xs font-medium text-amber-700"
-                      >
-                        Stop
-                      </button>
-                    )}
-                    <button
-                      type="button"
-                      onClick={() => setResultsFor(resultsFor === exp.id ? null : exp.id)}
-                      className="rounded-md border border-slate-300 px-2 py-1 text-xs text-slate-600"
-                    >
-                      Results
-                    </button>
-                    {canManage && exp.status !== "running" && (
-                      <button
-                        type="button"
-                        onClick={() => remove.mutate(exp.id)}
-                        className="rounded-md border border-red-300 px-2 py-1 text-xs font-medium text-red-600"
-                      >
-                        Delete
-                      </button>
-                    )}
-                  </div>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+  const resultColumns: TableProps<ResultArm>["columns"] = [
+    { title: "Arm", dataIndex: "arm" },
+    { title: "Devices", dataIndex: "devices", align: "right" as const },
+    { title: "Playbacks", dataIndex: "playback_count", align: "right" as const },
+  ];
+
+  return (
+    <Space orientation="vertical" size="middle" className="mt-4 w-full">
+      <Flex justify="space-between" align="flex-start" gap="middle" wrap>
+        <Typography.Text type="secondary" className="text-xs">
+          An experiment A/B-tests a campaign's variants: each device lands in a
+          stable arm (same device, same arm, always); the remainder plays the
+          base creative as control. Stopping reverts every device instantly.
+        </Typography.Text>
+        {canManage && (
+          <Button type="primary" icon={<PlusOutlined />} onClick={() => setCreateOpen(true)}>
+            New experiment
+          </Button>
+        )}
+      </Flex>
+
+      <Card size="small" title="Experiments">
+        <Table<ExperimentRow>
+          size="middle"
+          rowKey="id"
+          columns={columns}
+          dataSource={experiments}
+          loading={experimentsQuery.isLoading}
+          pagination={false}
+          scroll={{ x: "max-content" }}
+          locale={{ emptyText: <EmptyState title="No experiments yet." /> }}
+        />
 
         {resultsFor && resultsQuery.data?.data && (
-          <div className="mt-3 rounded-md border border-slate-200 bg-slate-50 p-3">
-            <h3 className="text-xs font-semibold uppercase text-slate-400">Results by arm</h3>
-            <table className="mt-1 w-full text-left text-sm">
-              <thead>
-                <tr className="text-xs uppercase text-slate-400">
-                  <th className="py-1 pr-4">Arm</th>
-                  <th className="py-1 pr-4">Devices</th>
-                  <th className="py-1">Playbacks</th>
-                </tr>
-              </thead>
-              <tbody>
-                {resultsQuery.data.data.arms.map((arm) => (
-                  <tr key={arm.arm} className="border-t border-slate-200">
-                    <td className="py-1 pr-4">{arm.arm}</td>
-                    <td className="py-1 pr-4">{arm.devices}</td>
-                    <td className="py-1">{arm.playback_count}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+          <Card size="small" type="inner" className="mt-3" title="Results by arm">
+            <Table<ResultArm>
+              size="middle"
+              rowKey="arm"
+              columns={resultColumns}
+              dataSource={resultsQuery.data.data.arms}
+              pagination={false}
+              scroll={{ x: "max-content" }}
+            />
+          </Card>
         )}
-      </section>
+      </Card>
 
-      {error && (
-        <p role="alert" className="rounded-md bg-red-50 px-3 py-2 text-sm text-red-700">
-          {error}
-        </p>
+      {error && <Alert type="error" message={error} showIcon role="alert" />}
+
+      {canManage && (
+        <Modal
+          title="New experiment"
+          open={createOpen}
+          onCancel={() => setCreateOpen(false)}
+          okText="Create experiment"
+          confirmLoading={create.isPending}
+          okButtonProps={{ disabled: !form.campaign_id || !form.variant_id || !form.name }}
+          onOk={onCreate}
+          destroyOnHidden
+        >
+          <Form layout="vertical">
+            <Form.Item label="Campaign" required>
+              <Select
+                value={form.campaign_id || undefined}
+                onChange={(value) =>
+                  setForm((p) => ({ ...p, campaign_id: value, variant_id: "" }))
+                }
+                placeholder="Select…"
+                aria-label="Campaign"
+                showSearch
+                optionFilterProp="label"
+                options={campaigns.map((c) => ({ value: c.id, label: c.name }))}
+              />
+            </Form.Item>
+            <Form.Item label="Variant (arm B)" required>
+              <Select
+                value={form.variant_id || undefined}
+                onChange={(value) => setForm((p) => ({ ...p, variant_id: value }))}
+                placeholder="Select…"
+                aria-label="Variant (arm B)"
+                options={variants.map((v) => ({ value: v.id, label: v.name }))}
+              />
+            </Form.Item>
+            <Form.Item label="Allocation %">
+              <InputNumber
+                min={1}
+                max={100}
+                value={form.pct === "" ? null : Number(form.pct)}
+                onChange={(value) =>
+                  setForm((p) => ({ ...p, pct: value == null ? "" : String(value) }))
+                }
+                aria-label="Allocation %"
+                className="w-24"
+              />
+            </Form.Item>
+            <Form.Item label="Name" required>
+              <Input
+                value={form.name}
+                onChange={(e) => setForm((p) => ({ ...p, name: e.target.value }))}
+                aria-label="Name"
+              />
+            </Form.Item>
+          </Form>
+        </Modal>
       )}
-    </div>
+    </Space>
   );
 }

@@ -1,4 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { App, Card, Checkbox, List, Space, Typography } from "antd";
 import { api, ApiError } from "../../lib/api";
 
 interface Policy {
@@ -9,6 +10,7 @@ interface Policy {
 
 /** P2-APP-001: tenant approval policy controls (part of Tenant Settings). */
 export function ApprovalPolicySection({ canManage }: { canManage: boolean }) {
+  const { message } = App.useApp();
   const queryClient = useQueryClient();
   const policiesQuery = useQuery({
     queryKey: ["approval-policies"],
@@ -24,52 +26,46 @@ export function ApprovalPolicySection({ canManage }: { canManage: boolean }) {
       }),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["approval-policies"] }),
     onError: (err) =>
-      window.alert(err instanceof ApiError ? err.message : "Failed to save policy"),
+      message.error(err instanceof ApiError ? err.message : "Failed to save policy"),
   });
 
   if (!canManage) return null;
   const policies = policiesQuery.data?.data ?? [];
 
   return (
-    <section className="mt-6 rounded-lg border border-slate-200 bg-white p-6">
-      <h2 className="text-sm font-semibold uppercase tracking-wide text-slate-400">
-        Approval policies
-      </h2>
-      <p className="mt-1 text-sm text-slate-500">
+    <Card size="small" title="Approval policies" loading={policiesQuery.isLoading}>
+      <Typography.Paragraph type="secondary" className="!mb-2">
         Govern which submissions need review and whether the submitter may decide
         their own request (maker-checker).
-      </p>
-      <div className="mt-3 space-y-2">
-        {policies.map((policy) => (
-          <div
-            key={policy.entity_type}
-            className="flex flex-wrap items-center gap-4 rounded-md border border-slate-100 px-3 py-2 text-sm"
-          >
-            <span className="w-24 font-medium capitalize text-slate-800">
-              {policy.entity_type}s
-            </span>
-            <label className="flex items-center gap-2 text-slate-600">
-              <input
-                type="checkbox"
+      </Typography.Paragraph>
+      <List
+        size="small"
+        dataSource={policies}
+        renderItem={(policy) => (
+          <List.Item>
+            <Space wrap size="large">
+              <Typography.Text strong className="w-24 inline-block capitalize">
+                {policy.entity_type}s
+              </Typography.Text>
+              <Checkbox
                 checked={policy.require_approval}
                 onChange={(e) =>
                   save.mutate({ ...policy, require_approval: e.target.checked })
                 }
-              />
-              Require approval
-            </label>
-            <label className="flex items-center gap-2 text-slate-600">
-              <input
-                type="checkbox"
+              >
+                Require approval
+              </Checkbox>
+              <Checkbox
                 checked={policy.maker_checker}
                 disabled={!policy.require_approval}
                 onChange={(e) => save.mutate({ ...policy, maker_checker: e.target.checked })}
-              />
-              Maker-checker (no self-approval)
-            </label>
-          </div>
-        ))}
-      </div>
-    </section>
+              >
+                Maker-checker (no self-approval)
+              </Checkbox>
+            </Space>
+          </List.Item>
+        )}
+      />
+    </Card>
   );
 }
