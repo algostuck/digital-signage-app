@@ -2,6 +2,7 @@ import {
   CloudUploadOutlined,
   CopyOutlined,
   DeleteOutlined,
+  DesktopOutlined,
   PlusOutlined,
   SaveOutlined,
 } from "@ant-design/icons";
@@ -31,6 +32,7 @@ import { StatusBadge } from "../../components/ui/StatusBadge";
 import { api, ApiError } from "../../lib/api";
 import { useAuth } from "../../lib/auth";
 import type { Asset } from "../content/types";
+import { CompositionTVPreview } from "../preview";
 import {
   newZoneKey,
   ZONE_CONTENT_TYPES,
@@ -69,6 +71,7 @@ export function DesignerPage() {
   const [selectedKey, setSelectedKey] = useState<string | null>(null);
   const [dirty, setDirty] = useState(false);
   const [templateModalOpen, setTemplateModalOpen] = useState(false);
+  const [previewOpen, setPreviewOpen] = useState(false);
   const [templateName, setTemplateName] = useState("");
   const dragRef = useRef<DragState | null>(null);
 
@@ -243,8 +246,13 @@ export function DesignerPage() {
             )}
           </Space>
         </div>
-        {canManage && (
-          <Space wrap>
+        <Space wrap>
+          {/* Read-only, so it is not gated behind manage permission. */}
+          <Button icon={<DesktopOutlined />} onClick={() => setPreviewOpen(true)}>
+            Preview
+          </Button>
+          {canManage && (
+            <>
             <Button icon={<PlusOutlined />} onClick={addZone}>
               Add zone
             </Button>
@@ -274,8 +282,9 @@ export function DesignerPage() {
             >
               Publish
             </Button>
-          </Space>
-        )}
+            </>
+          )}
+        </Space>
       </Flex>
 
       <Row gutter={[16, 16]}>
@@ -525,6 +534,13 @@ export function DesignerPage() {
           }}
         />
       </Modal>
+
+      <CompositionTVPreview
+        open={previewOpen}
+        onClose={() => setPreviewOpen(false)}
+        title={`Preview — ${layout.name}`}
+        canvas={canvas}
+      />
     </div>
   );
 }

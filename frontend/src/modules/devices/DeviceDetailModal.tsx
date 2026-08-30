@@ -1,4 +1,4 @@
-import { SendOutlined } from "@ant-design/icons";
+import { DesktopOutlined, SendOutlined } from "@ant-design/icons";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   Alert,
@@ -21,6 +21,7 @@ import { StatusBadge } from "../../components/ui/StatusBadge";
 import { api, ApiError } from "../../lib/api";
 import { useAuth } from "../../lib/auth";
 import type { LocationNode } from "../locations/types";
+import { DeviceTVPreview } from "../preview";
 import { timeAgo, type DeviceCommand, type DeviceDetail, type DeviceGroup } from "./types";
 
 const COMMAND_TYPES = [
@@ -54,6 +55,7 @@ export function DeviceDetailModal({ deviceId, onClose, onChanged }: Props) {
   const queryClient = useQueryClient();
   const [error, setError] = useState<string | null>(null);
   const [commandType, setCommandType] = useState(COMMAND_TYPES[0]);
+  const [previewOpen, setPreviewOpen] = useState(false);
 
   const deviceQuery = useQuery({
     queryKey: ["device", deviceId],
@@ -140,6 +142,11 @@ export function DeviceDetailModal({ deviceId, onClose, onChanged }: Props) {
       onClose={onClose}
       width={640}
       placement="right"
+      extra={
+        <Button icon={<DesktopOutlined />} onClick={() => setPreviewOpen(true)}>
+          TV preview
+        </Button>
+      }
       footer={
         canManage ? (
           <Flex wrap justify="flex-end" gap="small">
@@ -363,6 +370,11 @@ export function DeviceDetailModal({ deviceId, onClose, onChanged }: Props) {
 
         {error && <Alert type="error" message={error} showIcon role="alert" />}
       </Space>
+      <DeviceTVPreview
+        device={device}
+        open={previewOpen}
+        onClose={() => setPreviewOpen(false)}
+      />
     </Drawer>
   );
 }

@@ -1,0 +1,67 @@
+/* Playback-only styles for the TV preview. These live outside the design
+   system on purpose: they style the simulated screen, which is a TV and not
+   part of the app's light/dark surface. */
+
+@keyframes dsc-preview-marquee {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-50%);
+  }
+}
+
+.dsc-preview-ticker {
+  display: flex;
+  width: max-content;
+  animation: dsc-preview-marquee linear infinite;
+  will-change: transform;
+}
+
+.dsc-preview-ticker > span {
+  padding-inline-end: 3rem;
+  white-space: nowrap;
+}
+
+@keyframes dsc-preview-fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.dsc-preview-fade {
+  animation: dsc-preview-fade-in 400ms ease-out;
+}
+
+@keyframes dsc-preview-slide-in {
+  from {
+    transform: translateX(6%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+.dsc-preview-slide {
+  animation: dsc-preview-slide-in 400ms ease-out;
+}
+
+/* A paused preview should look paused even mid-marquee. */
+.dsc-preview-paused .dsc-preview-ticker,
+.dsc-preview-paused .dsc-preview-fade,
+.dsc-preview-paused .dsc-preview-slide {
+  animation-play-state: paused;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dsc-preview-ticker,
+  .dsc-preview-fade,
+  .dsc-preview-slide {
+    animation: none;
+  }
+}

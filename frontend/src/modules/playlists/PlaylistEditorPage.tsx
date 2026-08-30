@@ -2,6 +2,7 @@ import {
   ArrowDownOutlined,
   ArrowUpOutlined,
   CloudUploadOutlined,
+  DesktopOutlined,
   PlusOutlined,
 } from "@ant-design/icons";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -32,6 +33,7 @@ import { api, ApiError } from "../../lib/api";
 import { useAuth } from "../../lib/auth";
 import type { Asset } from "../content/types";
 import type { LayoutSummary } from "../design/types";
+import { CompositionTVPreview, playlistToManifestShape } from "../preview";
 import { formatDuration, type PlaylistDetail, type PlaylistItem, type PlaylistSummary } from "./types";
 
 const TRANSITIONS = ["none", "fade", "slide"];
@@ -43,6 +45,7 @@ export function PlaylistEditorPage() {
   const canManage = hasPermission("playlists.manage");
   const queryClient = useQueryClient();
   const [addOpen, setAddOpen] = useState(false);
+  const [previewOpen, setPreviewOpen] = useState(false);
   const [message, setMessage] = useState<{ kind: "ok" | "error"; text: string } | null>(null);
 
   const playlistQuery = useQuery({
@@ -103,21 +106,31 @@ export function PlaylistEditorPage() {
           playlist.total_duration_ms,
         )} total`}
         actions={
-          canManage && (
-            <>
-              <Button icon={<PlusOutlined />} onClick={() => setAddOpen(true)}>
-                Add item
-              </Button>
-              <Button
-                type="primary"
-                icon={<CloudUploadOutlined />}
-                onClick={() => publish.mutate()}
-                loading={publish.isPending}
-              >
-                Publish
-              </Button>
-            </>
-          )
+          <>
+            {/* Preview is read-only, so viewers get it too. */}
+            <Button
+              icon={<DesktopOutlined />}
+              onClick={() => setPreviewOpen(true)}
+              disabled={playlist.items.length === 0}
+            >
+              Preview
+            </Button>
+            {canManage && (
+              <>
+                <Button icon={<PlusOutlined />} onClick={() => setAddOpen(true)}>
+                  Add item
+                </Button>
+                <Button
+                  type="primary"
+                  icon={<CloudUploadOutlined />}
+                  onClick={() => publish.mutate()}
+                  loading={publish.isPending}
+                >
+                  Publish
+                </Button>
+              </>
+            )}
+          </>
         }
       />
 
@@ -211,6 +224,13 @@ export function PlaylistEditorPage() {
           }}
         />
       )}
+
+      <CompositionTVPreview
+        open={previewOpen}
+        onClose={() => setPreviewOpen(false)}
+        title={`Preview — ${playlist.name}`}
+        playlist={playlistToManifestShape(playlist)}
+      />
     </div>
   );
 }
