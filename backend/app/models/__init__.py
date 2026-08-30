@@ -1,5 +1,6 @@
 """Import all models here so Base.metadata and Alembic see the full schema."""
 
+from app.models.ai import AiOutput, AiPolicy, AiRequest
 from app.models.approval import ApprovalAction, ApprovalPolicy, ApprovalRequest
 from app.models.auth import RefreshToken
 from app.models.campaign import (
@@ -18,6 +19,9 @@ from app.models.content import (
     UploadSession,
     asset_tags,
 )
+from app.models.data_source import DataSource, DataSourceSchema, DataSourceSnapshot
+from app.models.decisioning import DecisionLog, DecisionPolicy, DecisionRule
+from app.models.developer import ApiProduct, ApiVersion
 from app.models.device import (
     Device,
     DeviceCapability,
@@ -29,6 +33,7 @@ from app.models.device import (
     device_tags,
 )
 from app.models.events import DomainEvent, EventDelivery, EventSubscription
+from app.models.experiment import Experiment, ExperimentAssignment, ExperimentVariant
 from app.models.integration import (
     ApiKey,
     WebhookDelivery,
@@ -64,9 +69,23 @@ from app.models.studio import (
 from app.models.user import Permission, Role, User, role_permissions, user_roles
 
 __all__ = [
+    "AiOutput",
+    "AiPolicy",
+    "AiRequest",
+    "ApiProduct",
+    "ApiVersion",
+    "DataSource",
+    "DecisionLog",
+    "DecisionPolicy",
+    "DecisionRule",
+    "DataSourceSchema",
+    "DataSourceSnapshot",
     "DomainEvent",
     "EventDelivery",
     "EventSubscription",
+    "Experiment",
+    "ExperimentAssignment",
+    "ExperimentVariant",
     "Organization",
     "User",
     "Role",

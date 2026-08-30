@@ -1,4 +1,4 @@
-﻿# Phase 3 â€” API Matrix
+# Phase 3 — API Matrix
 
 Conventions unchanged (docs/api-guidelines.md): `/api/v1`, envelope
 `{data, meta, errors}`, tenant from principal only, 404 for cross-tenant,
@@ -9,18 +9,18 @@ existing endpoint changes shape; new player-manifest blocks are additive.
 
 | Method | Endpoint | Auth/Perm (+flag) | Notes | Status |
 |---|---|---|---|---|
-| POST | /ai/generate/text | content.create + ai | governed by ai_policies; async provider call w/ timeout; records ai_request/output | pending |
-| POST | /ai/generate/creative | layouts.manage + ai | structured variant â†’ draft asset/template + governance record | pending |
-| POST | /ai/localize | content.create + ai | placeholder/format preservation validated post-generation | pending |
-| GET/PUT | /ai/policies | settings.manage + ai | allowed operations, approval routing, provider config ref | pending |
-| GET | /ai/requests(/{id}) | content.view + ai | explainability trail (model/template/version/confidence) | pending |
-| GET/POST/PATCH/DELETE | /data-sources(/{id}) | settings.manage (write) / layouts.view (read) + dynamic_data | secret-ref only; SSRF-guarded endpoint validation | pending |
-| POST | /data-sources/{id}/test | settings.manage | guarded fetch + schema validation dry-run | pending |
-| GET | /data-sources/{id}/health | layouts.view | last fetch, validity, cache age | pending |
-| POST | /widgets/{id}/bindings | layouts.manage | binds widget â†’ source + transform + fallback | pending |
-| GET/POST/PATCH | /decision-policies, /decision-rules | campaigns.manage | deterministic priority, guardrails | pending |
-| POST | /decision-rules/preview | campaigns.view | context in â†’ decision + ordered reasons out | pending |
-| GET/POST/PATCH | /experiments(/{id}) | campaigns.manage + experiments | allocation validation; stable assignment | pending |
+| POST | /ai/generate/text | content.create + ai_features | governed by ai_policies; deterministic local provider (real providers = config swap); records ai_request/output | **done (3B-1)** |
+| POST | /ai/generate/creative | layouts.manage + ai_features | dimension-aware structured variant + governance record (materialization to assets = later slice) | **done (3B-1)** |
+| POST | /ai/localize | content.create + ai_features | placeholder/format preservation validated post-generation (rejects damage) | **done (3B-1)** |
+| GET/PUT | /ai/policies | settings.manage + ai_features | allowed operations, guardrail banned-terms, approval routing | **done (3B-1)** |
+| GET | /ai/requests(/{id}) | content.view | explainability trail (provider/model/template-version/confidence/fallback) | **done (3B-1)** |
+| GET/POST/PATCH/DELETE | /data-sources(/{id}) (+PUT /schema) | settings.manage (write) / layouts.view (read) + dynamic_data | env-var token ref only (no secrets stored); SSRF-guarded endpoint validation | **done (3A-2)** |
+| POST | /data-sources/{id}/test, /{id}/refresh | settings.manage + dynamic_data | guarded fetch + schema validation dry-run / stored refresh | **done (3A-2)** |
+| GET | /data-sources/{id}/health | layouts.view | last fetch, validity, cache age, last-known-good | **done (3A-2)** |
+| POST | ~~/widgets/{id}/bindings~~ | layouts.manage | superseded: bindings are per-zone in the canvas (`zone.widget.data_binding` = {source_id, transform}) — richer than widget-global, validated at layout publish/template submit | **done (3A-2, deviation documented)** |
+| GET/POST/PATCH/DELETE | /decision-policies (+PUT /{id}/rules replace-set) | campaigns.manage (view: campaigns.view) | deterministic priority, guardrails, external-data conditions | **done (3B-2)** |
+| POST | /decision-rules/preview (+GET /decision-log) | campaigns.view | context in → decision + ordered reasons out; bounded auditable log | **done (3B-2)** |
+| GET/POST/DELETE | /experiments (+/transition, /{id}/results) | campaigns.manage + experiments (view: campaigns.view) | allocation validation; stable assignment; per-arm results | **done (3B-3)** |
 | GET/POST/PATCH/DELETE | /video-walls(/{id}) (+/members) | devices.manage + video_wall | canvas/viewport validation; member uniqueness | pending |
 | POST | /video-walls/{id}/sync | devices.control | starts session: epoch marker + tolerance; degraded state surfaced | pending |
 | GET/POST/PATCH | /ad-inventory(/{id}) | ads.manage + advertising | slot/hours/rate-card | pending |
@@ -40,5 +40,6 @@ existing endpoint changes shape; new player-manifest blocks are additive.
 | GET | /security/policy-violations | settings.manage | central policy engine output | pending |
 | GET/POST | /data-exports | reports.export | dataset/schedule/destination; runs via beat | pending |
 | GET | /platform/regions | is_superuser | tenant/region/service health; no tenant content | pending |
-| GET | /developer/openapi | api_keys.manage + developer_portal | versioned OpenAPI + changelog metadata | pending |
-| â€” | Player manifest additive blocks: sync/bundle/data/ad_slots/bandwidth/prefetch | device token | contract v2, ignored by v1 players | pending |
+| GET | /developer/openapi | api_keys.manage + developer_portal | versioned OpenAPI + changelog metadata | **done (3A-3)** |
+| GET/POST | /developer/sandbox (+/simulate-device) | api_keys.manage + developer_portal | idempotent sandbox org + owner membership; simulator via real player pipeline | **done (3A-3)** |
+| — | Player manifest additive blocks: sync/bundle/data/ad_slots/bandwidth/prefetch | device token | contract v2, ignored by v1 players | pending |

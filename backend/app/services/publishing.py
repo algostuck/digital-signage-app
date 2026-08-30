@@ -507,6 +507,37 @@ def _register_campaign_adapter() -> None:
 _register_campaign_adapter()
 
 
+async def candidate_campaigns_for_device(db: AsyncSession, device) -> list:
+    """Campaigns with a live deployment covering this device (shared by the
+    manifest builder and the decisioning engine, P3 3B-2)."""
+    from app.models import Campaign
+    from app.models.campaign import CampaignStatus
+
+    rows = await db.execute(
+        select(Campaign)
+        .join(Deployment, Deployment.campaign_id == Campaign.id)
+        .join(DeploymentDevice, DeploymentDevice.deployment_id == Deployment.id)
+        .where(
+            DeploymentDevice.device_id == device.id,
+            Deployment.status.in_(
+                [
+                    DeploymentStatus.PUBLISHING.value,
+                    DeploymentStatus.PARTIAL.value,
+                    DeploymentStatus.PUBLISHED.value,
+                ]
+            ),
+            Campaign.status == CampaignStatus.PUBLISHED.value,
+        )
+    )
+    seen: set[uuid.UUID] = set()
+    candidates = []
+    for campaign in rows.scalars():
+        if campaign.id not in seen:
+            seen.add(campaign.id)
+            candidates.append(campaign)
+    return candidates
+
+
 async def pending_deployment_ids_for_device(
     db: AsyncSession, device_id: uuid.UUID
 ) -> list[uuid.UUID]:

@@ -135,6 +135,11 @@ async def publish_layout(
     if not canvas.zones:
         raise BusinessRuleError("A layout needs at least one zone to be published")
     await validate_asset_bindings(db, organization_id, canvas)
+    # Widget refs incl. dynamic data bindings (P3 3A-2) are contract-checked
+    # at publish time, exactly like template submission (2D).
+    from app.services.studio import validate_canvas_widgets
+
+    await validate_canvas_widgets(db, organization_id, canvas.model_dump())
 
     version_no = (layout.versions[-1].version_no + 1) if layout.versions else 1
     version = LayoutVersion(

@@ -7,6 +7,7 @@ import { Spinner } from "../../components/ui/Spinner";
 import { StatusBadge } from "../../components/ui/StatusBadge";
 import { api, ApiError } from "../../lib/api";
 import { useAuth } from "../../lib/auth";
+import { AiStudioTab } from "./AiStudioTab";
 import { TemplatesTab } from "./TemplatesTab";
 import { WidgetsTab } from "./WidgetsTab";
 import type { LayoutDetail, LayoutSummary, Template } from "./types";
@@ -15,6 +16,7 @@ const TABS = [
   { key: "layouts", label: "Layouts" },
   { key: "templates", label: "Templates" },
   { key: "widgets", label: "Widgets" },
+  { key: "ai", label: "AI Studio" },
 ] as const;
 
 /** Design studio: SCR-15 layouts + P2-06 templates + P2-08 widgets. */
@@ -46,8 +48,10 @@ export function LayoutsPage() {
           <LayoutsTab />
         ) : tab === "templates" ? (
           <TemplatesTab />
-        ) : (
+        ) : tab === "widgets" ? (
           <WidgetsTab />
+        ) : (
+          <AiStudioTab />
         )}
       </div>
     </div>

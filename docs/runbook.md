@@ -108,6 +108,7 @@ Logs are structured JSON with `request_id`; every API response echoes
 | process_escalations | 5 min | Unread rule-matched alerts past their delay → critical ESCALATION |
 | prune_retention | daily | Tenant retention pruning (audited) |
 | push_event_deliveries | 1 min | P3 3A-1: signed domain-event pushes (backoff 1m→8m, replayable dead-letter) |
+| refresh_data_sources | 1 min | P3 3A-2: guarded feed refresh per source interval; last-known-good preserved on failure |
 | subscription_lifecycle | hourly | SaaS core: trial expiry, renewals + invoices, dunning ladder past_due→grace→suspended (docs/SAAS_CORE.md) |
 | snapshot_usage | 15 min | SaaS core: refresh usage_counters (devices/users/storage/locations) with effective limits |
 

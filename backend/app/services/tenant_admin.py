@@ -21,6 +21,7 @@ from app.models import (
     Asset,
     AssetVersion,
     AuditLog,
+    DecisionLog,
     Device,
     DeviceEvent,
     DeviceHeartbeat,
@@ -45,9 +46,11 @@ RETENTION_POLICY: dict[str, tuple[int, int, int]] = {
     "notifications": (1, 365, 90),
     "webhook_deliveries": (1, 365, 30),
     "audit_logs": (90, 3650, 365),  # compliance floor: 90 days minimum
-    # Phase-3 streams (3A-1): bounded raw history, aggregate-fed later.
+    # Phase-3 streams: bounded raw history, aggregate-fed later.
     "domain_events": (1, 730, 90),
     "event_deliveries": (1, 365, 30),
+    "data_source_snapshots": (1, 90, 14),
+    "decision_log": (1, 365, 30),
 }
 
 
@@ -286,6 +289,10 @@ async def _prune_org(db: AsyncSession, org_id: uuid.UUID) -> dict[str, int]:
             DomainEvent.organization_id == org_id,
             DomainEvent.occurred_at < cutoff("domain_events"),
         ),
+        "decision_log": delete(DecisionLog).where(
+            DecisionLog.organization_id == org_id,
+            DecisionLog.decided_at < cutoff("decision_log"),
+        ),
         "event_deliveries": delete(EventDelivery).where(
             EventDelivery.organization_id == org_id,
             EventDelivery.created_at < cutoff("event_deliveries"),
@@ -296,6 +303,27 @@ async def _prune_org(db: AsyncSession, org_id: uuid.UUID) -> dict[str, int]:
         result = await db.execute(statement)
         if result.rowcount:
             pruned[key] = result.rowcount
+
+    # Data-source snapshots (3A-2): prune by age but ALWAYS keep each
+    # source's newest valid snapshot — last-known-good must survive.
+    from app.models import DataSource, DataSourceSnapshot
+
+    source_ids = select(DataSource.id).where(DataSource.organization_id == org_id)
+    keep = (
+        select(DataSourceSnapshot.id)
+        .where(DataSourceSnapshot.valid.is_(True))
+        .distinct(DataSourceSnapshot.source_id)
+        .order_by(DataSourceSnapshot.source_id, DataSourceSnapshot.fetched_at.desc())
+    )
+    result = await db.execute(
+        delete(DataSourceSnapshot).where(
+            DataSourceSnapshot.source_id.in_(source_ids),
+            DataSourceSnapshot.fetched_at < cutoff("data_source_snapshots"),
+            DataSourceSnapshot.id.not_in(keep),
+        )
+    )
+    if result.rowcount:
+        pruned["data_source_snapshots"] = result.rowcount
     return pruned
 
 

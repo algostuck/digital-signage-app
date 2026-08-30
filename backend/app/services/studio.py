@@ -161,6 +161,25 @@ async def validate_canvas_widgets(
         validate_widget_config(current.config_schema_json, ref.get("config") or {})
         validate_bindings(ref.get("bindings") or {})
 
+        # Dynamic data binding (P3 3A-2): {source_id, transform?} — the
+        # source must exist in this tenant, the transform must be the safe
+        # declarative spec (never code).
+        data_binding = ref.get("data_binding")
+        if data_binding is not None:
+            from app.services import data_sources as data_sources_service
+
+            if not isinstance(data_binding, dict) or not data_binding.get("source_id"):
+                raise ValidationAppError("zone.widget.data_binding needs a source_id")
+            try:
+                source_id = uuid.UUID(str(data_binding["source_id"]))
+            except ValueError as exc:
+                raise ValidationAppError(
+                    "zone.widget.data_binding.source_id must be a UUID"
+                ) from exc
+            await data_sources_service.get_source(db, organization_id, source_id)
+            if data_binding.get("transform") is not None:
+                data_sources_service.validate_transform(data_binding["transform"])
+
 
 # --- widgets ---
 

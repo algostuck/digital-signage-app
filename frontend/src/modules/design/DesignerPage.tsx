@@ -638,10 +638,109 @@ function WidgetZonePanel({
           </p>
         </div>
       )}
+      {ref && <DataBindingEditor refWidget={ref} patchWidget={patchWidget} disabled={disabled} />}
       {widget?.fallback_json && (
         <p className="text-xs text-slate-400">
           Fallback when data unavailable: {JSON.stringify(widget.fallback_json)}
         </p>
+      )}
+    </div>
+  );
+}
+
+/** P3-04 (3A-2): bind the widget to a live data source with a safe
+ * declarative transform. The player receives validated snapshots via the
+ * manifest `data` block — never a raw feed. */
+function DataBindingEditor({
+  refWidget,
+  patchWidget,
+  disabled,
+}: {
+  refWidget: NonNullable<ZoneDef["widget"]>;
+  patchWidget: (patch: Partial<NonNullable<ZoneDef["widget"]>>) => void;
+  disabled: boolean;
+}) {
+  const sourcesQuery = useQuery({
+    queryKey: ["data-sources"],
+    queryFn: () => api.get<{ id: string; name: string; state: string }[]>("/data-sources"),
+  });
+  const sources = sourcesQuery.data?.data ?? [];
+  const binding = refWidget.data_binding ?? null;
+  const transform = binding?.transform ?? {};
+
+  function patchBinding(patch: Record<string, unknown>) {
+    patchWidget({
+      data_binding: { source_id: binding?.source_id ?? "", ...binding, ...patch },
+    });
+  }
+
+  return (
+    <div className="border-t border-slate-200 pt-3">
+      <label htmlFor="zone-data-source" className="block text-xs font-medium uppercase tracking-wide text-slate-400">
+        Live data source
+      </label>
+      <select
+        id="zone-data-source"
+        value={binding?.source_id ?? ""}
+        disabled={disabled}
+        onChange={(e) =>
+          patchWidget({
+            data_binding: e.target.value ? { source_id: e.target.value } : null,
+          })
+        }
+        className="mt-1 block w-full rounded-md border border-slate-300 px-2 py-1.5"
+      >
+        <option value="">— no live data —</option>
+        {sources.map((s) => (
+          <option key={s.id} value={s.id}>
+            {s.name} {s.state !== "active" ? `(${s.state})` : ""}
+          </option>
+        ))}
+      </select>
+      {binding && (
+        <div className="mt-2 space-y-2">
+          <PropInput
+            label="Transform path (e.g. items)"
+            value={String(transform.path ?? "")}
+            onChange={(v) => patchBinding({ transform: { ...transform, path: v || undefined } })}
+            disabled={disabled}
+          />
+          <PropInput
+            label="Fields (out:in, comma-separated)"
+            value={Object.entries(transform.fields ?? {})
+              .map(([k, v]) => `${k}:${v}`)
+              .join(", ")}
+            onChange={(v) => {
+              const fields: Record<string, string> = {};
+              for (const pair of v.split(",")) {
+                const [out, inPath] = pair.split(":").map((s) => s.trim());
+                if (out && inPath) fields[out] = inPath;
+              }
+              patchBinding({
+                transform: {
+                  ...transform,
+                  fields: Object.keys(fields).length ? fields : undefined,
+                },
+              });
+            }}
+            disabled={disabled}
+          />
+          <PropInput
+            label="Item limit"
+            type="number"
+            value={String(transform.limit ?? "")}
+            onChange={(v) =>
+              patchBinding({
+                transform: { ...transform, limit: v ? Number(v) : undefined },
+              })
+            }
+            disabled={disabled}
+          />
+          <p className="text-xs text-slate-400">
+            Snapshots are refreshed server-side; when the source is down the
+            player keeps last-known-good, then the widget fallback.
+          </p>
+        </div>
       )}
     </div>
   );

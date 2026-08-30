@@ -1,10 +1,11 @@
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+﻿import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useState, type FormEvent } from "react";
 import { FormField } from "../../components/ui/FormField";
 import { Spinner } from "../../components/ui/Spinner";
 import { api, ApiError } from "../../lib/api";
 import { useAuth } from "../../lib/auth";
 import { ApprovalPolicySection } from "./ApprovalPolicySection";
+import { DataSourcesSection } from "./DataSourcesSection";
 import { EventBusSection } from "./EventBusSection";
 import { IntegrationsSection } from "./IntegrationsSection";
 import { PlanBillingSection } from "./PlanBillingSection";
@@ -129,6 +130,7 @@ export function OrganizationSettingsPage() {
       <QuotasRetentionSection />
       <IntegrationsSection />
       <EventBusSection />
+      <DataSourcesSection />
     </div>
   );
 }

@@ -24,6 +24,9 @@ class Settings(BaseSettings):
     # Storage (ADR-004): "s3" for any S3-compatible endpoint (MinIO in dev
     # compose), "local" for disk-backed development without object storage.
     storage_backend: str = "local"
+    # AI provider adapter (P3 3B-1): "local" = deterministic rules, no
+    # external calls. Real providers are config swaps; credentials via env.
+    ai_provider: str = "local"
     local_storage_dir: str = "./var/storage"
     s3_endpoint: str = "http://localhost:9000"
     s3_bucket: str = "signage-media"

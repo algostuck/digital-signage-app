@@ -134,6 +134,36 @@ async def build_manifest(db: AsyncSession, device: Device) -> dict:
     # ship the highest-priority candidate anyway — the player evaluates the
     # windows locally (offline-first, SRS §13).
     active = scheduling.resolve_active_campaign(candidates, now, timezone)
+
+    # Decisioning (P3 3B-2): active rules may pin/boost/exclude among the
+    # schedule-eligible candidates. Any engine failure degrades to the
+    # scheduler's own result — decisioning can never break a manifest.
+    decision_reasons: list[dict] = []
+    if active is not None:
+        try:
+            import zoneinfo
+
+            from app.services import decisioning
+
+            # Guardrail (P3-DEC-004): rules choose only among campaigns whose
+            # schedule window is live RIGHT NOW — windows are never overridden.
+            eligible = [
+                c for c in candidates
+                if scheduling.resolve_active_campaign([c], now, timezone) is not None
+            ]
+            decided, decision_reasons = await decisioning.decide(
+                db,
+                device,
+                eligible,
+                active,
+                now_local=now.astimezone(zoneinfo.ZoneInfo(timezone)),
+            )
+            if decision_reasons and decided is not None:
+                active = decided
+        except Exception:  # noqa: BLE001 — degradation ladder, never blank a screen
+            logger.exception("Decisioning failed; using scheduler result")
+            decision_reasons = []
+
     winner = active or (
         max(candidates, key=lambda c: (c.priority, c.created_at)) if candidates else None
     )
@@ -166,6 +196,8 @@ async def build_manifest(db: AsyncSession, device: Device) -> dict:
         "name": winner.name,
         "priority": winner.priority,
     }
+    if decision_reasons:  # additive v2 block: auditable decision trail
+        manifest["decision"] = {"reasons": decision_reasons}
     manifest["schedules"] = [_schedule_out(s) for s in winner.schedules]
 
     # Variant override (P2-CAM-001): the audience-matched creative replaces
@@ -174,9 +206,35 @@ async def build_manifest(db: AsyncSession, device: Device) -> dict:
 
     effective_layout_id = winner.layout_id
     effective_playlist_id = winner.playlist_id
-    variant = await campaigns_service.resolve_variant_for_device(
-        db, device.organization_id, winner, device.id
-    )
+
+    # Experimentation (P3 3B-3): a RUNNING experiment on the winning
+    # campaign overrides audience-variant resolution with the device's
+    # stable arm; any failure degrades to normal 2E resolution.
+    variant = None
+    experiment_block = None
+    try:
+        from app.services import experiments as experiments_service
+
+        experiment = await experiments_service.running_experiment_for_campaign(
+            db, winner.id
+        )
+        if experiment is not None:
+            variant = await experiments_service.assigned_variant(db, experiment, device)
+            experiment_block = {
+                "id": str(experiment.id),
+                "arm": variant.name if variant is not None else "control",
+            }
+    except Exception:  # noqa: BLE001 — never blank a screen over an experiment
+        logger.exception("Experiment resolution failed; using variant targeting")
+        variant = None
+        experiment_block = None
+
+    if experiment_block is None:
+        variant = await campaigns_service.resolve_variant_for_device(
+            db, device.organization_id, winner, device.id
+        )
+    else:
+        manifest["experiment"] = experiment_block  # additive v2 block
     if variant is not None:
         effective_layout_id = variant.layout_id or effective_layout_id
         effective_playlist_id = variant.playlist_id or effective_playlist_id
@@ -216,6 +274,16 @@ async def build_manifest(db: AsyncSession, device: Device) -> dict:
                     )
                     if fallback_payload is not None:
                         manifest["fallback"] = fallback_payload
+
+    # Player contract v2 `data` block (P3 3A-2, additive — v1 players ignore
+    # it): latest valid snapshot per bound zone, transform applied.
+    from app.services import data_sources as data_sources_service
+
+    data_block = await data_sources_service.data_block_for_canvas(
+        db, device.organization_id, layout_canvas
+    )
+    if data_block:
+        manifest["data"] = data_block
 
     asset_ids = await _collect_asset_ids([playlist_payload, fallback_payload], layout_canvas)
     storage = get_storage()

@@ -8,6 +8,8 @@ import { api, ApiError } from "../../lib/api";
 import { useAuth } from "../../lib/auth";
 import type { PlaylistSummary } from "../playlists/types";
 import { CampaignDetailModal } from "./CampaignDetailModal";
+import { DecisioningTab } from "./DecisioningTab";
+import { ExperimentsTab } from "./ExperimentsTab";
 import type { CampaignSummary } from "./types";
 
 /** SCR-19 Campaigns (foundation view — targeting/approval arrive in 1I). */
@@ -17,6 +19,7 @@ export function CampaignsPage() {
   const queryClient = useQueryClient();
   const [createOpen, setCreateOpen] = useState(false);
   const [detailId, setDetailId] = useState<string | null>(null);
+  const [tab, setTab] = useState<"campaigns" | "decisioning" | "experiments">("campaigns");
 
   const campaignsQuery = useQuery({
     queryKey: ["campaigns"],
@@ -45,12 +48,27 @@ export function CampaignsPage() {
           </button>
         )}
       </div>
-      <p className="mt-1 text-sm text-slate-500">
-        A campaign bundles content, priority and schedules. Targeting and publishing land in
-        milestone 1I.
-      </p>
+      <div className="mt-4 border-b border-slate-200" role="tablist">
+        {(["campaigns", "decisioning", "experiments"] as const).map((t) => (
+          <button
+            key={t}
+            role="tab"
+            aria-selected={tab === t}
+            onClick={() => setTab(t)}
+            className={`-mb-px border-b-2 px-4 py-2 text-sm font-medium capitalize ${
+              tab === t
+                ? "border-slate-900 text-slate-900"
+                : "border-transparent text-slate-500 hover:text-slate-700"
+            }`}
+          >
+            {t}
+          </button>
+        ))}
+      </div>
 
-      {campaignsQuery.isLoading ? (
+      {tab === "decisioning" && <DecisioningTab />}
+      {tab === "experiments" && <ExperimentsTab />}
+      {tab === "campaigns" && (campaignsQuery.isLoading ? (
         <Spinner label="Loading campaigns…" />
       ) : campaigns.length === 0 ? (
         <p className="mt-6 rounded-lg border border-dashed border-slate-300 bg-white p-10 text-center text-sm text-slate-500">
@@ -99,7 +117,7 @@ export function CampaignsPage() {
             </div>
           ))}
         </div>
-      )}
+      ))}
 
       {createOpen && (
         <CreateCampaignModal

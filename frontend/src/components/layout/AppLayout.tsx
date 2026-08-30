@@ -21,6 +21,7 @@ const NAV = [
   { to: "/notifications", label: "Notifications" },
   { to: "/audit", label: "Audit Logs" },
   { to: "/settings", label: "Settings" },
+  { to: "/developer", label: "Developer" },
 ];
 
 export function AppLayout() {

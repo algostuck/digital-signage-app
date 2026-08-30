@@ -1,14 +1,19 @@
 from fastapi import APIRouter
 
 from app.api.v1 import (
+    ai,
     approvals,
     assets,
     auth,
     billing,
     campaigns,
+    data_sources,
+    decisioning,
     deployments,
+    developer,
     devices,
     events,
+    experiments,
     health,
     integrations,
     layouts,
@@ -52,3 +57,8 @@ api_router.include_router(search.router, tags=["search"])
 api_router.include_router(billing.router, tags=["billing"])
 api_router.include_router(platform.router, tags=["platform"])
 api_router.include_router(events.router, tags=["events"])
+api_router.include_router(data_sources.router, tags=["data-sources"])
+api_router.include_router(developer.router, tags=["developer"])
+api_router.include_router(ai.router, tags=["ai"])
+api_router.include_router(decisioning.router, tags=["decisioning"])
+api_router.include_router(experiments.router, tags=["experiments"])

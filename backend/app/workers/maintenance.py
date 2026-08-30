@@ -66,6 +66,15 @@ def push_event_deliveries() -> dict:
     return _run(events.process_deliveries)
 
 
+@celery_app.task(name="app.workers.maintenance.refresh_data_sources")
+def refresh_data_sources() -> dict:
+    """P3 3A-2: keep data-source snapshots warm (guarded fetch, per-source
+    refresh interval, last-known-good preserved on failure)."""
+    from app.services import data_sources
+
+    return _run(data_sources.refresh_due_sources)
+
+
 @celery_app.task(name="app.workers.maintenance.subscription_lifecycle")
 def subscription_lifecycle() -> dict:
     """SaaS core: trial expiry, renewals, dunning ladder
@@ -106,6 +115,10 @@ celery_app.conf.beat_schedule = {
     },
     "push-event-deliveries": {
         "task": "app.workers.maintenance.push_event_deliveries",
+        "schedule": 60.0,
+    },
+    "refresh-data-sources": {
+        "task": "app.workers.maintenance.refresh_data_sources",
         "schedule": 60.0,
     },
     "subscription-lifecycle": {

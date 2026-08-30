@@ -318,6 +318,10 @@ async def run_seed(db: AsyncSession, *, include_demo: bool) -> None:
     perms = await seed_permissions(db)
     system_roles = await seed_system_roles(db, perms)
     await seed_plans(db)
+
+    from app.services.developer import seed_api_catalogue
+
+    await seed_api_catalogue(db)  # P3 3A-3: versioned API contracts
     if include_demo:
         await seed_demo_tenant(db, system_roles)
 

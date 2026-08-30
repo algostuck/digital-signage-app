@@ -14,6 +14,12 @@ export interface ZoneDef {
     widget_id: string;
     config?: Record<string, unknown>;
     bindings?: Record<string, string>;
+    // P3 3A-2: live data binding — the manifest ships the latest valid
+    // snapshot of the source with the declarative transform applied.
+    data_binding?: {
+      source_id: string;
+      transform?: { path?: string; fields?: Record<string, string>; limit?: number };
+    } | null;
   } | null;
 }
 
