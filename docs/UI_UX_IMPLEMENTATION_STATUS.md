@@ -62,10 +62,30 @@ color #1D4ED8, maximize antd built-ins, near-zero custom CSS.
   single-column dashboard at 375px, Settings tab IA, Users, Reports, Ads,
   Security. Production build green; typecheck green.
 
-## Remaining (hardening passes)
+## Hardening passes (done 2026-08-30)
 
-1. Responsive hardening sweep across the brief's full width matrix (320→2560) — mobile spot-checks passed; systematic sweep pending.
-2. Accessibility hardening pass (see UI_UX_ACCESSIBILITY_CHECKLIST.md) — keyboard walkthroughs + contrast verification per screen.
-3. Performance pass: `manualChunks` to split the ~950kB antd vendor chunk; bundle review.
-4. antd v7 heads-up: v6 deprecates the `List` component (used in a handful of screens) — migrate when v7 upgrade is planned, not before.
-5. Tailwind end-state review (currently only width/flex utilities remain, per the phased-coexistence decision).
+1. **Responsive sweep** — automated horizontal-overflow measurement of
+   all 20 routes at 320/375/768/1024/1440/1920px. Five 320px overflows
+   found and fixed: Schedules calendar now scrolls inside its own
+   container (min-w 560px grid), Monitoring health tables got scroll-x,
+   Audit action filter became shrinkable (`w-full max-w-80`), Ads slot
+   input narrowed, Security age-policy form wraps. Final state: **zero
+   page-body overflow at every tested width on every route**.
+2. **Large screens** — Content is width-capped at 1600px and centered ≥xl
+   (brief §56); verified at 1920px across representative routes.
+3. **Accessible names** — automated scan of every visible button across
+   all 20 routes: zero app-authored unnamed controls (only antd-internal
+   input-clear/pagination arrows remain, which antd names via parent
+   elements per its own ARIA pattern).
+4. **Performance** — `manualChunks` splits react / antd / icons / query
+   vendors into immutable cacheable chunks; app-code deploys no longer
+   invalidate the ~451kB-gzip antd chunk. Route chunks unchanged.
+
+## Remaining / future
+
+- antd v7 heads-up: v6 deprecates the `List` component (used in a
+  handful of screens) — migrate when the v7 upgrade is planned, not before.
+- Tailwind end-state review (only width/flex utilities remain, per the
+  phased-coexistence decision — removal optional).
+- Deeper manual screen-reader walkthroughs and contrast audits remain
+  worthwhile before any formal WCAG conformance claim.

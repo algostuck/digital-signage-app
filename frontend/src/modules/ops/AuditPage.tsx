@@ -152,7 +152,7 @@ export function AuditPage() {
         />
         <Input
           allowClear
-          className="w-80 font-mono"
+          className="w-full max-w-80 font-mono"
           value={action}
           onChange={(e) => {
             setAction(e.target.value.toUpperCase());

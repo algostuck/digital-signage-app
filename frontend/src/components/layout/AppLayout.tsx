@@ -231,7 +231,9 @@ export function AppLayout() {
             </Dropdown>
           </div>
         </Header>
-        <Content className="m-4 md:m-6">
+        {/* Width-capped and centered so ultra-wide monitors get balanced
+            whitespace instead of endless line lengths (brief §56). */}
+        <Content className="m-4 w-full max-w-[1600px] md:m-6 xl:mx-auto">
           <ScrollRestoration />
           <Outlet />
         </Content>

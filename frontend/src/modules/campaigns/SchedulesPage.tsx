@@ -233,7 +233,10 @@ export function SchedulesPage() {
       {calendarQuery.isLoading ? (
         <LoadingState rows={6} />
       ) : (
-        <div className="grid grid-cols-7 gap-2">
+        // 7 fixed columns can't fit under ~560px — scroll the calendar
+        // inside its own container, never the page body (brief §9).
+        <div className="overflow-x-auto">
+        <div className="grid min-w-[560px] grid-cols-7 gap-2">
           {Array.from({ length: view === "week" ? 7 : 42 }, (_, index) => {
             const day = addDays(rangeStart, index);
             const dayIso = isoDate(day);
@@ -283,6 +286,7 @@ export function SchedulesPage() {
               </Card>
             );
           })}
+        </div>
         </div>
       )}
 

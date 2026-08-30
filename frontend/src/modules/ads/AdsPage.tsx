@@ -242,7 +242,7 @@ export function AdsPage() {
               label="Slot name"
               rules={[{ required: true, message: "Slot name is required." }]}
             >
-              <Input className="w-52" />
+              <Input className="w-44" />
             </Form.Item>
             <Form.Item
               name="device_id"

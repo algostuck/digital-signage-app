@@ -251,7 +251,7 @@ export function SecurityPage() {
         {canManage && (
           <Card size="small" title="Age policies">
             <Form layout="inline">
-              <Form.Item label="Max credential age (days)">
+              <Form.Item label="Max age (days)">
                 <InputNumber
                   min={1}
                   className="w-24"
@@ -259,7 +259,7 @@ export function SecurityPage() {
                   onChange={(v) => setAgeDays(v == null ? "" : String(v))}
                 />
               </Form.Item>
-              <Form.Item>
+              <Form.Item className="max-w-full">
                 <Space wrap>
                   <Button
                     type="primary"

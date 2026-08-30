@@ -148,6 +148,7 @@ function FleetHealthTab() {
           <Card size="small" title="By location (subtree rollup)">
             <Table<HealthRow>
               size="small"
+              scroll={{ x: "max-content" }}
               columns={healthColumns}
               dataSource={health.locations.map((row) => ({
                 key: row.id,
@@ -164,6 +165,7 @@ function FleetHealthTab() {
           <Card size="small" title="By group">
             <Table<HealthRow>
               size="small"
+              scroll={{ x: "max-content" }}
               columns={healthColumns}
               dataSource={health.groups.map((row) => ({
                 key: row.id,
