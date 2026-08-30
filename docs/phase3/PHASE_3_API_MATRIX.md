@@ -21,13 +21,13 @@ existing endpoint changes shape; new player-manifest blocks are additive.
 | GET/POST/PATCH/DELETE | /decision-policies (+PUT /{id}/rules replace-set) | campaigns.manage (view: campaigns.view) | deterministic priority, guardrails, external-data conditions | **done (3B-2)** |
 | POST | /decision-rules/preview (+GET /decision-log) | campaigns.view | context in → decision + ordered reasons out; bounded auditable log | **done (3B-2)** |
 | GET/POST/DELETE | /experiments (+/transition, /{id}/results) | campaigns.manage + experiments (view: campaigns.view) | allocation validation; stable assignment; per-arm results | **done (3B-3)** |
-| GET/POST/PATCH/DELETE | /video-walls(/{id}) (+/members) | devices.manage + video_wall | canvas/viewport validation; member uniqueness | pending |
-| POST | /video-walls/{id}/sync | devices.control | starts session: epoch marker + tolerance; degraded state surfaced | pending |
+| GET/POST/DELETE | /video-walls(/{id}) (+/members) | devices.manage + video_wall (view: devices.view) | canvas/viewport validation; member uniqueness (one wall per device) | **done (3C-1)** |
+| POST | /video-walls/{id}/sync | devices.control | start/stop session: epoch marker + tolerance; degraded state surfaced + incident | **done (3C-1)** |
 | GET/POST/PATCH | /ad-inventory(/{id}) | ads.manage + advertising | slot/hours/rate-card | pending |
 | GET/POST/PATCH | /ad-campaigns(/{id}) | ads.manage | booking against availability; approval adapter | pending |
 | GET | /reports/ad-performance | reports.view | booked vs delivered; export via 2I engine | pending |
-| GET/POST | /edge/bundles (+/{id}/publish) | devices.manage + edge_bundles | signed manifest, expiry, rollout state | pending |
-| GET | /edge/metrics | monitoring.view | cache/bandwidth/download queue | pending |
+| GET/POST | /edge/bundles (+/{id}/publish) | devices.manage + edge_bundles (view: devices.view) | signed manifest, TTL expiry, supersede-on-publish, rollout state | **done (3C-2)** |
+| GET | /edge/metrics | monitoring.view | bundle states, sync coverage, bandwidth policy | **done (3C-2)** |
 | GET | /fleet-intelligence/anomalies | monitoring.view + fleet_ai | score + evidence | pending |
 | POST | /fleet-intelligence/{id}/acknowledge | incidents.manage | human-in-the-loop | pending |
 | POST | /fleet-intelligence/{id}/remediation | devices.control | whitelisted commands only; logged | pending |
@@ -42,4 +42,4 @@ existing endpoint changes shape; new player-manifest blocks are additive.
 | GET | /platform/regions | is_superuser | tenant/region/service health; no tenant content | pending |
 | GET | /developer/openapi | api_keys.manage + developer_portal | versioned OpenAPI + changelog metadata | **done (3A-3)** |
 | GET/POST | /developer/sandbox (+/simulate-device) | api_keys.manage + developer_portal | idempotent sandbox org + owner membership; simulator via real player pipeline | **done (3A-3)** |
-| — | Player manifest additive blocks: sync/bundle/data/ad_slots/bandwidth/prefetch | device token | contract v2, ignored by v1 players | pending |
+| — | Player manifest additive blocks: data (3A-2), decision (3B-2), experiment (3B-3), sync (3C-1), bundle/prefetch/bandwidth (3C-2) + player GET /player/{id}/bundles/{bid} | device token | contract v2, ignored by v1 players | **partially done** (ad_slots pending 3D-1) |

@@ -45,6 +45,7 @@ async def upload_object(
 @router.get("/{key:path}")
 async def download_object(
     key: str,
+    request: Request,
     exp: int = Query(...),
     sig: str = Query(...),
     filename: str | None = Query(None),
@@ -56,7 +57,31 @@ async def download_object(
         raise NotFoundError("Object not found")
     data = storage.read(key)
     media_type = mimetypes.guess_type(key)[0] or "application/octet-stream"
-    headers = {}
+    headers = {"Accept-Ranges": "bytes"}
     if filename:
         headers["Content-Disposition"] = f'attachment; filename="{filename}"'
+
+    # Resumable downloads (P3 3C-2, NFR: interrupted edge fetches resume):
+    # single-range requests are honored exactly like S3 would.
+    range_header = request.headers.get("range")
+    if range_header and range_header.startswith("bytes="):
+        try:
+            start_raw, _, end_raw = range_header[6:].partition("-")
+            start = int(start_raw) if start_raw else 0
+            end = int(end_raw) if end_raw else len(data) - 1
+        except ValueError:
+            start, end = 0, len(data) - 1
+        end = min(end, len(data) - 1)
+        if start > end or start >= len(data):
+            return Response(
+                status_code=416,
+                headers={**headers, "Content-Range": f"bytes */{len(data)}"},
+            )
+        headers["Content-Range"] = f"bytes {start}-{end}/{len(data)}"
+        return Response(
+            content=data[start : end + 1],
+            status_code=206,
+            media_type=media_type,
+            headers=headers,
+        )
     return Response(content=data, media_type=media_type, headers=headers)

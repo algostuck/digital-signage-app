@@ -147,6 +147,21 @@ async def set_capabilities(
     return success({"capabilities": len(body.capabilities)})
 
 
+@router.get("/{device_id}/bundles/{bundle_id}")
+async def download_bundle(
+    device_id: uuid.UUID,
+    bundle_id: uuid.UUID,
+    device: CurrentDevice,
+    db: AsyncSession = Depends(get_db),
+) -> dict:
+    """P3 3C-2: signed prefetch bundle for a covered device; marks the
+    member synced. Asset URLs are fresh signed (Range-resumable)."""
+    _require_own(device, device_id)
+    from app.services import edge as edge_service
+
+    return success(await edge_service.serve_bundle(db, device, bundle_id))
+
+
 @router.get("/{device_id}/manifest")
 async def get_manifest(
     device_id: uuid.UUID, device: CurrentDevice, db: AsyncSession = Depends(get_db)

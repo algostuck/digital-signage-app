@@ -14,13 +14,13 @@ when the tenant flag is off.
 | P3-04 | Dynamic Widget Designer | /design designer widget panel (EXT of 2D panel) | layouts.manage | /widgets bindings, /data-sources | source select, transform (path/fields/limit) editor, fallback note | **done (3A-2)** |
 | P3-05 | Decisioning Rules | /campaigns → Decisioning tab | campaigns.manage | /decision-policies, /decision-rules/preview, /decision-log | policy list + activate toggle, ordered-rules JSON editor, dry-run preview with reasons, decision log | **done (3B-2)** |
 | P3-06 | Experiment Manager | /campaigns → Experiments tab | campaigns.manage + experiments flag | /experiments (+transition, results) | create form (campaign/variant/allocation), lifecycle actions, per-arm results table | **done (3B-3)** |
-| P3-07 | Video Wall Manager | /devices → Walls tab (new) | devices.manage + video_wall flag | /video-walls (+members) | wall grid editor, device assignment, viewport map | pending |
-| P3-08 | Wall Preview / Control | wall detail modal | devices.control | /video-walls/{id}/sync, state | member health, start/stop, degraded banner | pending |
+| P3-07 | Video Wall Manager | /devices → Walls tab | devices.manage + video_wall flag | /video-walls (+members) | wall list, grid-cell device assignment (auto viewports), delete | **done (3C-1)** |
+| P3-08 | Wall Preview / Control | /devices → Walls manage drawer | devices.control | /video-walls/{id} (+/sync) | member health chips, start/stop sync, session + tolerance, degraded banner | **done (3C-1)** |
 | P3-09 | Ad Inventory | /ads (new page) → Inventory tab | advertising flag + ads.manage (new perm) | /ad-inventory | slot table, hours editor, rate-card ref | pending |
 | P3-10 | Ad Campaign Manager | /ads → Bookings tab | ads.manage | /ad-campaigns | booking form, targeting, frequency, PoP link | pending |
 | P3-11 | Ad Performance Report | /reports → Ads tab (EXT) | reports.view | /reports/ad-performance (+export) | booked-vs-delivered table, export buttons (2I pattern) | pending |
-| P3-12 | Edge Delivery Dashboard | /monitoring → Edge tab (EXT) | monitoring.view | /edge/metrics | cache/bandwidth tiles, queued downloads | pending |
-| P3-13 | Offline Bundle Manager | /devices → Bundles tab (new) | devices.manage + edge_bundles flag | /edge/bundles (+publish) | bundle builder, expiry, rollout state (2C pattern) | pending |
+| P3-12 | Edge Delivery Dashboard | /devices → Bundles tab (metrics tiles; documented deviation) | monitoring.view | /edge/metrics | coverage/queued tiles, bandwidth window | **done (3C-2)** |
+| P3-13 | Offline Bundle Manager | /devices → Bundles tab | devices.manage + edge_bundles flag | /edge/bundles (+publish) | bundle builder (scope + TTL), publish/supersede, sync coverage | **done (3C-2)** |
 | P3-14 | Fleet Intelligence | /monitoring → Intelligence tab (EXT) | monitoring.view + fleet_ai flag | /fleet-intelligence/anomalies (+ack/remediate) | anomaly list w/ score + evidence drilldown, recommendation card | pending |
 | P3-15 | AI Operations Rules | /monitoring → Intelligence settings | settings.manage | anomaly_rules CRUD | sensitivity sliders, guardrail toggles | pending |
 | P3-16 | White-Label Settings | /settings → Branding section (EXT) | organization.manage + white_label flag | /organization branding, domain, email identity | theme editor, domain status, email preview | pending |

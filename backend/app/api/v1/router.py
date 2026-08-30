@@ -12,6 +12,7 @@ from app.api.v1 import (
     deployments,
     developer,
     devices,
+    edge,
     events,
     experiments,
     health,
@@ -30,6 +31,7 @@ from app.api.v1 import (
     storage_local,
     studio,
     users,
+    video_walls,
 )
 
 api_router = APIRouter()
@@ -62,3 +64,5 @@ api_router.include_router(developer.router, tags=["developer"])
 api_router.include_router(ai.router, tags=["ai"])
 api_router.include_router(decisioning.router, tags=["decisioning"])
 api_router.include_router(experiments.router, tags=["experiments"])
+api_router.include_router(video_walls.router, tags=["video-walls"])
+api_router.include_router(edge.router, tags=["edge"])

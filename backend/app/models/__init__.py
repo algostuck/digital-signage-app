@@ -32,6 +32,7 @@ from app.models.device import (
     Screenshot,
     device_tags,
 )
+from app.models.edge import EdgeBundle, EdgeBundleDevice
 from app.models.events import DomainEvent, EventDelivery, EventSubscription
 from app.models.experiment import Experiment, ExperimentAssignment, ExperimentVariant
 from app.models.integration import (
@@ -67,6 +68,7 @@ from app.models.studio import (
     WidgetVersion,
 )
 from app.models.user import Permission, Role, User, role_permissions, user_roles
+from app.models.video_wall import VideoWall, VideoWallMember
 
 __all__ = [
     "AiOutput",
@@ -81,6 +83,8 @@ __all__ = [
     "DataSourceSchema",
     "DataSourceSnapshot",
     "DomainEvent",
+    "EdgeBundle",
+    "EdgeBundleDevice",
     "EventDelivery",
     "EventSubscription",
     "Experiment",
@@ -145,6 +149,8 @@ __all__ = [
     "SubscriptionEvent",
     "UsageCounter",
     "UsageEvent",
+    "VideoWall",
+    "VideoWallMember",
     "Invoice",
     "Payment",
     "DeviceEvent",

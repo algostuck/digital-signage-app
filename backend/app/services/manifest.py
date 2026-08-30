@@ -188,6 +188,28 @@ async def build_manifest(db: AsyncSession, device: Device) -> dict:
             str(d) for d in await pending_deployment_ids_for_device(db, device.id)
         ],
     }
+    # Contract-v2 `sync` block (P3 3C-1, additive): wall members with a
+    # running session get the shared marker + viewport — even with no
+    # campaign resolved (the wall context is device-level, not content-level).
+    try:
+        from app.services import video_walls as video_walls_service
+
+        sync_block = await video_walls_service.sync_block_for_device(db, device)
+        if sync_block is not None:
+            manifest["sync"] = sync_block
+    except Exception:  # noqa: BLE001 — wall failure must never break playback
+        logger.exception("Wall sync block failed; serving standalone manifest")
+
+    # Contract-v2 `bundle`/`prefetch`/`bandwidth` blocks (P3 3C-2, additive).
+    try:
+        from app.services import edge as edge_service
+
+        edge_blocks = await edge_service.bundle_blocks_for_device(db, device)
+        if edge_blocks is not None:
+            manifest.update(edge_blocks)
+    except Exception:  # noqa: BLE001 — edge failure must never break playback
+        logger.exception("Edge bundle blocks failed; serving live manifest only")
+
     if winner is None:
         return manifest
 

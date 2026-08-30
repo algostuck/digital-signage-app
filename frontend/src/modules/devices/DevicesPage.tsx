@@ -7,6 +7,8 @@ import { useAuth } from "../../lib/auth";
 import type { LocationNode } from "../locations/types";
 import { DeviceDetailModal } from "./DeviceDetailModal";
 import { GroupsTab } from "./GroupsTab";
+import { BundlesTab } from "./BundlesTab";
+import { WallsTab } from "./WallsTab";
 import { timeAgo, type Device, type DeviceGroup } from "./types";
 
 const STATUS_FILTERS = ["", "pending", "active", "rejected", "decommissioned"];
@@ -23,7 +25,7 @@ export function DevicesPage() {
   const canManage = hasPermission("devices.manage");
   const queryClient = useQueryClient();
 
-  const [tab, setTab] = useState<"devices" | "groups">("devices");
+  const [tab, setTab] = useState<"devices" | "groups" | "walls" | "bundles">("devices");
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
   const [page, setPage] = useState(1);
@@ -155,7 +157,7 @@ export function DevicesPage() {
       </div>
 
       <div className="mt-4 border-b border-slate-200" role="tablist">
-        {(["devices", "groups"] as const).map((t) => (
+        {(["devices", "groups", "walls", "bundles"] as const).map((t) => (
           <button
             key={t}
             role="tab"
@@ -172,7 +174,15 @@ export function DevicesPage() {
         ))}
       </div>
 
-      {tab === "groups" ? (
+      {tab === "bundles" ? (
+        <div className="mt-4">
+          <BundlesTab />
+        </div>
+      ) : tab === "walls" ? (
+        <div className="mt-4">
+          <WallsTab />
+        </div>
+      ) : tab === "groups" ? (
         <div className="mt-4">
           <GroupsTab />
         </div>
