@@ -231,11 +231,14 @@ export function AppLayout() {
             </Dropdown>
           </div>
         </Header>
-        {/* Width-capped and centered so ultra-wide monitors get balanced
-            whitespace instead of endless line lengths (brief §56). */}
-        <Content className="m-4 w-full max-w-[1600px] md:m-6 xl:mx-auto">
-          <ScrollRestoration />
-          <Outlet />
+        {/* Padding lives on the Content so the gutter survives at every
+            width; the inner wrapper caps at 1600px and centers only on
+            ultra-wide monitors (brief §56). */}
+        <Content className="p-4 md:p-6">
+          <div className="mx-auto w-full max-w-[1600px]">
+            <ScrollRestoration />
+            <Outlet />
+          </div>
         </Content>
       </Layout>
     </Layout>
