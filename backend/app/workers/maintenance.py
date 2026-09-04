@@ -30,6 +30,15 @@ def detect_offline_devices() -> int:
     return _run(monitoring.detect_offline_devices)
 
 
+@celery_app.task(name="app.workers.maintenance.snapshot_device_health")
+def snapshot_device_health() -> int:
+    """One fleet-health row per tenant per hour, so the dashboard can
+    show how online/warning/offline moved over time."""
+    from app.services import dashboard
+
+    return _run(dashboard.snapshot_device_health)
+
+
 @celery_app.task(name="app.workers.maintenance.push_rule_deliveries")
 def push_rule_deliveries() -> dict:
     from app.services import notification_rules
@@ -133,6 +142,10 @@ def snapshot_usage() -> int:
 
 
 celery_app.conf.beat_schedule = {
+    "snapshot-device-health": {
+        "task": "app.workers.maintenance.snapshot_device_health",
+        "schedule": 3600.0,  # hourly
+    },
     "detect-offline-devices": {
         "task": "app.workers.maintenance.detect_offline_devices",
         "schedule": 120.0,

@@ -245,7 +245,7 @@ async def _signal_value(
             select(func.count()).where(
                 DeviceEvent.device_id == device.id,
                 DeviceEvent.event_at >= since,
-                DeviceEvent.type.in_(("error", "crash", "exception")),
+                DeviceEvent.event_type.in_(("error", "crash", "exception")),
             )
         )
     ).scalar_one()

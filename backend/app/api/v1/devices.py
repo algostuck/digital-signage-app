@@ -1,6 +1,6 @@
 import secrets
 import uuid
-from datetime import datetime
+from datetime import UTC, datetime, timedelta
 
 from fastapi import APIRouter, Depends, Query
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -59,6 +59,7 @@ async def list_devices(
     group_id: uuid.UUID | None = None,
     location_id: uuid.UUID | None = None,
     include_descendants: bool = Query(True),
+    connection_status: str | None = Query(None, pattern="^(online|warning|offline)$"),
     db: AsyncSession = Depends(get_db),
 ) -> dict:
     location = None
@@ -68,6 +69,8 @@ async def list_devices(
             from app.core.errors import NotFoundError
 
             raise NotFoundError("Location not found")
+    thresholds = await org_service.get_monitoring_thresholds(db, tenant_id)
+    now = datetime.now(UTC)
     devices, total = await repo.search(
         db,
         tenant_id,
@@ -79,8 +82,10 @@ async def list_devices(
         include_descendants=include_descendants,
         page=pagination.page,
         page_size=pagination.page_size,
+        connection_status=connection_status,
+        warning_cutoff=now - timedelta(seconds=thresholds["warning_after_seconds"]),
+        offline_cutoff=now - timedelta(seconds=thresholds["offline_after_seconds"]),
     )
-    thresholds = await org_service.get_monitoring_thresholds(db, tenant_id)
     return success(
         [_out(d, thresholds) for d in devices],
         page=pagination.page,

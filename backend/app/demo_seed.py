@@ -161,6 +161,53 @@ async def reset_demo(db: AsyncSession) -> dict[str, int]:
     return deleted
 
 
+async def refresh_timeline(db: AsyncSession) -> dict[str, int]:
+    """Slide every time-stamped demo record forward so the newest playback
+    event is about now. Heartbeats alone made the fleet look alive while
+    playback, incidents and notifications stayed days in the past; a
+    dashboard makes that gap obvious."""
+    org_ids = [
+        row for row in (
+            await db.execute(
+                select(Organization.id).where(Organization.code.in_(DEMO_ORG_CODES))
+            )
+        ).scalars().all()
+    ]
+    if not org_ids:
+        return {}
+    newest = (
+        await db.execute(
+            select(func.max(PlaybackEvent.started_at)).where(
+                PlaybackEvent.organization_id.in_(org_ids)
+            )
+        )
+    ).scalar_one()
+    if newest is None:
+        return {}
+    shift = _now() - newest - dt.timedelta(minutes=20)
+    if shift.total_seconds() < 3600:
+        return {}
+    shifted: dict[str, int] = {}
+    for table, columns in (
+        ("playback_events", ("started_at", "ended_at")),
+        ("incidents", ("opened_at", "acknowledged_at", "resolved_at")),
+        ("notifications", ("created_at", "read_at")),
+        ("anomalies", ("opened_at", "resolved_at")),
+        ("device_health_snapshots", ("captured_at",)),
+        ("audit_logs", ("created_at",)),
+        ("deployments", ("created_at", "started_at", "completed_at")),
+    ):
+        assignments = ", ".join(f"{c} = {c} + :shift" for c in columns)
+        result = await db.execute(
+            text(
+                f"UPDATE {table} SET {assignments} WHERE organization_id = ANY(:ids)"  # noqa: S608 - fixed names
+            ),
+            {"shift": shift, "ids": org_ids},
+        )
+        shifted[table] = result.rowcount
+    return shifted
+
+
 async def refresh_heartbeats(db: AsyncSession) -> int:
     """Re-stamp demo heartbeats against the clock.
 
@@ -945,11 +992,45 @@ class OrgBuilder:
                         "asset_id": asset.id,
                         "started_at": started,
                         "ended_at": started + dt.timedelta(seconds=duration),
-                        "result": "ok" if ok else "error",
+                        # "completed" is what the player reports and what every
+                        # report counts; "ok" made proof-of-play read 0 completions.
+                        "result": "completed" if ok else "error",
                     })
         for chunk in range(0, len(rows), 2000):
             await self.db.execute(insert(PlaybackEvent.__table__), rows[chunk:chunk + 2000])
         self._bump("playback_events", len(rows))
+        await self.db.flush()
+
+    async def create_health_history(self, days: int = 30) -> None:
+        """Hourly fleet-health snapshots for the dashboard trend. Written
+        around the same 84/8/8 mix the heartbeats are stamped with, with a
+        gentle daily rhythm and one visible dip, so the chart tells a
+        story instead of drawing a flat line."""
+        from app.models.dashboard import DeviceHealthSnapshot
+
+        active = len(self.active_devices)
+        na = len(self.devices) - active
+        if not active:
+            return
+        dip_day = self.rng.randint(4, days - 3)
+        rows: list[dict] = []
+        now = _now().replace(minute=0, second=0, microsecond=0)
+        for hour in range(days * 24):
+            at = now - dt.timedelta(hours=hour)
+            day_index = hour // 24
+            local_hour = (at.hour + 5) % 24  # IST-ish rhythm
+            base_offline = 0.06 + (0.03 if local_hour < 6 else 0)
+            if day_index == dip_day:
+                base_offline += 0.18
+            offline = int(active * min(0.6, base_offline + self.rng.uniform(-0.015, 0.015)))
+            warning = int(active * (0.07 + self.rng.uniform(-0.02, 0.02)))
+            online = max(0, active - offline - warning)
+            rows.append({
+                "id": uuid.uuid4(), "organization_id": self.org.id, "captured_at": at,
+                "online": online, "warning": warning, "offline": offline, "na": na,
+            })
+        await self.db.execute(insert(DeviceHealthSnapshot.__table__), rows)
+        self._bump("device_health_snapshots", len(rows))
         await self.db.flush()
 
     async def create_ops(self) -> None:
@@ -1272,6 +1353,7 @@ async def seed_demo(db: AsyncSession) -> dict[str, int]:
         await builder.create_campaigns(campaigns)
         await builder.create_deployments()
         await builder.create_playback(pb_days, pb_rate)
+        await builder.create_health_history()
         await builder.create_ops()
         await builder.create_governance()
         await builder.create_subscription()
@@ -1492,7 +1574,8 @@ async def main() -> None:
     parser.add_argument("--validate", action="store_true", help="validate only")
     parser.add_argument(
         "--refresh", action="store_true",
-        help="re-stamp demo device heartbeats so the fleet reads healthy again",
+        help="slide the demo timeline to now: heartbeats, playback, incidents, "
+             "notifications and health history",
     )
     args = parser.parse_args()
 
@@ -1503,9 +1586,11 @@ async def main() -> None:
 
     async with get_session_factory()() as db:
         if args.refresh:
+            shifted = await refresh_timeline(db)
             count = await refresh_heartbeats(db)
             await db.commit()
-            logger.info("Refreshed %d device heartbeats.", count)
+            logger.info("Refreshed %d device heartbeats; shifted %s.", count,
+                        ", ".join(f"{k}={v}" for k, v in shifted.items()) or "nothing")
             return
         if args.validate:
             passed, failed = await validate_demo(db)

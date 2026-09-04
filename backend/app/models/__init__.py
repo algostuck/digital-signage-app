@@ -22,6 +22,7 @@ from app.models.content import (
     UploadSession,
     asset_tags,
 )
+from app.models.dashboard import DeviceHealthSnapshot
 from app.models.data_source import DataSource, DataSourceSchema, DataSourceSnapshot
 from app.models.decisioning import DecisionLog, DecisionPolicy, DecisionRule
 from app.models.developer import ApiProduct, ApiVersion
@@ -91,6 +92,7 @@ __all__ = [
     "Anomaly",
     "AnomalyAction",
     "AnomalyRule",
+    "DeviceHealthSnapshot",
     "ApiProduct",
     "ApiVersion",
     "DataExport",

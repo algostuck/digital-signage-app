@@ -45,8 +45,27 @@ async def search(
     include_descendants: bool,
     page: int,
     page_size: int,
+    connection_status: str | None = None,
+    warning_cutoff=None,
+    offline_cutoff=None,
 ) -> tuple[list[Device], int]:
     query = select(Device).where(Device.organization_id == organization_id)
+    if connection_status:
+        # Mirrors services.devices.connection_status in SQL: only active
+        # devices have a connection state, and the cutoffs come from the
+        # tenant's own thresholds so list and detail never disagree.
+        query = query.where(Device.status == "active")
+        if connection_status == "online":
+            query = query.where(Device.last_heartbeat_at > warning_cutoff)
+        elif connection_status == "warning":
+            query = query.where(
+                Device.last_heartbeat_at <= warning_cutoff,
+                Device.last_heartbeat_at > offline_cutoff,
+            )
+        else:
+            query = query.where(
+                or_(Device.last_heartbeat_at.is_(None), Device.last_heartbeat_at <= offline_cutoff)
+            )
     if q:
         pattern = f"%{q.lower()}%"
         query = query.where(
