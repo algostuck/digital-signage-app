@@ -10,6 +10,8 @@ import {
   SyncOutlined,
 } from "@ant-design/icons";
 import { Tag } from "antd";
+import { useThemeMode } from "../../theme/ThemeProvider";
+import { toneStyle, type Tone } from "./tone";
 import type { ReactNode } from "react";
 
 interface StatusMeta {
@@ -74,9 +76,12 @@ function toLabel(status: string): string {
 }
 
 export function StatusBadge({ status }: { status: string }) {
+  const { mode } = useThemeMode();
   const meta = STATUS_META[status] ?? { color: "default", icon: <MinusCircleOutlined /> };
+  // Explicit pill colours rather than antd's filled variant: that variant's
+  // text measures 2.9–5.6:1 in dark mode, below AA for several statuses.
   return (
-    <Tag color={meta.color} icon={meta.icon} variant="filled">
+    <Tag icon={meta.icon} style={toneStyle(meta.color as Tone, mode)}>
       {toLabel(status)}
     </Tag>
   );

@@ -39,9 +39,28 @@ export function ChartHost({ children, height }: { children: ReactElement; height
     };
   }, []);
 
+  // Render only when the element actually changed. Chart configs are
+  // memoised upstream, so a parent re-render (or StrictMode's double
+  // render in development) with the same props must not push a second
+  // update into G2 while its previous asynchronous render is still in
+  // flight — that race is what produces "parentNode has only a getter" /
+  // "ownerDocument of null" errors from the engine.
+  const last = useRef<ReactElement | null>(null);
   useEffect(() => {
+    if (last.current && sameElement(last.current, children)) return;
+    last.current = children;
     state.current?.root.render(children);
   });
 
   return <div ref={container} style={{ height }} />;
+}
+
+function sameElement(a: ReactElement, b: ReactElement): boolean {
+  if (a.type !== b.type || a.key !== b.key) return false;
+  const pa = a.props as Record<string, unknown>;
+  const pb = b.props as Record<string, unknown>;
+  const ka = Object.keys(pa);
+  const kb = Object.keys(pb);
+  if (ka.length !== kb.length) return false;
+  return ka.every((k) => Object.is(pa[k], pb[k]));
 }

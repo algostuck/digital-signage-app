@@ -7,6 +7,10 @@
 
 @import "tailwindcss";
 
+/* Tailwind's `dark:` variant follows the app's theme switch (data-theme on
+   <html>, set by ThemeProvider) rather than the OS preference alone. */
+@custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
+
 body {
   @apply antialiased;
   /* Matches Layout's colorBgLayout token in each mode so the canvas
@@ -121,4 +125,17 @@ body {
 }
 :root[data-theme="dark"] .sidebar-scroll .ant-menu-inline .ant-menu-sub.ant-menu-inline .ant-menu-item-selected::before {
   background: #93c5fd;
+}
+
+/* Leaflet's default attribution colours measure 3.6:1; use AAA text on a
+   solid light strip in both themes (the strip sits outside the inverted
+   tile layer, so it is never colour-flipped). */
+/* Unlayered on purpose: leaflet.css is unlayered too, and layered rules
+   never beat unlayered ones. */
+.leaflet-container .leaflet-control-attribution {
+  background: rgba(255, 255, 255, 0.92);
+  color: #1e293b;
+}
+.leaflet-container .leaflet-control-attribution a {
+  color: #1e40af;
 }

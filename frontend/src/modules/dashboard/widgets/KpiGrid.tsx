@@ -9,7 +9,8 @@ import {
 import { Card, Skeleton, Typography, theme } from "antd";
 import type { ReactNode } from "react";
 import { Link } from "react-router-dom";
-import { BRAND } from "../../../theme/tokens";
+import { useThemeMode } from "../../../theme/ThemeProvider";
+import { STATUS_TEXT } from "../charts/theme";
 import { formatCompact, pct } from "../api";
 import type { Kpis } from "../types";
 
@@ -33,7 +34,8 @@ function KpiCard({
   to?: string;
 }) {
   const { token } = theme.useToken();
-  const color = { neutral: token.colorText, success: BRAND.success, warning: BRAND.warning, error: BRAND.error }[tone];
+  const { mode } = useThemeMode();
+  const color = tone === "neutral" ? token.colorText : STATUS_TEXT[mode][tone];
   const card = (
     <Card
       size="small"

@@ -1,7 +1,8 @@
 import { FileImageOutlined } from "@ant-design/icons";
-import { Avatar, Tag, Typography } from "antd";
+import { Avatar, Typography } from "antd";
 import { Link, useNavigate } from "react-router-dom";
 import { StatusBadge } from "../../../components/ui/StatusBadge";
+import { ToneTag } from "../../../components/ui/ToneTag";
 import { ChartFrame } from "../charts/ChartFrame";
 import { Donut } from "../charts/Donut";
 import { SERIES_COLORS } from "../charts/theme";
@@ -80,7 +81,7 @@ export function ContentWidget({
                         {a.name}
                       </Typography.Text>
                       <Typography.Text type="secondary" className="block text-xs">
-                        <Tag variant="filled" className="!me-1">{a.type}</Tag>
+                        <ToneTag tone="default" className="!me-1">{a.type}</ToneTag>
                         <When iso={a.created_at} />
                       </Typography.Text>
                     </div>

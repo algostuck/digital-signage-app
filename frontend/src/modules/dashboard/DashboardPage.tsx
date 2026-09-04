@@ -1,8 +1,8 @@
-import { Col, Row } from "antd";
+import { Alert, Button, Col, Row } from "antd";
 import type { ReactNode } from "react";
 import { ErrorState } from "../../components/ui/states";
 import { useAuth } from "../../lib/auth";
-import { PRESET_LABELS, useDashboardRange, useDashboardRefresh, useOrganizationDashboard } from "./api";
+import { PRESET_LABELS, useDashboardRange, useDashboardRefresh, useOrganizationDashboard, useRelativeAge } from "./api";
 import { useDashboardLayout, WIDGETS, type WidgetKey } from "./customise";
 import { WidgetBoundary } from "./WidgetBoundary";
 import { ActivityWidget } from "./widgets/ActivityWidget";
@@ -58,6 +58,9 @@ export function DashboardPage() {
   const loading = query.isPending;
   const error = query.error;
   const retry = () => void query.refetch();
+  // A failed poll keeps the last good data on screen (placeholderData);
+  // the banner below says so instead of letting stale numbers pass as live.
+  const age = useRelativeAge(data?.generated_at ?? null);
 
   if (error && !data) {
     return (
@@ -100,6 +103,21 @@ export function DashboardPage() {
         refreshing={query.isFetching}
         layout={layout}
       />
+      {error && (
+        <Alert
+          type="warning"
+          showIcon
+          role="status"
+          className="mb-4"
+          message="The dashboard could not be refreshed"
+          description={`Showing the last successful data${age ? ` from ${age}` : ""}. The next automatic refresh is in 30 seconds, or retry now.`}
+          action={
+            <Button size="small" onClick={retry}>
+              Retry
+            </Button>
+          }
+        />
+      )}
       <Row gutter={[16, 16]}>
         {layout.order
           .filter((key) => layout.isVisible(key) && widgets[key])

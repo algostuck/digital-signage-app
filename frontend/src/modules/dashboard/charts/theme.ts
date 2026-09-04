@@ -1,5 +1,5 @@
 import { theme } from "antd";
-import { BRAND } from "../../../theme/tokens";
+import { BRAND, type ThemeMode } from "../../../theme/tokens";
 import { useThemeMode } from "../../../theme/ThemeProvider";
 
 /** Colour is never the only signal on a chart — every series also has a
@@ -16,6 +16,15 @@ export const STATUS_COLORS = {
   acknowledged: BRAND.success,
   pending: BRAND.warning,
 } as const;
+
+/** Status colours for *text* — KPI numbers, statistic values. The brand
+ * fills are tuned for chart marks and measure only 3.2–4.8:1 as text on
+ * white and 3.6–5.4:1 on the dark card, so text uses darker shades of the
+ * same hues in light mode and lighter tints in dark (each ≥7:1). */
+export const STATUS_TEXT: Record<ThemeMode, { success: string; warning: string; error: string }> = {
+  light: { success: "#065F46", warning: "#92400E", error: "#991B1B" },
+  dark: { success: "#4ADE80", warning: "#FBBF24", error: "#FCA5A5" },
+};
 
 /** Ordered categorical palette for non-status series (content types,
  * campaign status). Six steps, all distinguishable on light and dark. */

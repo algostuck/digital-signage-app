@@ -29,6 +29,41 @@ export default defineConfig({
   // with everything else, once.
   optimizeDeps: {
     include: ["@ant-design/plots", "leaflet", "react-leaflet"],
+    esbuildOptions: {
+      // Match the production build target so the AntV engine's classes are
+      // lowered identically in both; see the plugin below for the rest.
+      target: "es2020",
+      plugins: [
+        {
+          // Dev only (pre-bundling does not run for production builds).
+          // `@ant-design/charts-util`'s React renderer loads react-dom
+          // lazily and flags itself "initialised" *before* the import
+          // resolves, so concurrent renders from one page of charts see the
+          // flag, find no `createRoot`, and throw "ReactDOM.render not
+          // available" — every plot blank, in dev only, because the
+          // production bundle happens to serialise those calls. This swaps
+          // in the same API with a static import and no race.
+          name: "plots-react-render-fix",
+          setup(build) {
+            build.onLoad({ filter: /charts-util[\\/]es[\\/]react[\\/]render\.js$/ }, () => ({
+              loader: "js",
+              contents: `
+import { createRoot } from "react-dom/client";
+const MARK = "__rc_react_root__";
+export async function render(node, container) {
+  if (!container[MARK]) container[MARK] = createRoot(container);
+  container[MARK].render(node);
+}
+export async function unmount(container) {
+  container[MARK]?.unmount?.();
+  delete container[MARK];
+}
+`,
+            }));
+          },
+        },
+      ],
+    },
   },
   server: {
     port: 5173,

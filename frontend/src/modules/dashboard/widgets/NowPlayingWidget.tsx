@@ -1,7 +1,8 @@
 import { PlayCircleOutlined } from "@ant-design/icons";
-import { Avatar, Tag, Typography } from "antd";
+import { Avatar, Typography } from "antd";
 import { Link } from "react-router-dom";
 import { StatusBadge } from "../../../components/ui/StatusBadge";
+import { ToneTag } from "../../../components/ui/ToneTag";
 import { ChartFrame } from "../charts/ChartFrame";
 import type { NowPlayingItem } from "../types";
 import { ViewAll, When } from "./shared";
@@ -53,13 +54,9 @@ export function NowPlayingWidget({
               </Typography.Text>
             </div>
             <div className="flex shrink-0 flex-col items-end gap-1">
-              <Tag
-                variant="filled"
-                color={row.source === "reported" ? "success" : "processing"}
-                className="!me-0"
-              >
+              <ToneTag tone={row.source === "reported" ? "success" : "processing"} className="!me-0">
                 {row.source === "reported" ? "Reported" : "Scheduled"}
-              </Tag>
+              </ToneTag>
               {row.source === "reported" ? (
                 <When iso={row.reported_at} />
               ) : (

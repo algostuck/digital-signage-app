@@ -1,5 +1,6 @@
-import { Tag, Timeline, Typography } from "antd";
+import { Timeline, Typography } from "antd";
 import { minuteLabel } from "../api";
+import { ToneTag } from "../../../components/ui/ToneTag";
 import { ChartFrame } from "../charts/ChartFrame";
 import type { ScheduleEvent } from "../types";
 import { ViewAll } from "./shared";
@@ -37,19 +38,19 @@ export function ScheduleTodayWidget({
               </Typography.Text>
               <Typography.Text strong>{e.campaign_name}</Typography.Text>
               {e.live && (
-                <Tag color="success" variant="filled" className="!me-0">
+                <ToneTag tone="success" className="!me-0">
                   Live now
-                </Tag>
+                </ToneTag>
               )}
               {e.conflict && (
-                <Tag color="error" variant="filled" className="!me-0">
+                <ToneTag tone="error" className="!me-0">
                   Conflict
-                </Tag>
+                </ToneTag>
               )}
               {e.kind === "blackout" && (
-                <Tag variant="filled" className="!me-0">
+                <ToneTag tone="default" className="!me-0">
                   Blackout
-                </Tag>
+                </ToneTag>
               )}
             </div>
           ),

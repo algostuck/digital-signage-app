@@ -1,8 +1,10 @@
-import { Progress, Tag, Typography, type TableProps } from "antd";
+import { Progress, Typography, type TableProps } from "antd";
 import { Link } from "react-router-dom";
 import { DataTable } from "../../../components/ui/DataTable";
 import { StatusBadge } from "../../../components/ui/StatusBadge";
+import { ToneTag } from "../../../components/ui/ToneTag";
 import { ChartFrame } from "../charts/ChartFrame";
+import { STATUS_COLORS } from "../charts/theme";
 import type { CampaignsBlock, TopCampaign } from "../types";
 import { ViewAll, When } from "./shared";
 
@@ -58,14 +60,15 @@ export function CampaignWidget({
             <Progress
               percent={Math.round((c.acknowledged / c.devices) * 100)}
               size="small"
-              status={c.failed ? "exception" : undefined}
+              status="normal"
+              strokeColor={c.failed ? STATUS_COLORS.failed : undefined}
               format={() => `${c.acknowledged}/${c.devices}`}
               aria-label={`${c.acknowledged} of ${c.devices} screens acknowledged`}
             />
             {c.failed > 0 && (
-              <Tag color="error" variant="filled">
+              <ToneTag tone="error">
                 {c.failed} failed
-              </Tag>
+              </ToneTag>
             )}
           </div>
         ) : (
@@ -93,10 +96,10 @@ export function CampaignWidget({
           <div className="mb-3 flex flex-wrap gap-2" aria-label="Campaigns by status">
             {statuses.map((s) => (
               <Link key={s} to={`/campaigns?status=${s}`} className="no-underline">
-                <Tag variant="filled" className="!me-0 cursor-pointer">
+                <ToneTag tone="default" className="!me-0 cursor-pointer">
                   <span className="capitalize">{s.replace(/_/g, " ")}</span>{" "}
                   <strong>{campaigns.by_status[s]}</strong>
-                </Tag>
+                </ToneTag>
               </Link>
             ))}
           </div>

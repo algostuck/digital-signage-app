@@ -1,6 +1,7 @@
-import { Progress, Tag, Typography } from "antd";
+import { Progress, Typography } from "antd";
 import { Link } from "react-router-dom";
 import { StatusBadge } from "../../../components/ui/StatusBadge";
+import { ToneTag } from "../../../components/ui/ToneTag";
 import { ChartFrame } from "../charts/ChartFrame";
 import { StackedColumn } from "../charts/StackedColumn";
 import { STATUS_COLORS } from "../charts/theme";
@@ -82,20 +83,21 @@ export function DeploymentWidget({
                   <Progress
                     percent={d.total_devices ? Math.round((d.acknowledged / d.total_devices) * 100) : 0}
                     size="small"
-                    status={d.failed ? "exception" : d.status === "published" ? "success" : "active"}
+                    status={d.failed || d.status === "published" ? "normal" : "active"}
+                    strokeColor={d.failed ? STATUS_COLORS.failed : d.status === "published" ? STATUS_COLORS.acknowledged : undefined}
                     format={() => `${d.acknowledged}/${d.total_devices}`}
                     className="!mb-0 flex-1"
                     aria-label={`${d.acknowledged} of ${d.total_devices} screens acknowledged`}
                   />
                   {d.failed > 0 && (
-                    <Tag color="error" variant="filled" className="!me-0">
+                    <ToneTag tone="error" className="!me-0">
                       {d.failed} failed
-                    </Tag>
+                    </ToneTag>
                   )}
                   {d.pending > 0 && (
-                    <Tag variant="filled" className="!me-0">
+                    <ToneTag tone="default" className="!me-0">
                       {d.pending} pending
-                    </Tag>
+                    </ToneTag>
                   )}
                 </div>
               </li>

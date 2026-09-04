@@ -74,7 +74,10 @@ export function buildTheme(mode: ThemeMode): ThemeConfig {
       colorText: dark ? "rgba(255, 255, 255, 0.92)" : "#0F172A",
       colorTextSecondary: dark ? "rgba(255, 255, 255, 0.75)" : "#475569",
       colorTextDescription: dark ? "rgba(255, 255, 255, 0.75)" : "#475569",
-      colorTextTertiary: dark ? "rgba(255, 255, 255, 0.65)" : "#64748B",
+      colorTextTertiary: dark ? "rgba(255, 255, 255, 0.72)" : "#475569",
+      // Placeholders double as the visible label of cleared filters, so they
+      // are held to the same 7:1 as secondary text rather than antd's 1.8:1.
+      colorTextPlaceholder: dark ? "rgba(255, 255, 255, 0.72)" : "#475569",
 
       colorBgLayout: dark ? "#0B1220" : "#F8FAFC",
       // Dark surfaces stay in the same navy family as the canvas and the

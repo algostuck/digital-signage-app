@@ -3,7 +3,8 @@ import { useNavigate } from "react-router-dom";
 import { EntitlementGuard } from "../../../components/ui/EntitlementGuard";
 import { ChartFrame } from "../charts/ChartFrame";
 import { RankBar } from "../charts/RankBar";
-import { STATUS_COLORS } from "../charts/theme";
+import { useThemeMode } from "../../../theme/ThemeProvider";
+import { STATUS_COLORS, STATUS_TEXT } from "../charts/theme";
 import { TrendLine } from "../charts/TrendLine";
 import type { PlaybackBlock, PlaybackTotals } from "../types";
 import { dayLabel, ViewAll } from "./shared";
@@ -23,6 +24,7 @@ export function PlaybackWidget({
   onRetry: () => void;
   rangeLabel: string;
 }) {
+  const { mode } = useThemeMode();
   const navigate = useNavigate();
   const summary =
     totals && playback
@@ -50,10 +52,10 @@ export function PlaybackWidget({
                 <Statistic title="Plays" value={totals.plays} />
               </Col>
               <Col xs={12} md={6}>
-                <Statistic title="Completed" value={totals.completed} styles={{ content: { color: STATUS_COLORS.completed } }} />
+                <Statistic title="Completed" value={totals.completed} styles={{ content: { color: STATUS_TEXT[mode].success } }} />
               </Col>
               <Col xs={12} md={6}>
-                <Statistic title="Failed" value={totals.failed} styles={{ content: { color: totals.failed ? STATUS_COLORS.failed : undefined } }} />
+                <Statistic title="Failed" value={totals.failed} styles={{ content: { color: totals.failed ? STATUS_TEXT[mode].error : undefined } }} />
               </Col>
               <Col xs={12} md={6}>
                 <Statistic

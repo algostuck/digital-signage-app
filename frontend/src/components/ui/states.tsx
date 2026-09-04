@@ -15,8 +15,8 @@ export function EmptyState({ title, description, action }: EmptyStateProps) {
       className="my-10"
       description={
         <>
-          <p className="font-medium text-slate-700">{title}</p>
-          {description && <p className="text-sm text-slate-500">{description}</p>}
+          <p className="font-medium text-slate-800 dark:text-slate-100">{title}</p>
+          {description && <p className="text-sm text-slate-600 dark:text-slate-300">{description}</p>}
         </>
       }
     >

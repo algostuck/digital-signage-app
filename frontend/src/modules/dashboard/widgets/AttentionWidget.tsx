@@ -46,9 +46,9 @@ export function AttentionWidget({
       ) : (
         <ul className="m-0 list-none p-0 divide-y divide-slate-200 dark:divide-slate-700">
           {items?.map((item) => (
-            <li key={item.key} className="flex items-start gap-3 py-2.5">
+            <li key={item.key} className="flex flex-wrap items-start gap-x-3 gap-y-2 py-2.5">
               <SeverityTag severity={item.severity} />
-              <div className="min-w-0 flex-1">
+              <div className="min-w-[12rem] flex-1">
                 <Typography.Text strong className="block">
                   {item.label}
                 </Typography.Text>
@@ -58,7 +58,7 @@ export function AttentionWidget({
                   </Typography.Text>
                 )}
               </div>
-              <Link to={item.href} className="shrink-0">
+              <Link to={item.href} className="ms-auto shrink-0">
                 <Button size="small">{item.action}</Button>
               </Link>
             </li>

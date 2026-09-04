@@ -5,6 +5,7 @@ import { useEffect, useMemo, useState } from "react";
 import { CircleMarker, MapContainer, Popup, TileLayer, useMap } from "react-leaflet";
 import { Link } from "react-router-dom";
 import "leaflet/dist/leaflet.css";
+import { toneStyle } from "../../../components/ui/tone";
 import { useThemeMode } from "../../../theme/ThemeProvider";
 import { ChartFrame } from "../charts/ChartFrame";
 import { STATUS_COLORS } from "../charts/theme";
@@ -298,9 +299,8 @@ export function LocationMapWidget({
                       </Typography.Text>
                     </span>
                     <Tag
-                      variant="filled"
-                      color={h.key === "healthy" ? "success" : h.key === "warning" ? "warning" : h.key === "offline" ? "error" : "default"}
                       className="!me-0"
+                      style={toneStyle(h.key === "healthy" ? "success" : h.key === "warning" ? "warning" : h.key === "offline" ? "error" : "default", mode)}
                     >
                       {h.label}
                     </Tag>

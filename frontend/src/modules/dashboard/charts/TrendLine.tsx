@@ -33,6 +33,14 @@ export function TrendLine({
   const config = useMemo(() => {
     const data = series.flatMap((s) => s.points.map((p) => ({ x: p.x, type: s.label, value: p.y })));
     const format = xLabel ?? ((x: string) => x);
+    // Passed to the plot as a thin arrow on purpose. @ant-design/plots
+    // decides whether a config function returns a React element by pattern
+    // matching the function's *source text* (`/* @__PURE__ */`, ".jsx",
+    // "react"…). Vite's dev transform annotates `new Date(...)` inside our
+    // label helpers with `/* @__PURE__ */`, which fooled that check, mounted
+    // the label text as a React root <div> and threw inside the G scene
+    // graph — axis labels blank in development only. The arrow's own source
+    // never carries such annotations.
     return {
       data,
       xField: "x",
@@ -46,7 +54,7 @@ export function TrendLine({
       viewStyle: chart.viewStyle,
       scale: { color: { range: series.map((s) => s.color) }, y: { nice: true } },
       axis: {
-        x: { title: false, labelAutoHide: true, labelFormatter: format, line: false, tick: false },
+        x: { title: false, labelAutoHide: true, labelFormatter: (x: string) => format(x), line: false, tick: false },
         y: {
           title: yLabel ?? false,
           gridLineDash: [3, 3],

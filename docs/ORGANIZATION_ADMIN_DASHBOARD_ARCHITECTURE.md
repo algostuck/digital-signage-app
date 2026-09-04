@@ -128,7 +128,39 @@ gzip) chunk together with Leaflet. Every chart:
 - has `animate` off (the dashboard polls; animation on every poll is
   noise);
 - carries a text summary in its `ChartFrame` and, for the donut, a legend
-  list with the same numbers, so nothing is conveyed by colour alone.
+  list with the same numbers, so nothing is conveyed by colour alone;
+- is mounted through `charts/ChartHost`, a React root of its own. The
+  plot library creates its G2 chart in an effect and StrictMode's
+  mount/unmount/remount in development destroyed the chart mid-render; a
+  separate root sits outside StrictMode. `ChartHost` also re-renders the
+  chart only when the element's props actually changed, so a parent
+  re-render never pushes a second update into G2 while the previous
+  asynchronous render is in flight.
+
+Text that carries status (KPI numbers, statistic values) uses
+`STATUS_TEXT[mode]`, not the chart fills: the fills are tuned for marks
+and measure 3.2–4.8:1 as text on white, so text gets darker shades in
+light mode and lighter tints in dark (all ≥7:1).
+
+Two development-only quirks of `@ant-design/plots` are handled in
+`vite.config.ts` and the chart components, and are worth knowing before
+touching either:
+
+1. **Lazy ReactDOM race.** The library's React renderer flags itself
+   "initialised" *before* its dynamic `import("react-dom/client")`
+   resolves, so a page of charts rendering concurrently finds no
+   `createRoot` and throws "ReactDOM.render not available". Production
+   bundles happen to serialise the calls; Vite's pre-bundle does not. An
+   esbuild plugin in `optimizeDeps` swaps that one module for a static
+   import. Pre-bundling never runs for production builds.
+2. **Source-text sniffing.** The library decides whether a config
+   function returns a React element by regex-matching the function's
+   *source* for `react`, `.jsx` or `/* @__PURE__ */`. Vite's dev transform
+   annotates `new Date(...)` inside our label helpers with `@__PURE__`, so
+   the axis label text was mounted as a React `<div>` and appended to the
+   canvas scene graph — blank axes, dev only. Every function handed to a
+   plot config is therefore a thin arrow (`(x) => format(x)`) whose own
+   source carries no such annotation.
 
 ### Map
 

@@ -1,5 +1,7 @@
 import { RightOutlined } from "@ant-design/icons";
 import { Tag, Tooltip, Typography } from "antd";
+import { toneStyle, type Tone } from "../../../components/ui/tone";
+import { useThemeMode } from "../../../theme/ThemeProvider";
 import { Link } from "react-router-dom";
 import { timeAgo } from "../../devices/types";
 import type { Severity } from "../types";
@@ -34,17 +36,18 @@ export function humanizeAction(action: string): string {
   return words.map((w, i) => (i === 0 ? w.charAt(0).toUpperCase() + w.slice(1) : w)).join(" ");
 }
 
-const SEVERITY_META: Record<Severity, { color: string; label: string }> = {
-  critical: { color: "error", label: "Critical" },
-  high: { color: "volcano", label: "High" },
-  medium: { color: "warning", label: "Medium" },
-  info: { color: "processing", label: "Info" },
+const SEVERITY_META: Record<Severity, { tone: Tone; label: string }> = {
+  critical: { tone: "error", label: "Critical" },
+  high: { tone: "high", label: "High" },
+  medium: { tone: "warning", label: "Medium" },
+  info: { tone: "processing", label: "Info" },
 };
 
 export function SeverityTag({ severity }: { severity: Severity }) {
+  const { mode } = useThemeMode();
   const meta = SEVERITY_META[severity];
   return (
-    <Tag color={meta.color} variant="filled" className="!me-0">
+    <Tag className="!me-0" style={toneStyle(meta.tone, mode)}>
       {meta.label}
     </Tag>
   );

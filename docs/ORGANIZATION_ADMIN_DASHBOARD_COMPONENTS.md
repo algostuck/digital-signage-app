@@ -22,7 +22,8 @@ nothing — that is the "not permitted" signal from the server.
 | `TrendLine` | `series[{key,label,color,points[{x,y}]}]`, `height`, `xLabel`, `yLabel` | Any time series |
 | `StackedColumn` | same shape as `TrendLine` | Outcomes per period |
 | `RankBar` | `rows[{key,label,sublabel,value,display,color,onClick}]`, `max`, `ariaLabel` | Any top-N list |
-| `theme.ts` | `STATUS_COLORS`, `SERIES_COLORS`, `useChartTheme()`, `statusLabel()` | Palette for any future chart |
+| `ChartHost` | `children` (a plot element), `height` | Wraps every plot in its own React root; see the architecture doc |
+| `theme.ts` | `STATUS_COLORS`, `SERIES_COLORS`, `STATUS_TEXT[mode]`, `useChartTheme()`, `statusLabel()` | Palette for any future chart; `STATUS_TEXT` for status-coloured text |
 
 ## Widgets (`widgets/`)
 
@@ -30,7 +31,7 @@ nothing — that is the "not permitted" signal from the server.
 |---|---|---|---|
 | `KpiGrid` | `kpis` | `Card`, `Typography` | six filtered routes |
 | `DeviceHealthWidget` | `device_health` | `Donut`, `TrendLine` | `/devices?connection_status=…` |
-| `AttentionWidget` | `attention` | `Tag`, `Button` | each row's `href` |
+| `AttentionWidget` | `attention` | `SeverityTag` (`ToneTag`), `Button` | each row's `href` |
 | `LocationMapWidget` | `geo` | `Select`, `Tag`, `Popup` + Leaflet | city → anchors → `/locations?id=` |
 | `CampaignWidget` | `campaigns` | status strip, `DataTable`, `Progress` | `/campaigns?status=…` |
 | `PlaybackWidget` | `playback` + `kpis.playback` | `Statistic`, `TrendLine`, `RankBar`, `EntitlementGuard` | `/reports`, `/content?type=` |
@@ -45,6 +46,14 @@ nothing — that is the "not permitted" signal from the server.
 | `UsageWidget` | `usage` | `Progress`, `StatusBadge` | `/settings` |
 | `InsightsWidget` | `insights` | `Button` | `/devices?tab=intelligence` |
 | `widgets/shared.tsx` | — | `ViewAll`, `SeverityTag`, `When` (relative + exact on hover), `humanizeAction`, `ENTITY_ROUTES`, `dayLabel`, `hourLabel` |
+
+## Added to the shared UI kit (`components/ui/`)
+
+| Component | Props | Notes |
+|---|---|---|
+| `tone.ts` → `toneStyle(tone, mode)` | `Tone` = success / warning / error / high / processing / default | Tinted pill colours measured ≥7:1 in both themes; replaces antd's `variant="filled"` tags, which fall to 2.9–5.6:1 in dark mode |
+| `ToneTag` | `tone` + antd `Tag` props (minus `color`/`variant`) | The tag to use wherever a status pill is needed |
+| `StatusBadge` | unchanged API | Now painted with `toneStyle`, so every status badge in the app clears AAA |
 
 ## Reused from the app
 
