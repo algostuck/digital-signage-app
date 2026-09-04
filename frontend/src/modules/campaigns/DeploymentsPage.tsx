@@ -9,11 +9,13 @@ import {
   Popconfirm,
   Progress,
   Row,
+  Select,
   Space,
   Tag,
   Typography,
 } from "antd";
 import { useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import { PageHeader } from "../../components/ui/PageHeader";
 import { EmptyState, LoadingState } from "../../components/ui/states";
 import { StatusBadge } from "../../components/ui/StatusBadge";
@@ -29,10 +31,15 @@ export function DeploymentsPage() {
   const canManage = hasPermission("deployments.manage");
   const queryClient = useQueryClient();
   const [expanded, setExpanded] = useState<string | null>(null);
+  const [searchParams] = useSearchParams();
+  const [statusFilter, setStatusFilter] = useState(searchParams.get("status") ?? "");
 
   const deploymentsQuery = useQuery({
-    queryKey: ["deployments"],
-    queryFn: () => api.get<DeploymentSummary[]>("/deployments?page_size=100"),
+    queryKey: ["deployments", statusFilter],
+    queryFn: () =>
+      api.get<DeploymentSummary[]>(
+        `/deployments?page_size=100${statusFilter ? `&status=${statusFilter}` : ""}`,
+      ),
     refetchInterval: 15_000,
   });
   const devicesQuery = useQuery({
@@ -60,6 +67,21 @@ export function DeploymentsPage() {
       <PageHeader
         title="Publishing"
         description="Deployment jobs with per-device delivery status. Players acknowledge after syncing."
+        actions={
+          <Select
+            className="w-44"
+            value={statusFilter}
+            aria-label="Filter by status"
+            onChange={setStatusFilter}
+            options={[
+              { value: "", label: "All statuses" },
+              ...["queued", "publishing", "partial", "published", "failed", "cancelled"].map((s) => ({
+                value: s,
+                label: s.charAt(0).toUpperCase() + s.slice(1),
+              })),
+            ]}
+          />
+        }
       />
 
       {deploymentsQuery.isLoading ? (

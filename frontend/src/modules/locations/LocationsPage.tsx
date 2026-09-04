@@ -22,6 +22,7 @@ import {
   type TreeDataNode,
 } from "antd";
 import { useMemo, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import { PageHeader } from "../../components/ui/PageHeader";
 import { EmptyState, ErrorState, LoadingState } from "../../components/ui/states";
 import { StatusBadge } from "../../components/ui/StatusBadge";
@@ -56,7 +57,8 @@ export function LocationsPage() {
   const canManage = hasPermission("locations.manage");
   const queryClient = useQueryClient();
 
-  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [searchParams] = useSearchParams();
+  const [selectedId, setSelectedId] = useState<string | null>(searchParams.get("id"));
   const [modal, setModal] = useState<
     | { kind: "create"; parentId: string | null; parentName: string | null }
     | { kind: "edit"; detail: LocationDetail }

@@ -1,7 +1,20 @@
 import { CheckOutlined } from "@ant-design/icons";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Badge, Button, Card, Flex, List, Tabs, Tag, Typography } from "antd";
+import {
+  Badge,
+  Button,
+  Card,
+  Checkbox,
+  Flex,
+  List,
+  Select,
+  Space,
+  Tabs,
+  Tag,
+  Typography,
+} from "antd";
 import { useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import { PageHeader } from "../../components/ui/PageHeader";
 import { EmptyState, LoadingState } from "../../components/ui/states";
 import { api } from "../../lib/api";
@@ -48,9 +61,15 @@ export function NotificationsPage() {
 
 function InboxTab() {
   const queryClient = useQueryClient();
+  const [searchParams] = useSearchParams();
+  const [severity, setSeverity] = useState(searchParams.get("severity") ?? "");
+  const [unreadOnly, setUnreadOnly] = useState(searchParams.get("unread") === "1");
   const inboxQuery = useQuery({
-    queryKey: ["notifications"],
-    queryFn: () => api.get<NotificationRow[]>("/notifications?page_size=100"),
+    queryKey: ["notifications", unreadOnly],
+    queryFn: () =>
+      api.get<NotificationRow[]>(
+        `/notifications?page_size=100${unreadOnly ? "&unread_only=true" : ""}`,
+      ),
     refetchInterval: 30_000,
   });
 
@@ -67,13 +86,30 @@ function InboxTab() {
     onSuccess: refresh,
   });
 
-  const rows = inboxQuery.data?.data ?? [];
+  const rows = (inboxQuery.data?.data ?? []).filter((r) => !severity || r.severity === severity);
   const unread = rows.filter((r) => !r.read_at).length;
 
   return (
     <div>
-      {unread > 0 && (
-        <Flex justify="flex-end" className="mb-3">
+      <Flex justify="space-between" align="center" wrap gap="small" className="mb-3">
+        <Space wrap>
+          <Select
+            className="w-40"
+            value={severity}
+            aria-label="Filter by severity"
+            onChange={setSeverity}
+            options={[
+              { value: "", label: "All severities" },
+              { value: "critical", label: "Critical" },
+              { value: "warning", label: "Warning" },
+              { value: "info", label: "Info" },
+            ]}
+          />
+          <Checkbox checked={unreadOnly} onChange={(e) => setUnreadOnly(e.target.checked)}>
+            Unread only
+          </Checkbox>
+        </Space>
+        {unread > 0 && (
           <Button
             icon={<CheckOutlined />}
             loading={markAll.isPending}
@@ -81,8 +117,8 @@ function InboxTab() {
           >
             Mark all read ({unread})
           </Button>
-        </Flex>
-      )}
+        )}
+      </Flex>
 
       {inboxQuery.isLoading ? (
         <LoadingState rows={4} />

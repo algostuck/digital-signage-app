@@ -21,6 +21,7 @@ import {
   Typography,
 } from "antd";
 import { useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import { FilterBar } from "../../components/ui/FilterBar";
 import { PageHeader } from "../../components/ui/PageHeader";
 import { EmptyState, LoadingState } from "../../components/ui/states";
@@ -32,6 +33,7 @@ import { UploadModal } from "./UploadModal";
 import { formatBytes, type Asset, type Folder } from "./types";
 
 const TYPE_FILTERS = ["", "image", "video", "audio", "document", "html", "text", "data"];
+const STATUS_FILTERS = ["", "draft", "published", "archived"];
 
 /** SCR-11 Content Library: folders, filters, grid, lifecycle. */
 export function ContentPage() {
@@ -42,8 +44,10 @@ export function ContentPage() {
   const queryClient = useQueryClient();
 
   const [folderId, setFolderId] = useState<string | null>(null);
-  const [search, setSearch] = useState("");
-  const [typeFilter, setTypeFilter] = useState("");
+  const [searchParams] = useSearchParams();
+  const [search, setSearch] = useState(searchParams.get("q") ?? "");
+  const [typeFilter, setTypeFilter] = useState(searchParams.get("type") ?? "");
+  const [statusFilter, setStatusFilter] = useState(searchParams.get("status") ?? "");
   const [page, setPage] = useState(1);
   const [uploadOpen, setUploadOpen] = useState(false);
   const [detailId, setDetailId] = useState<string | null>(null);
@@ -59,6 +63,7 @@ export function ContentPage() {
   const params = new URLSearchParams({ page: String(page), page_size: String(pageSize) });
   if (search) params.set("q", search);
   if (typeFilter) params.set("type", typeFilter);
+  if (statusFilter) params.set("status", statusFilter);
   if (folderId) params.set("folder_id", folderId);
 
   const assetsQuery = useQuery({
@@ -176,10 +181,11 @@ export function ContentPage() {
         <Col xs={24} lg={19}>
           <FilterBar
             onReset={
-              search || typeFilter
+              search || typeFilter || statusFilter
                 ? () => {
                     setSearch("");
                     setTypeFilter("");
+                    setStatusFilter("");
                     setPage(1);
                   }
                 : undefined
@@ -208,6 +214,19 @@ export function ContentPage() {
               options={TYPE_FILTERS.map((t) => ({
                 value: t,
                 label: t ? t.charAt(0).toUpperCase() + t.slice(1) : "All types",
+              }))}
+            />
+            <Select
+              className="w-40"
+              value={statusFilter}
+              aria-label="Filter by status"
+              onChange={(value) => {
+                setStatusFilter(value);
+                setPage(1);
+              }}
+              options={STATUS_FILTERS.map((s) => ({
+                value: s,
+                label: s ? s.charAt(0).toUpperCase() + s.slice(1) : "All statuses",
               }))}
             />
           </FilterBar>

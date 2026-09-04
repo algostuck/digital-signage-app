@@ -15,6 +15,7 @@ import {
   Typography,
 } from "antd";
 import { useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import { PageHeader } from "../../components/ui/PageHeader";
 import { EmptyState, ErrorState, LoadingState } from "../../components/ui/states";
 import { StatusBadge } from "../../components/ui/StatusBadge";
@@ -54,7 +55,8 @@ export function ApprovalsPage() {
   const { hasPermission } = useAuth();
   const canDecide = hasPermission("campaigns.approve");
   const queryClient = useQueryClient();
-  const [tab, setTab] = useState<string>("pending");
+  const [searchParams] = useSearchParams();
+  const [tab, setTab] = useState<string>(searchParams.get("state") ?? "pending");
   const [decision, setDecision] = useState<{
     request: ApprovalRequest;
     approve: boolean;

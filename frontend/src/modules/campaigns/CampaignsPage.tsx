@@ -18,6 +18,7 @@ import {
   Typography,
 } from "antd";
 import { useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import { PageHeader } from "../../components/ui/PageHeader";
 import { EmptyState, LoadingState } from "../../components/ui/states";
 import { StatusBadge } from "../../components/ui/StatusBadge";
@@ -29,6 +30,16 @@ import { DecisioningTab } from "./DecisioningTab";
 import { ExperimentsTab } from "./ExperimentsTab";
 import type { CampaignSummary } from "./types";
 
+const CAMPAIGN_STATUSES = [
+  "draft",
+  "pending_approval",
+  "approved",
+  "published",
+  "paused",
+  "expired",
+  "archived",
+];
+
 /** SCR-19 Campaigns (foundation view — targeting/approval arrive in 1I). */
 export function CampaignsPage() {
   const { hasPermission } = useAuth();
@@ -38,10 +49,15 @@ export function CampaignsPage() {
   const [createOpen, setCreateOpen] = useState(false);
   const [detailId, setDetailId] = useState<string | null>(null);
   const [tab, setTab] = useState<"campaigns" | "decisioning" | "experiments">("campaigns");
+  const [searchParams] = useSearchParams();
+  const [statusFilter, setStatusFilter] = useState(searchParams.get("status") ?? "");
 
   const campaignsQuery = useQuery({
-    queryKey: ["campaigns"],
-    queryFn: () => api.get<CampaignSummary[]>("/campaigns?page_size=100"),
+    queryKey: ["campaigns", statusFilter],
+    queryFn: () =>
+      api.get<CampaignSummary[]>(
+        `/campaigns?page_size=100${statusFilter ? `&status=${statusFilter}` : ""}`,
+      ),
   });
 
   const archive = useMutation({
@@ -141,11 +157,27 @@ export function CampaignsPage() {
         title="Campaigns"
         description="Plan, target, approve and publish content campaigns."
         actions={
-          canManage &&
           tab === "campaigns" && (
-            <Button type="primary" icon={<PlusOutlined />} onClick={() => setCreateOpen(true)}>
-              New campaign
-            </Button>
+            <>
+              <Select
+                className="w-44"
+                value={statusFilter}
+                aria-label="Filter by status"
+                onChange={setStatusFilter}
+                options={[
+                  { value: "", label: "All statuses" },
+                  ...CAMPAIGN_STATUSES.map((s) => ({
+                    value: s,
+                    label: s.replace(/_/g, " ").replace(/^\w/, (c) => c.toUpperCase()),
+                  })),
+                ]}
+              />
+              {canManage && (
+                <Button type="primary" icon={<PlusOutlined />} onClick={() => setCreateOpen(true)}>
+                  New campaign
+                </Button>
+              )}
+            </>
           )
         }
       />

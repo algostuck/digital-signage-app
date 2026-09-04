@@ -12,7 +12,7 @@ export type ThemeMode = "light" | "dark";
  * secondary copy clear WCAG 2.2 **AAA** (7:1) rather than just AA, in
  * both modes.
  */
-const BRAND = {
+export const BRAND = {
   primary: "#1D4ED8", // blue-700
   success: "#059669",
   warning: "#D97706",

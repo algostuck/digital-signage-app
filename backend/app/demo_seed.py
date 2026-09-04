@@ -996,6 +996,23 @@ class OrgBuilder:
                         # report counts; "ok" made proof-of-play read 0 completions.
                         "result": "completed" if ok else "error",
                     })
+        # A quarter of the fleet reported within the last half hour, so the
+        # dashboard's "now playing" reads live the moment the seed lands
+        # instead of waiting for the next scheduled window.
+        for device in self.active_devices[: max(1, len(self.active_devices) // 4)]:
+            campaign = self.rng.choices(self.published_campaigns, weights=weights)[0]
+            started = _now() - dt.timedelta(minutes=self.rng.uniform(1, 25))
+            rows.append({
+                "id": uuid.uuid4(),
+                "organization_id": self.org.id,
+                "device_id": device.id,
+                "campaign_id": campaign.id,
+                "playlist_id": campaign.playlist_id,
+                "asset_id": self.rng.choice(assets).id,
+                "started_at": started,
+                "ended_at": started + dt.timedelta(seconds=15),
+                "result": "completed",
+            })
         for chunk in range(0, len(rows), 2000):
             await self.db.execute(insert(PlaybackEvent.__table__), rows[chunk:chunk + 2000])
         self._bump("playback_events", len(rows))

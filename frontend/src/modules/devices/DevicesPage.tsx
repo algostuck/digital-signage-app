@@ -19,6 +19,7 @@ import {
   type TableProps,
 } from "antd";
 import { useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import { FilterBar } from "../../components/ui/FilterBar";
 import { PageHeader } from "../../components/ui/PageHeader";
 import { EmptyState } from "../../components/ui/states";
@@ -33,6 +34,7 @@ import { WallsTab } from "./WallsTab";
 import { timeAgo, type Device, type DeviceGroup } from "./types";
 
 const STATUS_FILTERS = ["", "pending", "active", "rejected", "decommissioned"];
+const CONNECTION_FILTERS = ["", "online", "warning", "offline"];
 
 interface SavedViewRow {
   id: string;
@@ -48,8 +50,13 @@ export function DevicesPage() {
   const queryClient = useQueryClient();
 
   const [tab, setTab] = useState<"devices" | "groups" | "walls" | "bundles">("devices");
-  const [search, setSearch] = useState("");
-  const [statusFilter, setStatusFilter] = useState("");
+  // Dashboard drill-downs arrive as ?status=, ?connection_status=, ?q=.
+  const [searchParams] = useSearchParams();
+  const [search, setSearch] = useState(searchParams.get("q") ?? "");
+  const [statusFilter, setStatusFilter] = useState(searchParams.get("status") ?? "");
+  const [connectionFilter, setConnectionFilter] = useState(
+    searchParams.get("connection_status") ?? "",
+  );
   const [page, setPage] = useState(1);
   const [detailId, setDetailId] = useState<string | null>(null);
   const [keyVisible, setKeyVisible] = useState(false);
@@ -58,6 +65,7 @@ export function DevicesPage() {
   const params = new URLSearchParams({ page: String(page), page_size: String(pageSize) });
   if (search) params.set("q", search);
   if (statusFilter) params.set("status", statusFilter);
+  if (connectionFilter) params.set("connection_status", connectionFilter);
 
   const devicesQuery = useQuery({
     queryKey: ["devices", params.toString()],
@@ -228,10 +236,11 @@ export function DevicesPage() {
     <div>
       <FilterBar
         onReset={
-          search || statusFilter
+          search || statusFilter || connectionFilter
             ? () => {
                 setSearch("");
                 setStatusFilter("");
+                setConnectionFilter("");
                 setPage(1);
               }
             : undefined
@@ -260,6 +269,19 @@ export function DevicesPage() {
           options={STATUS_FILTERS.map((s) => ({
             value: s,
             label: s ? s.charAt(0).toUpperCase() + s.slice(1) : "All statuses",
+          }))}
+        />
+        <Select
+          className="w-44"
+          value={connectionFilter}
+          aria-label="Filter by connection"
+          onChange={(value) => {
+            setConnectionFilter(value);
+            setPage(1);
+          }}
+          options={CONNECTION_FILTERS.map((s) => ({
+            value: s,
+            label: s ? s.charAt(0).toUpperCase() + s.slice(1) : "Any connection",
           }))}
         />
         <Select

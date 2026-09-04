@@ -1,7 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { Input, Select, Table, Typography, type TableProps } from "antd";
 import { useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import { FilterBar } from "../../components/ui/FilterBar";
 import { PageHeader } from "../../components/ui/PageHeader";
 import { EmptyState } from "../../components/ui/states";
@@ -47,8 +47,9 @@ const ENTITY_TYPES = ["", "user", "device", "campaign", "deployment", "asset", "
 
 /** SCR-25 Audit trail (FR-AUD-004: filter by actor, entity, action, date). */
 export function AuditPage() {
-  const [entityType, setEntityType] = useState("");
-  const [action, setAction] = useState("");
+  const [searchParams] = useSearchParams();
+  const [entityType, setEntityType] = useState(searchParams.get("entity_type") ?? "");
+  const [action, setAction] = useState(searchParams.get("action") ?? "");
   const [page, setPage] = useState(1);
   const pageSize = 30;
 
