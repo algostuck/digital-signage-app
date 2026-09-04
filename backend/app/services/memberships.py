@@ -52,9 +52,18 @@ async def can_access(
     db: AsyncSession, user: User, organization_id: uuid.UUID
 ) -> TenantUser | None | bool:
     """True/membership when the user may act inside the organization:
-    home org (implicit) or an active guest membership."""
+    home org (implicit), any active organization for a platform
+    administrator, or an active guest membership."""
     if organization_id == user.organization_id:
         return True
+    if user.is_superuser:
+        # The platform administrator operates every tenant by definition;
+        # requiring a tenant_users row per organization only meant new
+        # tenants were invisible to the switcher until someone remembered
+        # to add one. Superusers bypass permission checks, so the home-org
+        # shape (True) is the right return.
+        org = await db.get(Organization, organization_id)
+        return org is not None and org.status == "active"
     membership = await get_membership(db, organization_id, user.id)
     if membership is not None and membership.status == MembershipStatus.ACTIVE.value:
         return membership
@@ -72,6 +81,30 @@ async def accessible_tenants(db: AsyncSession, user: User) -> list[TenantAccess]
             role_name=None,
         )
     ]
+    if user.is_superuser:
+        # Every active tenant, home first; explicit guest rows would only
+        # duplicate entries here.
+        orgs = (
+            await db.execute(
+                select(Organization)
+                .where(
+                    Organization.status == "active",
+                    Organization.id != user.organization_id,
+                )
+                .order_by(Organization.name)
+            )
+        ).scalars()
+        result.extend(
+            TenantAccess(
+                organization_id=org.id,
+                organization_name=org.name,
+                is_home=False,
+                is_owner=True,
+                role_name="Platform administrator",
+            )
+            for org in orgs
+        )
+        return result
     rows = await db.execute(
         select(TenantUser, Organization)
         .join(Organization, Organization.id == TenantUser.organization_id)

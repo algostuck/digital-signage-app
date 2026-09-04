@@ -697,6 +697,53 @@ async def test_switch_tenant_without_membership_is_401(client, admin_tokens, org
     assert resp.status_code == 401
 
 
+async def test_platform_admin_can_switch_into_any_active_tenant(client, admin_tokens, org_b):  # noqa: F811
+    """A superuser needs no tenant_users row: every active organization is
+    listed by the switcher and can be entered; a normal admin still cannot."""
+    tokens = await platform_tokens(client)
+
+    resp = await client.get("/api/v1/auth/memberships", headers=bearer(tokens))
+    assert resp.status_code == 200
+    tenants = resp.json()["data"]
+    listed = {t["organization_id"] for t in tenants}
+    assert str(org_b["org_id"]) in listed, "org B has no membership row yet must be listed"
+    assert sum(1 for t in tenants if t["is_home"]) == 1
+
+    # Every active organization is present, none listed twice.
+    resp = await client.get("/api/v1/platform/tenants", headers=bearer(tokens))
+    active = {t["id"] for t in resp.json()["data"] if t["status"] == "active"}
+    assert active <= listed
+    assert len(listed) == len(tenants)
+
+    resp = await client.post(
+        "/api/v1/auth/switch-tenant",
+        headers=bearer(tokens),
+        json={
+            "organization_id": str(org_b["org_id"]),
+            "refresh_token": tokens["refresh_token"],
+        },
+    )
+    assert resp.status_code == 200, resp.text
+    switched = resp.json()["data"]
+    assert switched["user"]["active_organization_id"] == str(org_b["org_id"])
+
+    # The switched token is scoped to org B and works for tenant reads.
+    resp = await client.get(
+        "/api/v1/devices", headers={"Authorization": f"Bearer {switched['access_token']}"}
+    )
+    assert resp.status_code == 200
+
+    # A suspended tenant is not offered and cannot be entered.
+    resp = await client.patch(
+        f"/api/v1/platform/tenants/{org_b['org_id']}/status",
+        headers=bearer(tokens),
+        json={"status": "suspended"},
+    )
+    assert resp.status_code == 200
+    resp = await client.get("/api/v1/auth/memberships", headers=bearer(tokens))
+    assert str(org_b["org_id"]) not in {t["organization_id"] for t in resp.json()["data"]}
+
+
 # --- usage counters ---
 
 

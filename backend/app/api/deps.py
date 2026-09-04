@@ -107,7 +107,8 @@ async def get_current_user(
         user.membership_permission_codes = (  # type: ignore[attr-defined]
             {perm.code for perm in role.permissions} if role is not None else set()
         )
-        user.membership_is_owner = membership.is_owner  # type: ignore[attr-defined]
+        # `True` is the home-shaped access a platform administrator gets.
+        user.membership_is_owner = getattr(membership, "is_owner", True)  # type: ignore[attr-defined]
 
     user.active_organization_id = active_org  # type: ignore[attr-defined]
     tenant_id_ctx.set(active_org)

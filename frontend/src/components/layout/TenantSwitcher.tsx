@@ -56,10 +56,18 @@ export function TenantSwitcher() {
       disabled={switching}
       onChange={onChange}
       aria-label="Active organization"
-      className="w-48"
+      className="w-56"
+      popupMatchSelectWidth={false}
+      showSearch
+      optionFilterProp="label"
       options={memberships.map((m) => ({
         value: m.organization_id,
-        label: m.is_home ? m.organization_name : `${m.organization_name} (${m.role_name ?? "guest"})`,
+        // Home and platform-admin rows carry no role suffix; only a true
+        // guest membership shows the role it was granted.
+        label:
+          m.is_home || m.role_name === "Platform administrator" || !m.role_name
+            ? m.organization_name
+            : `${m.organization_name} (${m.role_name})`,
       }))}
     />
   );
