@@ -10,6 +10,7 @@ import {
 import {
   api,
   getStoredRefreshToken,
+  restoreSession,
   setSessionExpiredHandler,
   setTokens,
 } from "./api";
@@ -48,24 +49,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [initializing, setInitializing] = useState(true);
 
   // Restore the session from the stored refresh token on first load.
+  // `restoreSession` is single-flight and lock-guarded: this effect runs
+  // twice under StrictMode, and a second refresh with the same token would
+  // be read by the server as token reuse and end the session.
   useEffect(() => {
     let cancelled = false;
     (async () => {
-      const stored = getStoredRefreshToken();
-      if (!stored) {
-        setInitializing(false);
-        return;
-      }
       try {
-        const envelope = await api.post<TokenPair>("/auth/refresh", {
-          refresh_token: stored,
-        });
-        if (!cancelled && envelope.data) {
-          setTokens(envelope.data.access_token, envelope.data.refresh_token);
-          setUser(envelope.data.user);
-        }
-      } catch {
-        setTokens(null, null);
+        const envelope = await restoreSession();
+        if (!cancelled && envelope?.data) setUser(envelope.data.user as SessionUser);
       } finally {
         if (!cancelled) setInitializing(false);
       }

@@ -82,25 +82,64 @@ async function rawRequest<T>(
   return { resp, envelope };
 }
 
+interface RefreshedSession {
+  access_token: string;
+  refresh_token: string;
+  user: unknown;
+}
+
+/**
+ * Refresh tokens are single-use: the server rotates them and treats a
+ * second presentation of the same token as theft, revoking the whole
+ * session family. So a refresh must never race — not within this tab
+ * (React 18 double-runs effects in development) and not across tabs
+ * (two tabs booting together read the same stored token). The Web Locks
+ * API serialises across tabs of the origin; the token is re-read inside
+ * the lock so a tab that waited picks up the one its sibling just wrote.
+ */
+async function withRefreshLock<T>(fn: () => Promise<T>): Promise<T> {
+  const locks = (navigator as Navigator & { locks?: LockManager }).locks;
+  if (locks?.request) return locks.request("dsc.session-refresh", fn);
+  return fn();
+}
+
+async function rotate(): Promise<Envelope<RefreshedSession> | null> {
+  return withRefreshLock(async () => {
+    const stored = getStoredRefreshToken();
+    if (!stored) return null;
+    const { resp, envelope } = await rawRequest<RefreshedSession>("POST", "/auth/refresh", {
+      refresh_token: stored,
+    });
+    if (!resp.ok || !envelope?.data) {
+      setTokens(null, null);
+      return null;
+    }
+    setTokens(envelope.data.access_token, envelope.data.refresh_token);
+    return envelope;
+  });
+}
+
+let restorePromise: Promise<Envelope<RefreshedSession> | null> | null = null;
+
+/** Restores the session from the stored refresh token on app start.
+ * Single-flight: concurrent callers share one request. */
+export function restoreSession(): Promise<Envelope<RefreshedSession> | null> {
+  if (!restorePromise) {
+    restorePromise = rotate().finally(() => {
+      restorePromise = null;
+    });
+  }
+  return restorePromise;
+}
+
 /** Refreshes the access token once even under concurrent 401s. */
 async function tryRefresh(): Promise<boolean> {
   if (!refreshPromise) {
-    refreshPromise = (async () => {
-      const stored = getStoredRefreshToken();
-      if (!stored) return false;
-      const { resp, envelope } = await rawRequest<{
-        access_token: string;
-        refresh_token: string;
-      }>("POST", "/auth/refresh", { refresh_token: stored });
-      if (!resp.ok || !envelope?.data) {
-        setTokens(null, null);
-        return false;
-      }
-      setTokens(envelope.data.access_token, envelope.data.refresh_token);
-      return true;
-    })().finally(() => {
-      refreshPromise = null;
-    });
+    refreshPromise = rotate()
+      .then((envelope) => envelope != null)
+      .finally(() => {
+        refreshPromise = null;
+      });
   }
   return refreshPromise;
 }
