@@ -5,7 +5,7 @@ import {
   RightOutlined,
   TeamOutlined,
 } from "@ant-design/icons";
-import { Button, Card, Col, List, Row, Space, Typography } from "antd";
+import { Button, Card, Col, Empty, Flex, Row, Space, Typography } from "antd";
 import { Link } from "react-router-dom";
 import { PageHeader } from "../../components/ui/PageHeader";
 import { StatCard } from "../../components/ui/StatCard";
@@ -100,21 +100,17 @@ export function PlatformOverviewPage() {
               </Link>
             }
           >
-            <List
-              size="small"
+            <Rows
               loading={requests.isLoading}
-              dataSource={pending.slice(0, 5)}
-              locale={{ emptyText: "Nothing waiting for approval." }}
-              renderItem={(req) => (
-                <List.Item>
-                  <Space orientation="vertical" size={0}>
-                    <Typography.Text strong>{req.organization_name}</Typography.Text>
-                    <Typography.Text type="secondary" className="text-xs">
-                      {req.from_plan} → {req.to_plan_name} · {formatDate(req.created_at)}
-                    </Typography.Text>
-                  </Space>
-                </List.Item>
-              )}
+              empty="Nothing waiting for approval."
+              items={pending.slice(0, 5).map((req) => (
+                <Space key={req.id} orientation="vertical" size={0}>
+                  <Typography.Text strong>{req.organization_name}</Typography.Text>
+                  <Typography.Text type="secondary" className="text-xs">
+                    {req.from_plan} → {req.to_plan_name} · {formatDate(req.created_at)}
+                  </Typography.Text>
+                </Space>
+              ))}
             />
           </Card>
         </Col>
@@ -128,29 +124,51 @@ export function PlatformOverviewPage() {
               </Link>
             }
           >
-            <List
-              size="small"
+            <Rows
               loading={tenants.isLoading}
-              dataSource={atRisk.slice(0, 5)}
-              locale={{ emptyText: "Every subscription is in good standing." }}
-              renderItem={(t) => (
-                <List.Item
-                  actions={[
-                    <Link key="open" to={`/platform/tenants/${t.id}`}>
-                      <Button size="small">Open</Button>
-                    </Link>,
-                  ]}
-                >
+              empty="Every subscription is in good standing."
+              items={atRisk.slice(0, 5).map((t) => (
+                <Flex key={t.id} align="center" justify="space-between" gap="small">
                   <Space>
                     <Typography.Text strong>{t.name}</Typography.Text>
                     <StatusBadge status={t.subscription_status ?? "none"} />
                   </Space>
-                </List.Item>
-              )}
+                  <Link to={`/platform/tenants/${t.id}`}>
+                    <Button size="small">Open</Button>
+                  </Link>
+                </Flex>
+              ))}
             />
           </Card>
         </Col>
       </Row>
     </PlatformGuard>
+  );
+}
+
+/** Short attention lists. antd's List is deprecated in 6.6 and its
+ * replacement is a virtualised component built for long feeds, so five
+ * rows are simply stacked and separated. */
+function Rows({
+  loading,
+  empty,
+  items,
+}: {
+  loading: boolean;
+  empty: string;
+  items: React.ReactNode[];
+}) {
+  if (loading) return <Card size="small" loading variant="borderless" />;
+  if (items.length === 0) {
+    return <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description={empty} className="!my-4" />;
+  }
+  return (
+    <Flex vertical gap={0} className="divide-y divide-slate-200 dark:divide-slate-700">
+      {items.map((node, index) => (
+        <div key={index} className="py-2">
+          {node}
+        </div>
+      ))}
+    </Flex>
   );
 }
