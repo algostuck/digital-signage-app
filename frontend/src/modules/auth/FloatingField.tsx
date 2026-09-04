@@ -16,12 +16,16 @@ export function FloatingField({
     <div className="relative">
       <label
         htmlFor={htmlFor}
-        className="absolute z-[1] px-1.5"
+        className="absolute px-1.5"
         style={{
-          top: -8,
+          // antd raises a focused/hovered input wrapper to z-index 1 so its
+          // outline paints over siblings — which put it over this label and
+          // hid it the moment the field took focus. Sit above it.
+          zIndex: 2,
+          top: -9,
           left: 16,
-          fontSize: 12,
-          lineHeight: "16px",
+          fontSize: 13,
+          lineHeight: "18px",
           background: token.colorBgContainer,
           color: token.colorTextSecondary,
         }}
@@ -34,4 +38,4 @@ export function FloatingField({
 }
 
 /** Pill geometry shared by every auth input. */
-export const PILL_INPUT = { borderRadius: 999, height: 48, paddingInline: 18 } as const;
+export const PILL_INPUT = { borderRadius: 999, height: 48, paddingInline: 21 } as const;

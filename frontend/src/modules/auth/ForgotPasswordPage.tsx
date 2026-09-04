@@ -2,14 +2,8 @@ import { Alert, Button, Form, Input, Result, Space, Typography } from "antd";
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import { api, ApiError } from "../../lib/api";
-import { AuthShell } from "./AuthShell";
+import { AuthShell, useAuthButtonStyle } from "./AuthShell";
 import { FloatingField, PILL_INPUT } from "./FloatingField";
-
-const SUBMIT_STYLE = {
-  height: 44,
-  border: 0,
-  background: "linear-gradient(90deg, #4338CA 0%, #1D4ED8 100%)",
-} as const;
 
 type Step = "request" | "confirm" | "done";
 
@@ -20,6 +14,7 @@ export function ForgotPasswordPage() {
   const [step, setStep] = useState<Step>("request");
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const SUBMIT_STYLE = useAuthButtonStyle();
 
   async function request(values: { email: string }) {
     setError(null);
@@ -76,7 +71,7 @@ export function ForgotPasswordPage() {
           <Typography.Title level={4} className="!mb-1">
             {step === "request" ? "Reset your password" : "Enter your reset token"}
           </Typography.Title>
-          <Typography.Paragraph type="secondary" className="!mb-6">
+          <Typography.Paragraph type="secondary" style={{ marginBottom: 21 }}>
             {step === "request"
               ? "We'll e-mail a reset token if an account exists for this address."
               : "Paste the token from the e-mail and choose a new password (10+ characters)."}
@@ -143,7 +138,7 @@ export function ForgotPasswordPage() {
             </Form>
           )}
 
-          <Typography.Paragraph className="!mb-0 mt-8">
+          <Typography.Paragraph className="!mb-0" style={{ marginTop: 34 }}>
             <Link to="/login">Back to login</Link>
           </Typography.Paragraph>
         </>

@@ -3,7 +3,7 @@ import { useState } from "react";
 import { Link, Navigate, useLocation, useNavigate } from "react-router-dom";
 import { ApiError } from "../../lib/api";
 import { useAuth } from "../../lib/auth";
-import { AuthShell } from "./AuthShell";
+import { AuthShell, useAuthButtonStyle } from "./AuthShell";
 import { FloatingField, PILL_INPUT } from "./FloatingField";
 
 /** SCR-01 Login / Authentication. */
@@ -13,6 +13,7 @@ export function LoginPage() {
   const location = useLocation();
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const buttonStyle = useAuthButtonStyle();
 
   if (user) {
     return <Navigate to="/dashboard" replace />;
@@ -59,12 +60,9 @@ export function LoginPage() {
             { type: "email", message: "Enter a valid email address." },
           ]}
         >
-          <Input
-            autoFocus
-            autoComplete="email"
-            placeholder="you@company.com"
-            style={PILL_INPUT}
-          />
+          {/* No placeholder: antd renders it at ~1.8:1, and the floating
+              label already names the field. */}
+          <Input autoFocus autoComplete="email" style={PILL_INPUT} />
         </FloatingField>
         <FloatingField
           label="Password"
@@ -81,18 +79,14 @@ export function LoginPage() {
           loading={submitting}
           shape="round"
           size="large"
-          className="mt-1 min-w-[132px]"
-          style={{
-            height: 44,
-            border: 0,
-            background: "linear-gradient(90deg, #4338CA 0%, #1D4ED8 100%)",
-          }}
+          className="min-w-[132px]"
+          style={{ ...buttonStyle, marginTop: 13 }}
         >
           Login
         </Button>
       </Form>
 
-      <Typography.Paragraph className="!mb-0 mt-8">
+      <Typography.Paragraph className="!mb-0" style={{ marginTop: 34 }}>
         <Link to="/forgot-password">Forgot Password?</Link>
       </Typography.Paragraph>
     </AuthShell>
