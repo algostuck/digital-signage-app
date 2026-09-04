@@ -13,6 +13,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.api.deps import PlatformAdmin
 from app.db.session import get_db
 from app.models import Invoice, Organization
+from app.models.saas import Plan, Subscription
 from app.schemas.envelope import success
 from app.schemas.saas import (
     AssignSubscriptionRequest,
@@ -40,6 +41,13 @@ router = APIRouter(prefix="/platform")
 @router.get("/tenants")
 async def list_tenants(_admin: PlatformAdmin, db: AsyncSession = Depends(get_db)) -> dict:
     return success(await platform_service.list_tenants(db))
+
+
+@router.get("/tenants/{tenant_id}")
+async def get_tenant(
+    tenant_id: uuid.UUID, _admin: PlatformAdmin, db: AsyncSession = Depends(get_db)
+) -> dict:
+    return success(await platform_service.get_tenant(db, tenant_id))
 
 
 @router.post("/tenants")
@@ -228,6 +236,42 @@ async def list_tenant_invoices(
         )
     ).scalars()
     return success([invoice_out(invoice) for invoice in invoices])
+
+
+@router.get("/invoices")
+async def list_invoices(
+    _admin: PlatformAdmin,
+    db: AsyncSession = Depends(get_db),
+    status: str | None = None,
+    tenant_id: uuid.UUID | None = None,
+) -> dict:
+    """Every tenant's invoices in one list, so the console can work the
+    receivables ledger without opening tenants one at a time."""
+    query = (
+        select(Invoice, Organization.name, Organization.code, Plan.code, Plan.name)
+        .join(Organization, Organization.id == Invoice.organization_id)
+        .join(Subscription, Subscription.id == Invoice.subscription_id)
+        .join(Plan, Plan.id == Subscription.plan_id)
+        .order_by(Invoice.issued_at.desc())
+    )
+    if status:
+        query = query.where(Invoice.status == status)
+    if tenant_id:
+        query = query.where(Invoice.organization_id == tenant_id)
+    rows = (await db.execute(query)).all()
+    return success(
+        [
+            {
+                **invoice_out(invoice),
+                "organization_id": str(invoice.organization_id),
+                "organization_name": org_name,
+                "organization_code": org_code,
+                "plan_code": plan_code,
+                "plan_name": plan_name,
+            }
+            for invoice, org_name, org_code, plan_code, plan_name in rows
+        ]
+    )
 
 
 @router.patch("/tenants/{tenant_id}/subscription/plan")

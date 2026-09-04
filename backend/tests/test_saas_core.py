@@ -714,3 +714,52 @@ async def test_usage_snapshot_populates_counters(client, admin_tokens, db_engine
     assert metrics["devices"]["used"] >= 3  # seeded demo devices
     assert metrics["devices"]["limit"] == 5000  # enterprise plan
     assert "storage_mb" in metrics
+
+
+# --- platform console reads (tenant detail, cross-tenant invoices) ---
+
+
+async def test_platform_reads_one_tenant_and_all_invoices(client, admin_tokens, org_b):  # noqa: F811
+    tokens = await platform_tokens(client)
+
+    # Single tenant carries the profile fields the console edits.
+    resp = await client.get(
+        f"/api/v1/platform/tenants/{org_b['org_id']}", headers=bearer(tokens)
+    )
+    assert resp.status_code == 200, resp.text
+    tenant = resp.json()["data"]
+    assert tenant["id"] == str(org_b["org_id"])
+    assert {"timezone", "region", "locale", "quotas", "devices", "users"} <= tenant.keys()
+
+    resp = await client.get(
+        f"/api/v1/platform/tenants/{org_b['org_id']}", headers=bearer(admin_tokens)
+    )
+    assert resp.status_code == 403
+
+    # Give org B a subscription so it has an invoice, then read the ledger.
+    resp = await client.post(
+        f"/api/v1/platform/tenants/{org_b['org_id']}/subscription",
+        headers=bearer(tokens),
+        json={"plan_code": "business", "billing_cycle": "monthly"},
+    )
+    assert resp.status_code == 200, resp.text
+
+    resp = await client.get("/api/v1/platform/invoices", headers=bearer(tokens))
+    assert resp.status_code == 200
+    rows = resp.json()["data"]
+    mine = [r for r in rows if r["organization_id"] == str(org_b["org_id"])]
+    assert mine, "org B's invoice should appear in the platform ledger"
+    assert mine[0]["organization_code"] == tenant["code"]
+    assert mine[0]["plan_code"] == "business"
+    assert mine[0]["status"] == "issued"
+
+    # Filters narrow, never widen.
+    resp = await client.get(
+        "/api/v1/platform/invoices",
+        headers=bearer(tokens),
+        params={"tenant_id": str(org_b["org_id"]), "status": "paid"},
+    )
+    assert resp.json()["data"] == []
+
+    resp = await client.get("/api/v1/platform/invoices", headers=bearer(admin_tokens))
+    assert resp.status_code == 403

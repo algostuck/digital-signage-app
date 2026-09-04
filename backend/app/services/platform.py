@@ -22,13 +22,35 @@ logger = logging.getLogger("app.platform")
 
 
 async def list_tenants(db: AsyncSession) -> list[dict]:
-    from app.services import entitlements as entitlements_service
-
     orgs = (
         await db.execute(select(Organization).order_by(Organization.name))
     ).scalars().all()
-    result = []
-    for org in orgs:
+    return [await tenant_row(db, org) for org in orgs]
+
+
+async def get_tenant(db: AsyncSession, organization_id: uuid.UUID) -> dict:
+    """One tenant with the profile fields the console edits."""
+    org = await db.get(Organization, organization_id)
+    if org is None:
+        from app.core.errors import NotFoundError
+
+        raise NotFoundError("Organization not found")
+    row = await tenant_row(db, org)
+    row.update(
+        {
+            "timezone": org.timezone,
+            "locale": org.locale,
+            "region": org.region,
+            "quotas": org.quotas_json or {},
+        }
+    )
+    return row
+
+
+async def tenant_row(db: AsyncSession, org: Organization) -> dict:
+    from app.services import entitlements as entitlements_service
+
+    if True:
         devices = (
             await db.execute(
                 select(func.count()).where(
@@ -45,7 +67,7 @@ async def list_tenants(db: AsyncSession) -> list[dict]:
             )
         ).scalar_one()
         effective = await entitlements_service.get_effective(db, org.id)
-        result.append(
+        return (
             {
                 "id": str(org.id),
                 "name": org.name,
@@ -59,7 +81,6 @@ async def list_tenants(db: AsyncSession) -> list[dict]:
                 "created_at": org.created_at.isoformat() if org.created_at else None,
             }
         )
-    return result
 
 
 async def create_tenant(

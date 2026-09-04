@@ -228,11 +228,49 @@ export const NAVIGATION: NavNode[] = [
     permission: ["organization.view"],
   },
   {
-    key: "/platform",
+    // Super Admin only. Each area is its own page: the console used to be
+    // one long screen mixing tenants, plans, requests and invoices.
+    key: "platform-console",
     label: "Platform Console",
     icon: <CrownOutlined />,
-    path: "/platform",
     superuserOnly: true,
+    children: [
+      {
+        key: "/platform",
+        label: "Overview",
+        path: "/platform",
+        icon: <DashboardOutlined />,
+        superuserOnly: true,
+      },
+      {
+        key: "/platform/tenants",
+        label: "Tenants",
+        path: "/platform/tenants",
+        icon: <TeamOutlined />,
+        superuserOnly: true,
+      },
+      {
+        key: "/platform/plans",
+        label: "Plans",
+        path: "/platform/plans",
+        icon: <AppstoreOutlined />,
+        superuserOnly: true,
+      },
+      {
+        key: "/platform/plan-requests",
+        label: "Plan requests",
+        path: "/platform/plan-requests",
+        icon: <AuditOutlined />,
+        superuserOnly: true,
+      },
+      {
+        key: "/platform/invoices",
+        label: "Invoices",
+        path: "/platform/invoices",
+        icon: <DollarOutlined />,
+        superuserOnly: true,
+      },
+    ],
   },
 ];
 

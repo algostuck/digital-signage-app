@@ -28,7 +28,12 @@ const OrganizationSettingsPage = lazy(() => import("../modules/organization/Orga
 const DeveloperPage = lazy(() => import("../modules/developer/DeveloperPage").then((m) => ({ default: m.DeveloperPage })));
 const AdsPage = lazy(() => import("../modules/ads/AdsPage").then((m) => ({ default: m.AdsPage })));
 const SecurityPage = lazy(() => import("../modules/security/SecurityPage").then((m) => ({ default: m.SecurityPage })));
-const PlatformPage = lazy(() => import("../modules/platform/PlatformPage").then((m) => ({ default: m.PlatformPage })));
+const PlatformOverviewPage = lazy(() => import("../modules/platform/PlatformOverviewPage").then((m) => ({ default: m.PlatformOverviewPage })));
+const TenantsPage = lazy(() => import("../modules/platform/TenantsPage").then((m) => ({ default: m.TenantsPage })));
+const TenantDetailPage = lazy(() => import("../modules/platform/TenantDetailPage").then((m) => ({ default: m.TenantDetailPage })));
+const PlansPage = lazy(() => import("../modules/platform/PlansPage").then((m) => ({ default: m.PlansPage })));
+const PlanRequestsPage = lazy(() => import("../modules/platform/PlanRequestsPage").then((m) => ({ default: m.PlanRequestsPage })));
+const InvoicesPage = lazy(() => import("../modules/platform/InvoicesPage").then((m) => ({ default: m.InvoicesPage })));
 
 function withSuspense(node: ReactNode) {
   return (
@@ -71,7 +76,12 @@ export const router = createBrowserRouter([
           { path: "developer", element: withSuspense(<DeveloperPage />) },
           { path: "ads", element: withSuspense(<AdsPage />) },
           { path: "security", element: withSuspense(<SecurityPage />) },
-          { path: "platform", element: withSuspense(<PlatformPage />) },
+          { path: "platform", element: withSuspense(<PlatformOverviewPage />) },
+          { path: "platform/tenants", element: withSuspense(<TenantsPage />) },
+          { path: "platform/tenants/:tenantId", element: withSuspense(<TenantDetailPage />) },
+          { path: "platform/plans", element: withSuspense(<PlansPage />) },
+          { path: "platform/plan-requests", element: withSuspense(<PlanRequestsPage />) },
+          { path: "platform/invoices", element: withSuspense(<InvoicesPage />) },
         ],
       },
     ],
