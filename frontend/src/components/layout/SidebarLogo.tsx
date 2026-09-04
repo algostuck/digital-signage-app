@@ -10,7 +10,7 @@ export function SidebarLogo({ collapsed }: { collapsed: boolean }) {
     <Link
       to="/dashboard"
       style={{ borderBottom: `1px solid ${token.colorBorderSecondary}` }}
-      className={`flex h-16 shrink-0 items-center gap-3 no-underline ${
+      className={`flex h-[55px] shrink-0 items-center gap-3 no-underline ${
         collapsed ? "justify-center px-2" : "px-4"
       }`}
       aria-label="Digital Signage Cloud — go to dashboard"

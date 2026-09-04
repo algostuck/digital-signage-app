@@ -68,7 +68,7 @@ export function AccountMenu({ collapsed }: { collapsed: boolean }) {
 
   return (
     <div
-      className="flex h-16 shrink-0 items-center px-2"
+      className="flex h-[55px] shrink-0 items-center px-2"
       style={{ borderTop: `1px solid ${token.colorBorderSecondary}` }}
     >
       <Dropdown menu={{ items }} trigger={["click"]} placement="topRight" arrow>

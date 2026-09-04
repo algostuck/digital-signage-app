@@ -52,7 +52,7 @@ export function MainNavigation({ collapsed, onNavigate }: Props) {
   }, [routeOpenKeys]);
 
   return (
-    <nav aria-label="Main navigation" className="sidebar-scroll min-h-0 flex-1 overflow-y-auto py-4">
+    <nav aria-label="Main navigation" className="sidebar-scroll min-h-0 flex-1 overflow-y-auto py-3">
       {!collapsed && (
         <Typography.Text
           type="secondary"
@@ -73,7 +73,7 @@ export function MainNavigation({ collapsed, onNavigate }: Props) {
         key={collapsed ? "rail" : "full"}
         selectedKeys={selectedKeys}
         {...(collapsed ? {} : { openKeys, onOpenChange: setOpenKeys })}
-        inlineIndent={24}
+        inlineIndent={21}
         className="!border-e-0 !bg-transparent"
         onClick={({ key }) => {
           const path = paths.get(key);

@@ -95,11 +95,15 @@ export function AppLayout() {
             <HeaderActions />
           </div>
         </Header>
-        {/* Padding lives on the Content so the gutter survives at every
-            width; the inner wrapper caps at 1600px and centers only on
-            ultra-wide monitors (brief §56). */}
-        <Content className="p-4 md:p-6">
-          <div className="mx-auto w-full max-w-[1600px]">
+        {/* Centered container, applied once for every screen: 24px page
+            gutters (16px below md) on the Content, and an inner wrapper
+            with auto margins whose max-width follows the golden ratio of
+            the space beside the sidebar — 61.8cqw of the Content, floored
+            at 1024px (Tailwind's 5xl) and capped at 1440px. Container
+            units, not viewport units, so it stays correct whether the
+            sidebar is expanded, collapsed or a drawer. */}
+        <Content className="p-4 md:p-6" style={{ containerType: "inline-size" }}>
+          <div className="mx-auto w-full" style={{ maxWidth: "clamp(1024px, 61.8cqw, 1440px)" }}>
             <ScrollRestoration />
             <Outlet />
           </div>

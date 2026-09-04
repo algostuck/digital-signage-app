@@ -71,7 +71,7 @@ color #1D4ED8, maximize antd built-ins, near-zero custom CSS.
    Audit action filter became shrinkable (`w-full max-w-80`), Ads slot
    input narrowed, Security age-policy form wraps. Final state: **zero
    page-body overflow at every tested width on every route**.
-2. **Large screens** — Content is width-capped at 1600px and centered ≥xl
+2. **Large screens** — Content sits in a centred container whose max-width is 61.8 % of the area beside the sidebar (floor 1024px, cap 1440px), with 24px gutters
    (brief §56); verified at 1920px across representative routes.
 3. **Accessible names** — automated scan of every visible button across
    all 20 routes: zero app-authored unnamed controls (only antd-internal

@@ -96,22 +96,27 @@ export function buildTheme(mode: ThemeMode): ThemeConfig {
     },
     components: {
       Layout: {
+        // 55px: matches the sidebar's logo and account bands so the three
+        // top edges line up, and sits at φ against the 34px menu rows.
+        headerHeight: 55,
         siderBg: SIDEBAR_BG[mode],
         headerBg: dark ? "#0F172A" : "#FFFFFF",
-        headerHeight: 64,
         bodyBg: dark ? "#0B1220" : "#F8FAFC",
       },
       Menu: {
         ...MENU_TOKENS,
-        // 8pt rhythm: 40px rows sit at 1:1.6 against the 64px logo and
-        // account bands, and a 16px icon column aligns with the brand mark.
-        itemHeight: 40,
-        itemMarginBlock: 2,
+        // Golden rhythm: 34px rows against the 55px logo, header and
+        // account bands (55 / 34 = 1.618). Fibonacci steps throughout —
+        // 13px type, 21px submenu indent — keep the rail compact without
+        // crowding: 34px still clears the 24px minimum target size.
+        itemHeight: 34,
+        itemMarginBlock: 1,
         itemMarginInline: 4,
         itemPaddingInline: 12,
         itemBorderRadius: 8,
         iconSize: 16,
         collapsedIconSize: 18,
+        fontSize: 13,
       },
       Tabs: {
         // The brand blue is too dark to read as text on the dark canvas.

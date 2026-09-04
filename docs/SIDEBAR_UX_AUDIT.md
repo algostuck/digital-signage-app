@@ -18,7 +18,7 @@ Layout
 │       └── flat `type: "group"` sections
 └── Layout
     ├── Header (hamburger, GlobalSearch, TenantSwitcher, account Dropdown)
-    └── Content (p-4/6, inner max-w-1600 wrapper)
+    └── Content (p-4/6 gutters, centred inner wrapper: clamp(1024px, 61.8cqw, 1440px))
 ```
 
 Mobile (`<md`) swaps the Sider for an antd `Drawer` holding the same

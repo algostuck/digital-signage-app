@@ -15,7 +15,7 @@ only layout grid:
 | `md` | ≥768 | Persistent sidebar appears (shell switches from Drawer to Sider) |
 | `lg` | ≥992 | Secondary table columns appear (`responsive: ["lg"]`) |
 | `xl` | ≥1200 | Full KPI rows (4-up), golden-ratio splits activate, tertiary table columns (`responsive: ["xl"]`) |
-| `xxl` | ≥1600 | No additional restructuring — content is width-capped by the shell padding |
+| `xxl` | ≥1600 | No additional restructuring — the centred container caps content at 61.8 % of the space beside the sidebar (max 1440px) and auto margins absorb the rest |
 
 The brief's QA widths (320/360/375/390/430/768/1024/1280/1440/1920/2560)
 are the *test matrix*, not a second grid — every screen must be usable at
