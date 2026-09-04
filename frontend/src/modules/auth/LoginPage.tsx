@@ -1,16 +1,16 @@
-import { LockOutlined, MailOutlined } from "@ant-design/icons";
-import { Alert, Button, Card, Form, Input, Typography, theme } from "antd";
+import { Alert, Button, Form, Input, Typography } from "antd";
 import { useState } from "react";
-import { Navigate, useLocation, useNavigate } from "react-router-dom";
+import { Link, Navigate, useLocation, useNavigate } from "react-router-dom";
 import { ApiError } from "../../lib/api";
 import { useAuth } from "../../lib/auth";
+import { AuthShell } from "./AuthShell";
+import { FloatingField, PILL_INPUT } from "./FloatingField";
 
 /** SCR-01 Login / Authentication. */
 export function LoginPage() {
   const { user, login } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
-  const { token } = theme.useToken();
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
@@ -38,56 +38,63 @@ export function LoginPage() {
   }
 
   return (
-    <div
-      className="flex min-h-screen items-center justify-center px-4"
-      style={{ background: token.colorBgLayout }}
-    >
-      <Card className="w-full max-w-sm shadow-sm">
-        <div className="mb-6 flex items-center gap-3">
-          <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-blue-700 text-base font-bold text-white">
-            DS
-          </div>
-          <div>
-            <Typography.Title level={4} className="!mb-0">
-              Digital Signage Cloud
-            </Typography.Title>
-            <Typography.Text type="secondary">Sign in to your organization</Typography.Text>
-          </div>
-        </div>
-        {error && (
-          <Alert type="error" message={error} showIcon className="mb-4" role="alert" />
-        )}
-        <Form layout="vertical" onFinish={onFinish} requiredMark={false} aria-label="Sign in">
-          <Form.Item
-            name="email"
-            label="Email"
-            rules={[
-              { required: true, message: "Enter your email address." },
-              { type: "email", message: "Enter a valid email address." },
-            ]}
-          >
-            <Input
-              autoFocus
-              autoComplete="email"
-              prefix={<MailOutlined className="text-slate-400" />}
-              placeholder="you@company.com"
-            />
-          </Form.Item>
-          <Form.Item
-            name="password"
-            label="Password"
-            rules={[{ required: true, message: "Enter your password." }]}
-          >
-            <Input.Password
-              autoComplete="current-password"
-              prefix={<LockOutlined className="text-slate-400" />}
-            />
-          </Form.Item>
-          <Button type="primary" htmlType="submit" block loading={submitting} size="large">
-            Sign in
-          </Button>
-        </Form>
-      </Card>
-    </div>
+    <AuthShell>
+      {error && (
+        <Alert type="error" message={error} showIcon className="mb-5" role="alert" />
+      )}
+      <Form
+        name="login"
+        layout="vertical"
+        onFinish={onFinish}
+        requiredMark={false}
+        aria-label="Sign in"
+        size="large"
+      >
+        <FloatingField
+          label="E-mail"
+          htmlFor="login_email"
+          name="email"
+          rules={[
+            { required: true, message: "Enter your email address." },
+            { type: "email", message: "Enter a valid email address." },
+          ]}
+        >
+          <Input
+            autoFocus
+            autoComplete="email"
+            placeholder="you@company.com"
+            style={PILL_INPUT}
+          />
+        </FloatingField>
+        <FloatingField
+          label="Password"
+          htmlFor="login_password"
+          name="password"
+          rules={[{ required: true, message: "Enter your password." }]}
+        >
+          <Input.Password autoComplete="current-password" style={PILL_INPUT} />
+        </FloatingField>
+
+        <Button
+          type="primary"
+          htmlType="submit"
+          loading={submitting}
+          shape="round"
+          size="large"
+          className="mt-1 min-w-[132px]"
+          style={{
+            height: 44,
+            border: 0,
+            background: "linear-gradient(90deg, #4338CA 0%, #1D4ED8 100%)",
+          }}
+        >
+          Login
+        </Button>
+      </Form>
+
+      <Typography.Paragraph className="!mb-0 mt-8">
+        <Link to="/forgot-password">Forgot Password?</Link>
+      </Typography.Paragraph>
+    </AuthShell>
   );
 }

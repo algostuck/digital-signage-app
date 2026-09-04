@@ -2,6 +2,7 @@ import { Skeleton } from "antd";
 import { lazy, Suspense, type ReactNode } from "react";
 import { createBrowserRouter, Navigate } from "react-router-dom";
 import { AppLayout } from "../components/layout/AppLayout";
+import { ForgotPasswordPage } from "../modules/auth/ForgotPasswordPage";
 import { LoginPage } from "../modules/auth/LoginPage";
 import { ProtectedRoute } from "./ProtectedRoute";
 
@@ -39,6 +40,7 @@ function withSuspense(node: ReactNode) {
 
 export const router = createBrowserRouter([
   { path: "/login", element: <LoginPage /> },
+  { path: "/forgot-password", element: <ForgotPasswordPage /> },
   {
     element: <ProtectedRoute />,
     children: [
