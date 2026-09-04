@@ -62,8 +62,11 @@ export function When({ iso }: { iso: string | null | undefined }) {
   );
 }
 
+/** "Sep 4" for either a plain date ("2026-09-04") or a full timestamp,
+ * always in the viewer's local calendar so two points on the same day get
+ * the same label and points on different days never share one. */
 export function dayLabel(iso: string): string {
-  const d = new Date(`${iso}T00:00:00`);
+  const d = iso.length === 10 ? new Date(`${iso}T00:00:00`) : new Date(iso);
   return d.toLocaleDateString(undefined, { month: "short", day: "numeric" });
 }
 

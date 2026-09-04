@@ -22,8 +22,27 @@ export default defineConfig({
       },
     },
   },
+  // The dashboard route lazy-loads the chart and map libraries. Left to
+  // discovery, Vite re-optimises dependencies mid-session when it first
+  // sees them, which leaves two copies of the AntV runtime alive in one page
+  // and every chart throwing. Declaring them here bundles them up front
+  // with everything else, once.
+  optimizeDeps: {
+    include: ["@ant-design/plots", "leaflet", "react-leaflet"],
+  },
   server: {
     port: 5173,
+    proxy: {
+      "/api": {
+        target: "http://localhost:8000",
+        changeOrigin: true,
+      },
+    },
+  },
+  // `vite preview` serves the production build; give it the same proxy so
+  // the built app can be exercised against the local API.
+  preview: {
+    port: 4173,
     proxy: {
       "/api": {
         target: "http://localhost:8000",

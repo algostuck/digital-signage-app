@@ -29,7 +29,7 @@ export function DeviceHealthWidget({
     : undefined;
 
   const trend = health?.trend ?? [];
-  const xLabel = health?.trend_granularity === "hour" ? hourLabel : (iso: string) => dayLabel(iso.slice(0, 10));
+  const xLabel = health?.trend_granularity === "hour" ? hourLabel : dayLabel;
 
   return (
     <ChartFrame
