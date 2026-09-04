@@ -43,10 +43,10 @@ function KpiCard({
     >
       <div className="flex items-center gap-2 text-[13px]" style={{ color: token.colorTextSecondary }}>
         <span aria-hidden>{icon}</span>
-        <span className="font-medium uppercase tracking-wide">{label}</span>
+        <span className="truncate font-medium uppercase tracking-wide">{label}</span>
       </div>
       <div className="mt-1 flex items-baseline gap-2">
-        <Typography.Text strong style={{ fontSize: 28, lineHeight: 1.15, color }}>
+        <Typography.Text strong className="whitespace-nowrap" style={{ fontSize: 28, lineHeight: 1.15, color }}>
           {value}
         </Typography.Text>
         {sub && (
@@ -105,8 +105,16 @@ export function KpiGrid({ kpis, loading, rangeLabel }: { kpis?: Kpis; loading: b
         icon={<WifiOutlined />}
         value={d.online}
         sub={onlinePct != null ? `${onlinePct}%` : undefined}
-        context={d.warning ? `${d.warning} with a warning` : "All reporting on time"}
-        tone={onlinePct != null && onlinePct < 80 ? "warning" : "success"}
+        context={
+          d.active === 0
+            ? "No active displays"
+            : d.online === 0
+              ? "No display is reporting"
+              : d.warning
+                ? `${d.warning} with a warning`
+                : "All reporting on time"
+        }
+        tone={d.active === 0 ? "neutral" : onlinePct != null && onlinePct < 80 ? "warning" : "success"}
         to="/devices?connection_status=online"
       />
       <KpiCard
@@ -119,7 +127,7 @@ export function KpiGrid({ kpis, loading, rangeLabel }: { kpis?: Kpis; loading: b
         to="/devices?connection_status=offline"
       />
       <KpiCard
-        label="Active campaigns"
+        label="Live campaigns"
         icon={<RocketOutlined />}
         value={kpis.campaigns.published}
         context={

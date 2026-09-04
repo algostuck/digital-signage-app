@@ -89,7 +89,7 @@ async def get_usage(db: AsyncSession, organization_id: uuid.UUID) -> dict:
         "devices": {"used": devices, "limit": effective.limit("max_devices")},
         "users": {"used": users, "limit": effective.limit("max_users")},
         "storage_mb": {
-            "used": round(storage_bytes / (1024 * 1024), 2),
+            "used": round(float(storage_bytes) / (1024 * 1024), 2),
             "limit": effective.limit("max_storage_mb"),
         },
     }

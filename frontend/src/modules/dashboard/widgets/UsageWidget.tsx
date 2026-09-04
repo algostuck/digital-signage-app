@@ -5,13 +5,17 @@ import type { UsageBlock, UsageMetric } from "../types";
 import { ViewAll } from "./shared";
 
 function formatStorage(mb: number): string {
-  if (mb >= 1024) return `${(mb / 1024).toFixed(1)} GB`;
+  if (mb >= 1024 * 1024) return `${(mb / (1024 * 1024)).toFixed(1).replace(/\.0$/, "")} TB`;
+  if (mb >= 1024) return `${(mb / 1024).toFixed(1).replace(/\.0$/, "")} GB`;
   return `${mb.toFixed(mb < 10 ? 2 : 0)} MB`;
 }
 
 function Meter({ label, metric, format }: { label: string; metric: UsageMetric; format?: (n: number) => string }) {
   const fmt = format ?? ((n: number) => n.toLocaleString());
-  const share = metric.limit ? metric.used / metric.limit : 0;
+  // Sums arrive as strings when the server serialises a Decimal; never trust the type.
+  const used = Number(metric.used) || 0;
+  const limit = metric.limit == null ? null : Number(metric.limit);
+  const share = limit ? used / limit : 0;
   // Thresholds match the platform's own usage notifications (80 %) and the
   // point at which growth is refused (the limit itself).
   const status = share >= 0.95 ? "exception" : share >= 0.8 ? "active" : "normal";
@@ -20,19 +24,19 @@ function Meter({ label, metric, format }: { label: string; metric: UsageMetric; 
       <div className="flex items-baseline justify-between">
         <Typography.Text>{label}</Typography.Text>
         <Typography.Text type="secondary" className="tabular-nums text-xs">
-          {fmt(metric.used)} / {metric.limit == null ? "unlimited" : fmt(metric.limit)}
-          {metric.limit ? ` · ${Math.round(share * 100)}%` : ""}
+          {fmt(used)} / {limit == null ? "unlimited" : fmt(limit)}
+          {limit ? ` · ${Math.round(share * 100)}%` : ""}
         </Typography.Text>
       </div>
       <Progress
-        percent={metric.limit ? Math.min(100, Math.round(share * 100)) : 0}
+        percent={limit ? Math.min(100, Math.round(share * 100)) : 0}
         showInfo={false}
         size="small"
         status={status}
         className="!mb-0"
         aria-label={`${label} usage`}
       />
-      {share >= 0.8 && metric.limit && (
+      {share >= 0.8 && limit && (
         <Typography.Text type={share >= 0.95 ? "danger" : "warning"} className="text-xs">
           {share >= 0.95 ? "At the plan limit — growth is blocked." : "Approaching the plan limit."}
         </Typography.Text>

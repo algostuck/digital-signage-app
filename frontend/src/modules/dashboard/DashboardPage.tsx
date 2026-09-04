@@ -3,7 +3,8 @@ import type { ReactNode } from "react";
 import { ErrorState } from "../../components/ui/states";
 import { useAuth } from "../../lib/auth";
 import { PRESET_LABELS, useDashboardRange, useDashboardRefresh, useOrganizationDashboard } from "./api";
-import { useDashboardLayout, type WidgetKey } from "./customise";
+import { useDashboardLayout, WIDGETS, type WidgetKey } from "./customise";
+import { WidgetBoundary } from "./WidgetBoundary";
 import { ActivityWidget } from "./widgets/ActivityWidget";
 import { ApprovalsWidget } from "./widgets/ApprovalsWidget";
 import { AttentionWidget } from "./widgets/AttentionWidget";
@@ -104,7 +105,9 @@ export function DashboardPage() {
           .filter((key) => layout.isVisible(key) && widgets[key])
           .map((key) => (
             <Col key={key} xs={24} xl={SPAN[key]}>
-              {widgets[key]}
+              <WidgetBoundary title={WIDGETS.find((w) => w.key === key)?.label ?? key}>
+                {widgets[key]}
+              </WidgetBoundary>
             </Col>
           ))}
       </Row>

@@ -30,7 +30,7 @@ export function ScheduleTodayWidget({
         className="mt-2"
         items={events?.map((e) => ({
           color: e.live ? "green" : e.conflict ? "red" : "blue",
-          children: (
+          content: (
             <div className="flex flex-wrap items-center gap-2">
               <Typography.Text type="secondary" className="tabular-nums text-xs">
                 {minuteLabel(e.start_minute)}–{minuteLabel(e.end_minute)}
