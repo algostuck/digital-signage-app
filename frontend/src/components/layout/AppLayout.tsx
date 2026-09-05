@@ -105,9 +105,8 @@ export function AppLayout() {
         </Header>
         {/* Centered container, applied once for every screen: 24px page
             gutters (16px below md) on the Content, and an inner wrapper
-            with auto margins whose max-width follows the golden ratio of
-            the space beside the sidebar — 61.8cqw of the Content, floored
-            at 1024px and capped at 1440px. Container units, not viewport
+            with auto margins whose max-width is 88cqw of the Content,
+            floored at 1024px and capped at 1440px (SHELL.contentMaxWidth). Container units, not viewport
             units, so it stays correct whether the sidebar is expanded,
             collapsed or a drawer. */}
         <Content

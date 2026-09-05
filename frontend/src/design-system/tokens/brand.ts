@@ -43,5 +43,8 @@ export const SHELL = {
   siderWidth: 260,
   siderCollapsedWidth: 80,
   headerHeight: 55,
-  contentMaxWidth: "clamp(1024px, 61.8cqw, 1440px)",
+  // 88 % of the space beside the sidebar, floored at 1024 and capped at
+  // 1440 (RESPONSIVE_COMPONENT_RULES.md): tables and dashboards use a
+  // 1920 display instead of sitting in a 1024 column.
+  contentMaxWidth: "clamp(1024px, 88cqw, 1440px)",
 } as const;

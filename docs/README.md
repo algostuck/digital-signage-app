@@ -23,7 +23,7 @@ customer needs; the second is the working history behind it.
 | Hardening evidence | [HARDENING_AUDIT.md](HARDENING_AUDIT.md) | every gate, its script, its results and fixes |
 | Scheduling | [SCHEDULE_UX_AUDIT.md](SCHEDULE_UX_AUDIT.md) | the schedule workspace: audit, data contract, conflict rules, implementation |
 | Dashboard | [ORGANIZATION_ADMIN_DASHBOARD_ARCHITECTURE.md](ORGANIZATION_ADMIN_DASHBOARD_ARCHITECTURE.md) · […_DATA_MAP.md](ORGANIZATION_ADMIN_DASHBOARD_DATA_MAP.md) · […_COMPONENTS.md](ORGANIZATION_ADMIN_DASHBOARD_COMPONENTS.md) · […_QA.md](ORGANIZATION_ADMIN_DASHBOARD_QA.md) | the executive dashboard end to end |
-| Design system | [UI_UX_DESIGN_SYSTEM.md](UI_UX_DESIGN_SYSTEM.md) · [UI_UX_ACCESSIBILITY_CHECKLIST.md](UI_UX_ACCESSIBILITY_CHECKLIST.md) · [UI_UX_RESPONSIVE_GUIDELINES.md](UI_UX_RESPONSIVE_GUIDELINES.md) | tokens, AA/AAA rules, breakpoints |
+| Design system | [design-system/DESIGN_SYSTEM_USAGE.md](design-system/DESIGN_SYSTEM_USAGE.md) · [design-system/DESIGN_TOKENS.md](design-system/DESIGN_TOKENS.md) · [design-system/COMPONENT_CATALOGUE.md](design-system/COMPONENT_CATALOGUE.md) · [design-system/RESPONSIVE_COMPONENT_RULES.md](design-system/RESPONSIVE_COMPONENT_RULES.md) · [design-system/ACCESSIBILITY_GUIDELINES.md](design-system/ACCESSIBILITY_GUIDELINES.md) · [design-system/ANTD_REFERENCE_ANALYSIS.md](design-system/ANTD_REFERENCE_ANALYSIS.md) | how to build a page, tokens, the component catalogue, responsive and accessibility rules, the Ant Design study; audit and status in [design-system/FULL_UI_UX_AUDIT.md](design-system/FULL_UI_UX_AUDIT.md) and [design-system/UI_UX_IMPLEMENTATION_STATUS.md](design-system/UI_UX_IMPLEMENTATION_STATUS.md) |
 
 ## Requirements
 
@@ -46,7 +46,7 @@ product documentation above says otherwise.
 [PHASE_2_DATABASE_CHANGES.md](PHASE_2_DATABASE_CHANGES.md) ·
 [PHASE_2_SCREEN_IMPLEMENTATION_MATRIX.md](PHASE_2_SCREEN_IMPLEMENTATION_MATRIX.md) ·
 [PHASE_2_TEST_PLAN.md](PHASE_2_TEST_PLAN.md) ·
-[UI_UX_AUDIT.md](UI_UX_AUDIT.md) ·
+[UI_UX_AUDIT.md](UI_UX_AUDIT.md) · [UI_UX_DESIGN_SYSTEM.md](UI_UX_DESIGN_SYSTEM.md) · [UI_UX_ACCESSIBILITY_CHECKLIST.md](UI_UX_ACCESSIBILITY_CHECKLIST.md) · [UI_UX_RESPONSIVE_GUIDELINES.md](UI_UX_RESPONSIVE_GUIDELINES.md) ·
 [UI_UX_API_CHANGES.md](UI_UX_API_CHANGES.md) ·
 [UI_UX_IMPLEMENTATION_STATUS.md](UI_UX_IMPLEMENTATION_STATUS.md) ·
 [UI_UX_SCREEN_REDESIGN_MATRIX.md](UI_UX_SCREEN_REDESIGN_MATRIX.md) ·

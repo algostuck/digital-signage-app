@@ -175,7 +175,7 @@ suppresses transitions for 220 ms (`.theme-switching`, the one justified
 |---|---|---|
 | Sider | 260 / 80 | expanded / rail |
 | Header | 55 | matches sidebar bands; 55/34 ≈ φ with menu rows |
-| Content max width | `clamp(1024px, 61.8cqw, 1440px)` | centred container |
+| Content max width | `clamp(1024px, 88cqw, 1440px)` | centred container (1024 floor, 1440 cap) |
 | `GOLDEN_SPLIT` | 15 / 9 | master–detail and dashboard splits (heuristic) |
 
 ## 9. Accessibility tokens
