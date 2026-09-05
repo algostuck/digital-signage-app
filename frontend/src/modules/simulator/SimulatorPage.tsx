@@ -268,6 +268,17 @@ export function SimulatorPage() {
     } catch (err) {
       append("error", `Heartbeat failed: ${errorText(err)}`);
       window.clearTimeout(rt.heartbeatTimer);
+      if (err instanceof PlayerApiError && err.status === 401) {
+        // The contract's one hard stop: the device is no longer active
+        // (rejected, decommissioned or its token rotated). Content stays on
+        // screen; the player must register again.
+        rt.running = false;
+        window.clearInterval(rt.commandTimer);
+        window.clearInterval(rt.flushTimer);
+        setPhase("stopped");
+        setLastError("Device token rejected — the device is no longer active. Forget the token and register again.");
+        return;
+      }
       rt.heartbeatTimer = window.setTimeout(() => void heartbeat(), 30_000);
     }
   }, [append, fast, pollCommands, syncManifest]);
