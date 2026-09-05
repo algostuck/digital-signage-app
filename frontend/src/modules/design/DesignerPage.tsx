@@ -245,7 +245,7 @@ export function DesignerPage() {
             ]}
           />
           <Space align="center">
-            <Typography.Title level={3} className="!mb-0">
+            <Typography.Title level={3} style={{ marginBottom: 0 }}>
               {layout.name}
             </Typography.Title>
             <StatusBadge status={layout.status} />
@@ -389,7 +389,7 @@ export function DesignerPage() {
                 })}
             </div>
             </div>
-            <Typography.Paragraph type="secondary" className="!mb-0 mt-2 text-center text-xs">
+            <Typography.Paragraph type="secondary" className="mt-2 text-center text-xs" style={{ marginBottom: 0 }}>
               {canvas.canvas.width}×{canvas.canvas.height} · scale {(scale * 100).toFixed(0)}%
             </Typography.Paragraph>
           </Card>

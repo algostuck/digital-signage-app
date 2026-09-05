@@ -93,7 +93,7 @@ export function LocationsPage() {
       message.error(err instanceof ApiError ? err.message : "Failed to archive location"),
   });
 
-  const tree = treeQuery.data?.data ?? [];
+  const tree = useMemo(() => treeQuery.data?.data ?? [], [treeQuery.data]);
   const treeData = useMemo(() => toTreeData(tree), [tree]);
   const detail = detailQuery.data?.data ?? null;
 
@@ -174,8 +174,8 @@ export function LocationsPage() {
                 <Flex wrap justify="space-between" align="flex-start" gap="small">
                   <Space orientation="vertical" size={0}>
                     <Space align="center">
-                      <EnvironmentOutlined className="text-slate-600 dark:text-slate-400" />
-                      <Typography.Title level={5} className="!mb-0">
+                      <EnvironmentOutlined className="dsc-text-secondary" />
+                      <Typography.Title level={5} style={{ marginBottom: 0 }}>
                         {detail.name}
                       </Typography.Title>
                       {detail.code && <ToneTag tone="default">{detail.code}</ToneTag>}

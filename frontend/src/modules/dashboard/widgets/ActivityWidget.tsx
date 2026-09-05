@@ -25,7 +25,7 @@ export function ActivityWidget({
       empty={!!items && items.length === 0}
       emptyTitle="No activity recorded yet"
     >
-      <ul className="m-0 list-none p-0 divide-y divide-slate-200 dark:divide-slate-700">
+      <ul className="m-0 list-none p-0 dsc-divided">
         {items?.map((row) => {
           const to = ENTITY_ROUTES[row.entity_type];
           return (

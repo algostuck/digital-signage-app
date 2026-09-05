@@ -24,7 +24,7 @@ function Section({
     <section aria-label={title} className="mb-4 last:mb-0">
       <Typography.Text
         type="secondary"
-        className="mb-1.5 flex items-center gap-1 text-[11px] font-semibold uppercase tracking-wider"
+        className="mb-1.5 flex items-center gap-1 font-semibold uppercase tracking-wider" style={{ fontSize: 12 }}
       >
         {icon}
         {title}

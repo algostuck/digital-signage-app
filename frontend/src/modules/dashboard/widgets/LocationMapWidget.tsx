@@ -1,5 +1,5 @@
 import { EnvironmentOutlined } from "@ant-design/icons";
-import { Button, Select, Space, Tag, Typography, theme } from "antd";
+import { Button, Descriptions, Select, Space, Tag, Typography, theme } from "antd";
 import type { LatLngBoundsExpression } from "leaflet";
 import { useEffect, useMemo, useState } from "react";
 import { CircleMarker, MapContainer, Popup, TileLayer, useMap } from "react-leaflet";
@@ -245,15 +245,20 @@ export function LocationMapWidget({
                             {h.label}
                           </Tag>
                         </div>
-                        <table style={{ marginTop: 6, fontSize: 12 }}>
-                          <tbody>
-                            <tr><td>Devices</td><td style={{ paddingLeft: 12, textAlign: "right" }}>{m.devices}</td></tr>
-                            <tr><td>Online</td><td style={{ paddingLeft: 12, textAlign: "right" }}>{m.online}</td></tr>
-                            <tr><td>Warning</td><td style={{ paddingLeft: 12, textAlign: "right" }}>{m.warning}</td></tr>
-                            <tr><td>Offline</td><td style={{ paddingLeft: 12, textAlign: "right" }}>{m.offline}</td></tr>
-                            <tr><td>Campaigns</td><td style={{ paddingLeft: 12, textAlign: "right" }}>{m.campaigns}</td></tr>
-                          </tbody>
-                        </table>
+                        <Descriptions
+                          size="small"
+                          column={1}
+                          colon={false}
+                          style={{ marginTop: 6 }}
+                          styles={{ label: { fontSize: 12 }, content: { fontSize: 12, textAlign: "right" } }}
+                          items={[
+                            { key: "devices", label: "Devices", children: m.devices },
+                            { key: "online", label: "Online", children: m.online },
+                            { key: "warning", label: "Warning", children: m.warning },
+                            { key: "offline", label: "Offline", children: m.offline },
+                            { key: "campaigns", label: "Campaigns", children: m.campaigns },
+                          ]}
+                        />
                         <div style={{ marginTop: 6 }}>
                           <Link to={focus ? `/locations?id=${m.key}` : "/locations"}>View location</Link>
                         </div>
@@ -300,9 +305,7 @@ export function LocationMapWidget({
                         {m.devices} devices · {m.online} online · {m.offline} offline
                       </Typography.Text>
                     </span>
-                    <Tag
-                      className="!me-0"
-                      style={toneStyle(h.key === "healthy" ? "success" : h.key === "warning" ? "warning" : h.key === "offline" ? "error" : "default", mode)}
+                    <Tag style={{ ...toneStyle(h.key === "healthy" ? "success" : h.key === "warning" ? "warning" : h.key === "offline" ? "error" : "default", mode), marginInlineEnd: 0 }}
                     >
                       {h.label}
                     </Tag>

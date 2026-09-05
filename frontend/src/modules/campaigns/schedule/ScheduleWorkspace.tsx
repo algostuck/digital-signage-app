@@ -241,15 +241,15 @@ export function ScheduleWorkspace() {
       title: "Campaign",
       render: (_, s) => (
         <Space size="small" wrap>
-          <Button type="link" size="small" className="!h-auto !p-0" onClick={() => setCampaignId(s.campaign_id)}>
+          <Button type="link" size="small" style={{ height: "auto", padding: 0 }} onClick={() => setCampaignId(s.campaign_id)}>
             {campaignsById.get(s.campaign_id)?.name ?? "…"}
           </Button>
           {s.kind === "blackout" && (
-            <ToneTag tone="default" icon={<LockOutlined />} className="!mr-0">
+            <ToneTag tone="default" icon={<LockOutlined />} style={{ marginInlineEnd: 0 }}>
               Blackout
             </ToneTag>
           )}
-          {s.expired && <ToneTag tone="default" className="!mr-0">Ended</ToneTag>}
+          {s.expired && <ToneTag tone="default" style={{ marginInlineEnd: 0 }}>Ended</ToneTag>}
         </Space>
       ),
     },
@@ -488,11 +488,11 @@ export function ScheduleWorkspace() {
       >
         {moveCheck && (
           <div>
-            <Typography.Paragraph className="!mb-2">
+            <Typography.Paragraph style={{ marginBottom: 8 }}>
               <strong>{moveCheck.proposal.event.campaign_name}</strong>
               {moveCheck.schedule.name ? ` · ${moveCheck.schedule.name}` : ""}
             </Typography.Paragraph>
-            <Typography.Paragraph className="!mb-2">
+            <Typography.Paragraph style={{ marginBottom: 8 }}>
               {formatDayShort(moveCheck.proposal.event.date)}{" "}
               {windowLabel(moveCheck.proposal.event.start_minute, moveCheck.proposal.event.end_minute)} →{" "}
               <strong>
@@ -518,7 +518,7 @@ export function ScheduleWorkspace() {
                 <ul className="m-0 list-none space-y-1 p-0 text-sm">
                   {moveCheck.conflicts.map((c) => (
                     <li key={c.id} className="flex flex-wrap items-center gap-1.5">
-                      <ToneTag tone={severityTone(c.severity)} className="!mr-0">
+                      <ToneTag tone={severityTone(c.severity)} style={{ marginInlineEnd: 0 }}>
                         {SEVERITY_LABEL[c.severity]}
                       </ToneTag>
                       <span>

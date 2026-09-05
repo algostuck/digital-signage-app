@@ -1,7 +1,9 @@
 import { Badge, Tag, Typography } from "antd";
+import { cloneElement, isValidElement } from "react";
 import { useThemeMode } from "../theme/ThemeProvider";
 import { statusMeta, type StatusDomain } from "../tokens/status";
 import { toneStyle } from "../tokens/tone";
+import { useReducedMotion } from "../utilities/useReducedMotion";
 
 export interface StatusBadgeProps {
   status: string | null | undefined;
@@ -22,8 +24,14 @@ export interface StatusBadgeProps {
  */
 export function StatusBadge({ status, domain = "generic", label, size = "medium", dot }: StatusBadgeProps) {
   const { mode } = useThemeMode();
+  const reducedMotion = useReducedMotion();
   const meta = statusMeta(status, domain);
   const text = label ?? meta.label;
+  // Processing statuses spin their icon; honour prefers-reduced-motion.
+  const icon =
+    reducedMotion && isValidElement<{ spin?: boolean }>(meta.icon) && meta.icon.props.spin
+      ? cloneElement(meta.icon, { spin: false })
+      : meta.icon;
   if (dot) {
     return (
       <Badge
@@ -34,7 +42,7 @@ export function StatusBadge({ status, domain = "generic", label, size = "medium"
   }
   return (
     <Tag
-      icon={meta.icon}
+      icon={icon}
       style={{
         ...toneStyle(meta.tone, mode),
         marginInlineEnd: 0,

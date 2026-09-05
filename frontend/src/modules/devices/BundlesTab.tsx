@@ -231,7 +231,7 @@ export function BundlesTab() {
       )}
 
       <Card size="small" title="Offline bundles">
-        <Typography.Paragraph type="secondary" className="!mb-2 text-xs">
+        <Typography.Paragraph type="secondary" className="text-xs" style={{ marginBottom: 8 }}>
           A bundle is a signed prefetch manifest built from the targets' live manifests —
           binaries stay in storage and downloads resume via HTTP Range. Publishing supersedes
           the previous bundle of the same scope.

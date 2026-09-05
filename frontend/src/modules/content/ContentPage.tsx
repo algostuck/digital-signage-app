@@ -131,7 +131,7 @@ export function ContentPage() {
             <Menu
               mode="inline"
               selectedKeys={[folderId ?? "__all__"]}
-              className="!border-e-0"
+              style={{ borderInlineEnd: 0 }}
               onClick={({ key }) => {
                 setFolderId(key === "__all__" ? null : key);
                 setPage(1);
@@ -258,7 +258,7 @@ export function ContentPage() {
                       if (e.key === "Enter" || e.key === " ") setDetailId(asset.id);
                     }}
                     cover={
-                      <div className="flex h-28 items-center justify-center overflow-hidden bg-slate-100 dark:bg-slate-800">
+                      <div className="flex h-28 items-center justify-center overflow-hidden dsc-fill">
                         {asset.thumbnail_url ? (
                           <img
                             src={asset.thumbnail_url}
@@ -266,7 +266,7 @@ export function ContentPage() {
                             className="h-full w-full object-cover"
                           />
                         ) : (
-                          <span className="text-2xl uppercase text-slate-600 dark:text-slate-400">
+                          <span className="text-2xl uppercase dsc-text-secondary">
                             {asset.type.slice(0, 3)}
                           </span>
                         )}
@@ -276,7 +276,7 @@ export function ContentPage() {
                     <Typography.Text strong ellipsis className="block text-sm">
                       {asset.name}
                     </Typography.Text>
-                    <div className="mt-1 flex items-center gap-2 text-xs text-slate-600 dark:text-slate-300">
+                    <div className="mt-1 flex items-center gap-2 text-xs dsc-text-secondary">
                       <StatusBadge status={asset.status} />
                       {asset.current_version && (
                         <span>{formatBytes(asset.current_version.size_bytes)}</span>

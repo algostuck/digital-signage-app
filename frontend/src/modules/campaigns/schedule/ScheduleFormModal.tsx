@@ -276,7 +276,7 @@ export function ScheduleFormModal({
                 const other = c.campaigns.find((x) => x.schedule_id !== "proposed") ?? c.campaigns[1];
                 return (
                     <Space size={6} wrap>
-                      <ToneTag tone={severityTone(c.severity)} className="!mr-0">
+                      <ToneTag tone={severityTone(c.severity)} style={{ marginInlineEnd: 0 }}>
                         {SEVERITY_LABEL[c.severity]}
                       </ToneTag>
                       <Typography.Text>{REASON_LABEL[c.reason]}</Typography.Text>

@@ -87,7 +87,7 @@ export function TagEditor({ detail, canManage, onSaved }: Props) {
         </Space.Compact>
       )}
       {error && (
-        <Typography.Paragraph type="danger" role="alert" className="!mb-0 mt-2 text-sm">
+        <Typography.Paragraph type="danger" role="alert" className="mt-2 text-sm" style={{ marginBottom: 0 }}>
           {error}
         </Typography.Paragraph>
       )}

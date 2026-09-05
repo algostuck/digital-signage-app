@@ -33,7 +33,7 @@ export function InsightsWidget({
       emptyTitle="No anomalies open"
       emptyDescription="Fleet intelligence scores every device against your rules each sweep."
     >
-      <ul className="m-0 list-none p-0 divide-y divide-slate-200 dark:divide-slate-700">
+      <ul className="m-0 list-none p-0 dsc-divided">
         {items?.map((i) => (
           <li key={i.id} className="py-2.5">
             <Typography.Text strong className="block">
@@ -45,7 +45,7 @@ export function InsightsWidget({
               </Typography.Text>
             )}
             {i.action && (
-              <Typography.Text className="mt-1 block text-[13px]">{i.action}</Typography.Text>
+              <Typography.Text className="mt-1 block" style={{ fontSize: 12 }}>{i.action}</Typography.Text>
             )}
             <Link to={i.href} className="mt-1 inline-block">
               <Button size="small">Review device</Button>

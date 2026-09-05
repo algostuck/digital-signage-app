@@ -40,7 +40,7 @@ export function WidgetZonePanel({
   }
 
   return (
-    <Space orientation="vertical" size="small" className="w-full border-t border-slate-200 pt-3">
+    <Space orientation="vertical" size="small" className="w-full dsc-border-t pt-3">
       <PropField label="Widget">
         <Select
           className="w-full"
@@ -171,7 +171,7 @@ export function DataBindingEditor({
   }
 
   return (
-    <Space orientation="vertical" size="small" className="w-full border-t border-slate-200 pt-3">
+    <Space orientation="vertical" size="small" className="w-full dsc-border-t pt-3">
       <PropField label="Live data source">
         <Select
           className="w-full"

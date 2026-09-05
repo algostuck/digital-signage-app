@@ -38,17 +38,17 @@ export function ScheduleTodayWidget({
               </Typography.Text>
               <Typography.Text strong>{e.campaign_name}</Typography.Text>
               {e.live && (
-                <ToneTag tone="success" className="!me-0">
+                <ToneTag tone="success" style={{ marginInlineEnd: 0 }}>
                   Live now
                 </ToneTag>
               )}
               {e.conflict && (
-                <ToneTag tone="error" className="!me-0">
+                <ToneTag tone="error" style={{ marginInlineEnd: 0 }}>
                   Conflict
                 </ToneTag>
               )}
               {e.kind === "blackout" && (
-                <ToneTag tone="default" className="!me-0">
+                <ToneTag tone="default" style={{ marginInlineEnd: 0 }}>
                   Blackout
                 </ToneTag>
               )}

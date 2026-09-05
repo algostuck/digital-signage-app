@@ -61,7 +61,7 @@ export function RolesTab() {
               }
             >
               {role.description && (
-                <Typography.Paragraph type="secondary" className="!mb-2">
+                <Typography.Paragraph type="secondary" style={{ marginBottom: 8 }}>
                   {role.description}
                 </Typography.Paragraph>
               )}
@@ -70,7 +70,7 @@ export function RolesTab() {
               </Typography.Text>
               <Flex wrap gap={4} className="mt-1">
                 {role.permissions.slice(0, 12).map((p) => (
-                  <ToneTag tone="default" key={p.code} className="!me-0 text-xs">
+                  <ToneTag tone="default" key={p.code} className="text-xs" style={{ marginInlineEnd: 0 }}>
                     {p.code}
                   </ToneTag>
                 ))}

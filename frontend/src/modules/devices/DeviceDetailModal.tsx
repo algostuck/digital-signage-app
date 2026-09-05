@@ -258,10 +258,10 @@ export function DeviceDetailModal({ deviceId, onClose, onChanged }: Props) {
                 src={screenshots[0].url}
                 alt={`Screen of ${device.name}`}
                 height={160}
-                className="rounded-md border border-slate-200 object-contain"
+                className="rounded-md dsc-border object-contain"
               />
             </div>
-            <Typography.Paragraph type="secondary" className="!mb-0 mt-1 text-xs">
+            <Typography.Paragraph type="secondary" className="mt-1 text-xs" style={{ marginBottom: 0 }}>
               captured {timeAgo(screenshots[0].captured_at)} · {screenshots.length} on record
             </Typography.Paragraph>
           </div>

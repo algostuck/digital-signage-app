@@ -140,7 +140,7 @@ export function ApprovalsPage() {
           </Flex>
           {request.actions.length > 1 && (
             <Timeline
-              className="!mt-4"
+              style={{ marginTop: 16 }}
               items={request.actions.map((action) => ({
                 children: (
                   <Typography.Text type="secondary" className="text-xs">

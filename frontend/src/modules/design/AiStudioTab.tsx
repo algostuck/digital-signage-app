@@ -295,7 +295,7 @@ export function AiStudioTab() {
           {lastResult.outputs.map((output) => (
             <Space key={output.id} orientation="vertical" size="small" className="w-full">
               <ConfidenceBadge output={output} />
-              <Typography.Paragraph className="!mb-0">
+              <Typography.Paragraph style={{ marginBottom: 0 }}>
                 <pre className="max-h-48 overflow-auto text-xs">
                   {JSON.stringify(output.content, null, 2)}
                 </pre>
@@ -312,7 +312,7 @@ export function AiStudioTab() {
               )}
             </Space>
           ))}
-          <Typography.Paragraph type="secondary" className="!mb-0 mt-2 text-xs">
+          <Typography.Paragraph type="secondary" className="mt-2 text-xs" style={{ marginBottom: 0 }}>
             {lastResult.provider} · {lastResult.model_ref} ·{" "}
             {lastResult.template_version}
           </Typography.Paragraph>

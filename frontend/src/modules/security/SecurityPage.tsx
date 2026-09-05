@@ -269,7 +269,7 @@ export function SecurityPage() {
                 </Space>
               </Form.Item>
             </Form>
-            <Typography.Paragraph type="secondary" className="!mb-0 mt-2 text-xs">
+            <Typography.Paragraph type="secondary" className="mt-2 text-xs" style={{ marginBottom: 0 }}>
               The daily sweep opens violations for over-age credentials and
               auto-resolves them once rotated. Violations are surfaced, never
               auto-enforced.

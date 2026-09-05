@@ -45,7 +45,7 @@ export function RankBar({ rows, max, ariaLabel }: { rows: RankRow[]; max?: numbe
               showInfo={false}
               size={["100%", 6]}
               strokeColor={row.color}
-              className="!mb-0 !mt-1"
+              style={{ marginBottom: 0, marginTop: 4 }}
               aria-hidden
             />
           </>

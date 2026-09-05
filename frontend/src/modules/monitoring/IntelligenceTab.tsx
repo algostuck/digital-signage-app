@@ -274,7 +274,7 @@ export function IntelligenceTab() {
                           key: "evidence",
                           label: "Evidence",
                           children: (
-                            <Typography.Paragraph className="!mb-0">
+                            <Typography.Paragraph style={{ marginBottom: 0 }}>
                               <pre className="max-h-32 overflow-auto text-xs">
                                 {JSON.stringify(a.evidence, null, 2)}
                               </pre>

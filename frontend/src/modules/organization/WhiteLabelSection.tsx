@@ -86,7 +86,7 @@ export function WhiteLabelSection() {
 
   return (
     <SectionCard title="White label">
-      <Typography.Paragraph type="secondary" className="!mb-3">
+      <Typography.Paragraph type="secondary" style={{ marginBottom: 12 }}>
         Theme + custom-domain metadata (DNS routing and verification are
         handled with the platform administrator) + the sender identity used
         for notification email. Region: {data.region}.

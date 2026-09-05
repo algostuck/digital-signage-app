@@ -129,7 +129,7 @@ export function DataSourcesSection() {
             <Typography.Paragraph
               type="danger"
               ellipsis
-              className="!mb-0 mt-1 max-w-xs text-xs"
+              className="mt-1 max-w-xs text-xs" style={{ marginBottom: 0 }}
             >
               {s.last_error}
             </Typography.Paragraph>

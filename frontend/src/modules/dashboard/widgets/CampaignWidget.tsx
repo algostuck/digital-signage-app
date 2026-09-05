@@ -96,7 +96,7 @@ export function CampaignWidget({
           <div className="mb-3 flex flex-wrap gap-2" aria-label="Campaigns by status">
             {statuses.map((s) => (
               <Link key={s} to={`/campaigns?status=${s}`} className="no-underline">
-                <ToneTag tone="default" className="!me-0 cursor-pointer">
+                <ToneTag tone="default" className="cursor-pointer" style={{ marginInlineEnd: 0 }}>
                   <span className="capitalize">{s.replace(/_/g, " ")}</span>{" "}
                   <strong>{campaigns.by_status[s]}</strong>
                 </ToneTag>

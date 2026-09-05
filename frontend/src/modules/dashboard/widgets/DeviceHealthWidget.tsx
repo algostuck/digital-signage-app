@@ -59,7 +59,7 @@ export function DeviceHealthWidget({
             }
           />
           <div className="mt-4">
-            <Typography.Text strong className="text-[13px]">
+            <Typography.Text strong style={{ fontSize: 12 }}>
               Health trend
             </Typography.Text>
             <Typography.Text type="secondary" className="ms-2 text-xs">
@@ -76,7 +76,7 @@ export function DeviceHealthWidget({
                 ]}
               />
             ) : (
-              <Typography.Paragraph type="secondary" className="!mb-0 mt-2 text-xs">
+              <Typography.Paragraph type="secondary" className="mt-2 text-xs" style={{ marginBottom: 0 }}>
                 Health is captured hourly; the trend appears once two or more snapshots fall in the selected range.
               </Typography.Paragraph>
             )}

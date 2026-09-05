@@ -103,12 +103,12 @@ export function PlaylistsPage() {
               >
                 <Flex justify="space-between" align="flex-start" gap="small">
                   <Typography.Text strong ellipsis>
-                    <PlaySquareOutlined className="mr-2 text-slate-600 dark:text-slate-400" />
+                    <PlaySquareOutlined className="mr-2 dsc-text-secondary" />
                     {playlist.name}
                   </Typography.Text>
                   <StatusBadge status={playlist.status} />
                 </Flex>
-                <Typography.Paragraph type="secondary" className="!mb-0 !mt-1">
+                <Typography.Paragraph type="secondary" style={{ marginBottom: 0, marginTop: 4 }}>
                   {playlist.item_count} item{playlist.item_count === 1 ? "" : "s"} ·{" "}
                   {formatDuration(playlist.total_duration_ms)}
                   {playlist.loop_enabled ? " · loops" : ""}

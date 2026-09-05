@@ -124,7 +124,7 @@ export function AssetDetailModal({ assetId, onClose, onChanged }: Props) {
             src={asset.thumbnail_url}
             alt={`Preview of ${asset.name}`}
             height={192}
-            className="rounded-md border border-slate-200 object-contain"
+            className="rounded-md dsc-border object-contain"
           />
         )}
 

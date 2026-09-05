@@ -48,7 +48,7 @@ export function ContentWidget({
               <Link key={status} to={`/content?status=${status}`} className="no-underline">
                 <span className="inline-flex items-center gap-1">
                   <StatusBadge status={status} />
-                  <Typography.Text strong className="text-[13px]">
+                  <Typography.Text strong style={{ fontSize: 12 }}>
                     {count}
                   </Typography.Text>
                 </span>
@@ -69,10 +69,10 @@ export function ContentWidget({
           />
           {content.recent.length > 0 && (
             <div className="mt-3">
-              <Typography.Text strong className="text-[13px]">
+              <Typography.Text strong style={{ fontSize: 12 }}>
                 Recently added
               </Typography.Text>
-              <ul className="m-0 list-none p-0 divide-y divide-slate-200 dark:divide-slate-700">
+              <ul className="m-0 list-none p-0 dsc-divided">
                 {content.recent.map((a) => (
                   <li key={a.id} className="flex items-center gap-3 py-1.5">
                     <Avatar shape="square" size={32} src={a.thumbnail_url ?? undefined} icon={<FileImageOutlined />} />
@@ -81,7 +81,7 @@ export function ContentWidget({
                         {a.name}
                       </Typography.Text>
                       <Typography.Text type="secondary" className="block text-xs">
-                        <ToneTag tone="default" className="!me-1">{a.type}</ToneTag>
+                        <ToneTag tone="default" style={{ marginInlineEnd: 4 }}>{a.type}</ToneTag>
                         <When iso={a.created_at} />
                       </Typography.Text>
                     </div>

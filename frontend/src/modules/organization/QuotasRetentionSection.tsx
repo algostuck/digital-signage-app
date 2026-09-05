@@ -84,7 +84,7 @@ export function QuotasRetentionSection() {
   return (
     <Space orientation="vertical" size="medium" className="w-full">
       <SectionCard title="Usage & limits">
-        <Typography.Paragraph type="secondary" className="!mb-3">
+        <Typography.Paragraph type="secondary" style={{ marginBottom: 12 }}>
           Limits come from your subscription plan (and any platform override).
           To change them, upgrade your plan or contact the platform
           administrator.
@@ -119,7 +119,7 @@ export function QuotasRetentionSection() {
 
       {canSettings && retention && (
         <SectionCard title="Data retention (days)">
-          <Typography.Paragraph type="secondary" className="!mb-3">
+          <Typography.Paragraph type="secondary" style={{ marginBottom: 12 }}>
             Pruned by the maintenance sweep. Platform floors apply — audit logs
             cannot go below {retention.audit_logs?.floor ?? 90} days.
           </Typography.Paragraph>
@@ -129,7 +129,7 @@ export function QuotasRetentionSection() {
                 <Col key={key} xs={12} sm={8}>
                   <Form.Item
                     label={`${key.replace(/_/g, " ")} (${entry.floor}–${entry.ceiling})`}
-                    className="!mb-3"
+                    style={{ marginBottom: 12 }}
                   >
                     <InputNumber
                       min={entry.floor}

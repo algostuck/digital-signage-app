@@ -132,12 +132,12 @@ function LayoutsTab() {
               >
                 <Flex justify="space-between" align="flex-start" gap="small">
                   <Typography.Text strong ellipsis>
-                    <AppstoreOutlined className="mr-2 text-slate-600 dark:text-slate-400" />
+                    <AppstoreOutlined className="mr-2 dsc-text-secondary" />
                     {layout.name}
                   </Typography.Text>
                   <StatusBadge status={layout.status} />
                 </Flex>
-                <Typography.Paragraph type="secondary" className="!mb-0 !mt-1">
+                <Typography.Paragraph type="secondary" style={{ marginBottom: 0, marginTop: 4 }}>
                   {layout.zone_count} zone{layout.zone_count === 1 ? "" : "s"}
                   {layout.current_version_no
                     ? ` · v${layout.current_version_no} published`

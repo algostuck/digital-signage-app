@@ -208,7 +208,7 @@ function WebhookDeliveries({ webhookId }: { webhookId: string }) {
   });
   const rows = deliveriesQuery.data?.data ?? [];
   return rows.length === 0 ? (
-    <Typography.Paragraph type="secondary" className="!mb-0 mt-2 text-xs">
+    <Typography.Paragraph type="secondary" className="mt-2 text-xs" style={{ marginBottom: 0 }}>
       No deliveries yet.
     </Typography.Paragraph>
   ) : (

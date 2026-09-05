@@ -295,7 +295,7 @@ export function TimeGrid({
           {Array.from({ length: 24 }, (_, hour) => (
             <div
               key={hour}
-              className="pr-1.5 text-right text-[11px] tabular-nums opacity-70"
+              className="pr-1.5 text-right tabular-nums opacity-70"
               style={{ height: HOUR_PX, transform: "translateY(-7px)" }}
               aria-hidden
             >
@@ -314,6 +314,15 @@ export function TimeGrid({
               key={iso}
               role="gridcell"
               data-day-column={iso}
+              tabIndex={canManage && onSlotClick ? 0 : -1}
+              aria-label={`${weekdayShort(iso)} ${dayNumber(iso)}${canManage && onSlotClick ? ", press Enter to schedule at 09:00" : ""}`}
+              onKeyDown={(e) => {
+                if (!onSlotClick || !canManage || e.target !== e.currentTarget) return;
+                if (e.key === "Enter") {
+                  e.preventDefault();
+                  onSlotClick(iso, 9 * 60);
+                }
+              }}
               className={`relative border-l ${canManage && onSlotClick ? "cursor-cell" : ""}`}
               style={{
                 ...columnStyle,
@@ -403,7 +412,7 @@ export function TimeGrid({
                 >
                   <button
                     type="button"
-                    className="absolute right-0.5 z-10 rounded-full border px-1.5 text-[11px] font-semibold shadow-sm focus-visible:ring-2"
+                    className="absolute right-0.5 z-10 rounded-full border px-1.5 font-semibold shadow-sm focus-visible:ring-2"
                     style={{
                       top: (cluster.start / DAY_MINUTES) * GRID_HEIGHT + 2,
                       background: token.colorBgElevated,
@@ -429,7 +438,7 @@ export function TimeGrid({
                     style={{ background: token.colorError }}
                   />
                   <span
-                    className="absolute -top-2.5 right-1 rounded-sm px-1 text-[10px] font-semibold text-white"
+                    className="absolute -top-2.5 right-1 rounded-sm px-1 font-semibold text-white"
                     style={{ background: token.colorError }}
                   >
                     {minuteLabel(nowMinute)}

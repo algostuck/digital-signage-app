@@ -177,7 +177,7 @@ export function PlanDrawer({
         <Divider titlePlacement="start" plain>
           Limits
         </Divider>
-        <Typography.Paragraph type="secondary" className="!mb-3 text-xs">
+        <Typography.Paragraph type="secondary" className="text-xs" style={{ marginBottom: 12 }}>
           Blank means unlimited.
         </Typography.Paragraph>
         <Row gutter={16}>
@@ -196,7 +196,7 @@ export function PlanDrawer({
         <Row gutter={[16, 8]}>
           {boolKeys.map((key) => (
             <Col key={key} xs={12} sm={8}>
-              <Form.Item name={["features", key]} valuePropName="checked" className="!mb-1">
+              <Form.Item name={["features", key]} valuePropName="checked" style={{ marginBottom: 4 }}>
                 <Checkbox>{entitlementLabel(key)}</Checkbox>
               </Form.Item>
             </Col>

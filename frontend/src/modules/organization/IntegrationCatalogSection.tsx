@@ -30,7 +30,7 @@ export function IntegrationCatalogSection() {
 
   return (
     <SectionCard title="Integration catalog" loading={query.isLoading}>
-      <Typography.Paragraph type="secondary" className="!mb-3">
+      <Typography.Paragraph type="secondary" style={{ marginBottom: 12 }}>
         Everything the platform connects to, in one place — configure each
         in its section below (locked items need a plan upgrade).
       </Typography.Paragraph>
@@ -51,7 +51,7 @@ export function IntegrationCatalogSection() {
                       : "not configured"}
                 </ToneTag>
               </Flex>
-              <Typography.Paragraph type="secondary" className="!mb-0 mt-1 text-xs">
+              <Typography.Paragraph type="secondary" className="mt-1 text-xs" style={{ marginBottom: 0 }}>
                 {c.description}
               </Typography.Paragraph>
             </Card>

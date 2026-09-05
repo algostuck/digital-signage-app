@@ -197,7 +197,7 @@ export function SubscriptionTab({ tenant }: { tenant: TenantDetail }) {
 
       <Col xs={24} xl={10}>
         <Card size="small" title="Payment provider">
-          <Typography.Paragraph type="secondary" className="!mb-3 text-xs">
+          <Typography.Paragraph type="secondary" className="text-xs" style={{ marginBottom: 12 }}>
             Manual is the enterprise invoice flow — record payments on the Invoices tab. Gateway
             credentials are server configuration and are never entered here; only references.
           </Typography.Paragraph>

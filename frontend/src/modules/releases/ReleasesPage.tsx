@@ -204,7 +204,7 @@ function ReleaseCard({
         </Space>
       </Flex>
       {release.notes && (
-        <Typography.Paragraph type="secondary" className="!mb-0 !mt-1">
+        <Typography.Paragraph type="secondary" style={{ marginBottom: 0, marginTop: 4 }}>
           {release.notes}
         </Typography.Paragraph>
       )}

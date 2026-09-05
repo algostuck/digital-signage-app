@@ -100,7 +100,7 @@ export function TemplatesTab() {
                   </Typography.Text>
                   <StatusBadge status={template.status} />
                 </Flex>
-                <Typography.Paragraph type="secondary" className="!mb-0 !mt-1">
+                <Typography.Paragraph type="secondary" style={{ marginBottom: 0, marginTop: 4 }}>
                   {template.canvas_json.zones.length} zone
                   {template.canvas_json.zones.length === 1 ? "" : "s"}
                   {template.current_version_no
@@ -109,7 +109,7 @@ export function TemplatesTab() {
                   {" · "}updated {timeAgo(template.updated_at)}
                 </Typography.Paragraph>
                 {template.description && (
-                  <Typography.Paragraph type="secondary" className="!mb-0 !mt-1 text-xs">
+                  <Typography.Paragraph type="secondary" className="text-xs" style={{ marginBottom: 0, marginTop: 4 }}>
                     {template.description}
                   </Typography.Paragraph>
                 )}

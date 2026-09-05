@@ -180,7 +180,7 @@ export function EventPopover({
             {conflicts.map((conflict) => {
               return (
                 <li key={conflict.id} className="flex flex-wrap items-center gap-1">
-                  <ToneTag tone={severityTone(conflict.severity)} className="!mr-0">
+                  <ToneTag tone={severityTone(conflict.severity)} style={{ marginInlineEnd: 0 }}>
                     {SEVERITY_LABEL[conflict.severity]}
                   </ToneTag>
                   <span>{conflictLine(conflict, event)}</span>
@@ -188,7 +188,7 @@ export function EventPopover({
                     <Button
                       type="link"
                       size="small"
-                      className="!h-auto !p-0"
+                      style={{ height: "auto", padding: 0 }}
                       onClick={() => actions.onShowConflict?.(conflict)}
                     >
                       Review

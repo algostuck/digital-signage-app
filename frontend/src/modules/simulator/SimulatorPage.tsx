@@ -522,7 +522,7 @@ export function SimulatorPage() {
               {source ? (
                 <TVScreen source={source} playback={playback} muted bezel />
               ) : (
-                <div className="flex h-full items-center justify-center text-slate-600 dark:text-slate-400">
+                <div className="flex h-full items-center justify-center dsc-text-secondary">
                   {phase === "pending" ? "Waiting for approval — nothing to show yet" : "No manifest yet"}
                 </div>
               )}
@@ -605,11 +605,11 @@ export function SimulatorPage() {
                 <Col span={8}><Statistic title="Queued events" value={runtime.current.pendingEvents.length} /></Col>
               </Row>
               <ul className="m-0 mt-4 max-h-80 list-none overflow-auto p-0 font-mono text-xs" aria-label="Player log">
-                {log.length === 0 && <li className="text-slate-600 dark:text-slate-300">Nothing yet — start the player.</li>}
+                {log.length === 0 && <li className="dsc-text-secondary">Nothing yet — start the player.</li>}
                 {log.map((entry, i) => (
                   <li key={`${entry.at}-${i}`} className="flex gap-2 py-0.5">
-                    <span className="shrink-0 text-slate-600 dark:text-slate-300">{entry.at.slice(11, 19)}</span>
-                    <Tag color={entry.kind === "ok" ? "green" : entry.kind === "warn" ? "gold" : entry.kind === "error" ? "red" : undefined} className="!me-0 shrink-0">
+                    <span className="shrink-0 dsc-text-secondary">{entry.at.slice(11, 19)}</span>
+                    <Tag color={entry.kind === "ok" ? "green" : entry.kind === "warn" ? "gold" : entry.kind === "error" ? "red" : undefined} className="shrink-0" style={{ marginInlineEnd: 0 }}>
                       {entry.kind}
                     </Tag>
                     <span className="min-w-0 break-words">{entry.text}</span>

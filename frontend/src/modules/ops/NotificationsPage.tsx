@@ -139,7 +139,7 @@ function InboxTab() {
                     {row.title}
                   </Typography.Text>
                   {row.message && (
-                    <Typography.Paragraph type="secondary" className="!mb-0">
+                    <Typography.Paragraph type="secondary" style={{ marginBottom: 0 }}>
                       {row.message}
                     </Typography.Paragraph>
                   )}

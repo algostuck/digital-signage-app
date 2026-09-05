@@ -33,7 +33,7 @@ export function NowPlayingWidget({
       emptyTitle="Nothing reported in the last 30 minutes"
       emptyDescription="Rows appear as online screens report playback or resolve a scheduled campaign."
     >
-      <ul className="m-0 list-none p-0 divide-y divide-slate-200 dark:divide-slate-700">
+      <ul className="m-0 list-none p-0 dsc-divided">
         {items?.map((row) => (
           <li key={row.device_id} className="flex items-center gap-3 py-2">
             <Avatar
@@ -54,7 +54,7 @@ export function NowPlayingWidget({
               </Typography.Text>
             </div>
             <div className="flex shrink-0 flex-col items-end gap-1">
-              <ToneTag tone={row.source === "reported" ? "success" : "processing"} className="!me-0">
+              <ToneTag tone={row.source === "reported" ? "success" : "processing"} style={{ marginInlineEnd: 0 }}>
                 {row.source === "reported" ? "Reported" : "Scheduled"}
               </ToneTag>
               {row.source === "reported" ? (

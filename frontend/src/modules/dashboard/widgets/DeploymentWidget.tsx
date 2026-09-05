@@ -48,7 +48,7 @@ export function DeploymentWidget({
               <Link key={s} to={`/deployments?status=${s}`} className="no-underline">
                 <span className="inline-flex items-center gap-1">
                   <StatusBadge status={s} />
-                  <Typography.Text strong className="text-[13px]">
+                  <Typography.Text strong style={{ fontSize: 12 }}>
                     {deployments.by_status[s]}
                   </Typography.Text>
                 </span>
@@ -66,7 +66,7 @@ export function DeploymentWidget({
               ]}
             />
           )}
-          <ul className="m-0 mt-2 list-none p-0 divide-y divide-slate-200 dark:divide-slate-700">
+          <ul className="m-0 mt-2 list-none p-0 dsc-divided">
             {deployments.recent.map((d) => (
               <li key={d.id} className="py-2">
                 <div className="flex items-center gap-2">
@@ -86,16 +86,16 @@ export function DeploymentWidget({
                     status={d.failed || d.status === "published" ? "normal" : "active"}
                     strokeColor={d.failed ? STATUS_COLORS.failed : d.status === "published" ? STATUS_COLORS.acknowledged : undefined}
                     format={() => `${d.acknowledged}/${d.total_devices}`}
-                    className="!mb-0 flex-1"
+                    className="flex-1" style={{ marginBottom: 0 }}
                     aria-label={`${d.acknowledged} of ${d.total_devices} screens acknowledged`}
                   />
                   {d.failed > 0 && (
-                    <ToneTag tone="error" className="!me-0">
+                    <ToneTag tone="error" style={{ marginInlineEnd: 0 }}>
                       {d.failed} failed
                     </ToneTag>
                   )}
                   {d.pending > 0 && (
-                    <ToneTag tone="default" className="!me-0">
+                    <ToneTag tone="default" style={{ marginInlineEnd: 0 }}>
                       {d.pending} pending
                     </ToneTag>
                   )}

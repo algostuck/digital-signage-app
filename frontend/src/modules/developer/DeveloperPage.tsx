@@ -136,7 +136,7 @@ export function DeveloperPage() {
         )}
 
         <Card size="small" title="Sandbox tenant">
-          <Typography.Paragraph type="secondary" className="!mb-2 text-xs">
+          <Typography.Paragraph type="secondary" className="text-xs" style={{ marginBottom: 8 }}>
             An isolated test organization — build and break freely without
             touching production content or devices. You get an owner membership,
             so it appears in the tenant switcher in the header.
@@ -197,7 +197,7 @@ export function DeveloperPage() {
         {(meta?.products ?? []).map((product) => (
           <Card size="small" key={product.name} title={product.name}>
             {product.description && (
-              <Typography.Paragraph type="secondary" className="!mb-3 text-xs">
+              <Typography.Paragraph type="secondary" className="text-xs" style={{ marginBottom: 12 }}>
                 {product.description}
               </Typography.Paragraph>
             )}

@@ -41,7 +41,7 @@ async function call<T>(
     headers,
     body: body === undefined ? undefined : JSON.stringify(body),
   });
-  let envelope: Envelope<T> | null = null;
+  let envelope: Envelope<T> | null;
   try {
     envelope = (await resp.json()) as Envelope<T>;
   } catch {

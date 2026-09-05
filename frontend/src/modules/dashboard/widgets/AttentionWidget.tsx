@@ -25,7 +25,7 @@ export function AttentionWidget({
         <span>
           Needs attention
           {count > 0 && (
-            <Typography.Text type="secondary" className="ms-2 text-[13px] font-normal">
+            <Typography.Text type="secondary" className="ms-2 font-normal" style={{ fontSize: 12 }}>
               {count}
             </Typography.Text>
           )}
@@ -44,7 +44,7 @@ export function AttentionWidget({
           </Typography.Text>
         </div>
       ) : (
-        <ul className="m-0 list-none p-0 divide-y divide-slate-200 dark:divide-slate-700">
+        <ul className="m-0 list-none p-0 dsc-divided">
           {items?.map((item) => (
             <li key={item.key} className="flex flex-wrap items-start gap-x-3 gap-y-2 py-2.5">
               <SeverityTag severity={item.severity} />

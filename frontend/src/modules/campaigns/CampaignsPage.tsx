@@ -139,12 +139,12 @@ export function CampaignsPage() {
           >
             <Flex justify="space-between" align="flex-start" gap="small">
               <Typography.Text strong ellipsis>
-                <RocketOutlined className="mr-2 text-slate-600 dark:text-slate-400" />
+                <RocketOutlined className="mr-2 dsc-text-secondary" />
                 {campaign.name}
               </Typography.Text>
               <StatusBadge status={campaign.status} />
             </Flex>
-            <Typography.Paragraph type="secondary" className="!mb-0 !mt-1">
+            <Typography.Paragraph type="secondary" style={{ marginBottom: 0, marginTop: 4 }}>
               Priority {campaign.priority} · {campaign.schedule_count} schedule
               {campaign.schedule_count === 1 ? "" : "s"}
             </Typography.Paragraph>

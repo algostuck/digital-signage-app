@@ -77,7 +77,7 @@ export function PlaybackWidget({
             />
             {playback.top_assets.length > 0 && (
               <div className="mt-4">
-                <Typography.Text strong className="text-[13px]">
+                <Typography.Text strong style={{ fontSize: 12 }}>
                   Most played
                 </Typography.Text>
                 <RankBar

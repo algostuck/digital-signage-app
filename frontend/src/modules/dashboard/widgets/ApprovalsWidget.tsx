@@ -28,7 +28,7 @@ export function ApprovalsWidget({
       emptyTitle="Nothing waiting on you"
       emptyDescription="Submitted campaigns and templates queue here."
     >
-      <ul className="m-0 list-none p-0 divide-y divide-slate-200 dark:divide-slate-700">
+      <ul className="m-0 list-none p-0 dsc-divided">
         {items?.map((row) => (
           <li key={row.id} className="flex items-center gap-3 py-2">
             <div className="min-w-0 flex-1">

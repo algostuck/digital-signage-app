@@ -84,7 +84,7 @@ export function QuotasTab({ tenant }: { tenant: TenantDetail }) {
             <UsageBar label="Users" metric={usage.users} />
             <UsageBar label="Storage" metric={usage.storage_mb} unit="MB" />
           </Space>
-          <Typography.Paragraph type="secondary" className="!mb-0 mt-3 text-xs">
+          <Typography.Paragraph type="secondary" className="mt-3 text-xs" style={{ marginBottom: 0 }}>
             Effective limit = plan entitlement, capped by any override on the right.
           </Typography.Paragraph>
         </Card>

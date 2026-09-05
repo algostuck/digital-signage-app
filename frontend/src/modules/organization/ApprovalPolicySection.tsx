@@ -36,7 +36,7 @@ export function ApprovalPolicySection({ canManage }: { canManage: boolean }) {
 
   return (
     <SectionCard title="Approval policies" loading={policiesQuery.isLoading}>
-      <Typography.Paragraph type="secondary" className="!mb-2">
+      <Typography.Paragraph type="secondary" style={{ marginBottom: 8 }}>
         Govern which submissions need review and whether the submitter may decide
         their own request (maker-checker).
       </Typography.Paragraph>

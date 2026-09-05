@@ -317,7 +317,7 @@ export function DecisioningTab() {
         </Space>
         {preview && (
           <div className="mt-3">
-            <Typography.Paragraph className="!mb-2">
+            <Typography.Paragraph style={{ marginBottom: 8 }}>
               Scheduler picks{" "}
               <Typography.Text strong>
                 {campaignName(preview.scheduler_campaign_id)}
@@ -327,7 +327,7 @@ export function DecisioningTab() {
                 {campaignName(preview.decided_campaign_id)}
               </Typography.Text>
             </Typography.Paragraph>
-            <Typography.Paragraph className="!mb-0">
+            <Typography.Paragraph style={{ marginBottom: 0 }}>
               <pre className="max-h-40 overflow-auto text-xs">
                 {JSON.stringify(preview.reasons, null, 2)}
               </pre>

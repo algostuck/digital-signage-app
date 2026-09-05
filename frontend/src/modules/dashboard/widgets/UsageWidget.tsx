@@ -33,7 +33,7 @@ function Meter({ label, metric, format }: { label: string; metric: UsageMetric; 
         showInfo={false}
         size="small"
         status={status}
-        className="!mb-0"
+        style={{ marginBottom: 0 }}
         aria-label={`${label} usage`}
       />
       {share >= 0.8 && limit && (
@@ -67,7 +67,7 @@ export function UsageWidget({
       {usage && (
         <>
           <div className="mb-2 flex flex-wrap items-center gap-2">
-            <Typography.Text strong className="text-[15px]">
+            <Typography.Text strong style={{ fontSize: 16 }}>
               {usage.plan_name ?? "No plan"}
             </Typography.Text>
             {usage.subscription_status && <StatusBadge status={usage.subscription_status} />}

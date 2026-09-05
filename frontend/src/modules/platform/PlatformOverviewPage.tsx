@@ -160,10 +160,10 @@ function Rows({
 }) {
   if (loading) return <Card size="small" loading variant="borderless" />;
   if (items.length === 0) {
-    return <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description={empty} className="!my-4" />;
+    return <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description={empty} style={{ marginBlock: 16 }} />;
   }
   return (
-    <Flex vertical gap={0} className="divide-y divide-slate-200 dark:divide-slate-700">
+    <Flex vertical gap={0} className="dsc-divided">
       {items.map((node, index) => (
         <div key={index} className="py-2">
           {node}

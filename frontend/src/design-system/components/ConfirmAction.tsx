@@ -1,5 +1,5 @@
 import { Popconfirm } from "antd";
-import type { ReactNode } from "react";
+import { cloneElement, isValidElement, type MouseEvent, type ReactElement, type ReactNode } from "react";
 import { useFeedback } from "../utilities/feedback";
 
 interface ConfirmActionProps {
@@ -39,18 +39,18 @@ export function ConfirmAction({
   const label = okText ?? (danger ? "Delete" : "Confirm");
 
   if (severity === "high") {
-    return (
-      <span
-        onClick={(e) => {
-          if (disabled) return;
+    const open = () => confirm({ title, content: consequence, okText: label, danger, onOk: onConfirm });
+    if (isValidElement<{ onClick?: (e: MouseEvent) => void; disabled?: boolean }>(children)) {
+      // The trigger keeps its own semantics (a Button); we only intercept the click.
+      return cloneElement(children as ReactElement<{ onClick?: (e: MouseEvent) => void; disabled?: boolean }>, {
+        disabled: disabled || children.props.disabled,
+        onClick: (e: MouseEvent) => {
           e.stopPropagation();
-          confirm({ title, content: consequence, okText: label, danger, onOk: onConfirm });
-        }}
-        style={{ display: "inline-flex" }}
-      >
-        {children}
-      </span>
-    );
+          if (!disabled) open();
+        },
+      });
+    }
+    return <>{children}</>;
   }
   return (
     <Popconfirm

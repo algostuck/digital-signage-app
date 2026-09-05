@@ -102,7 +102,7 @@ export function SsoSection() {
 
   return (
     <SectionCard title="Enterprise SSO (OIDC)">
-      <Typography.Paragraph type="secondary" className="!mb-3">
+      <Typography.Paragraph type="secondary" style={{ marginBottom: 12 }}>
         The IdP authenticates; roles stay platform-managed via claim
         mapping. The client secret is referenced by an environment-variable
         NAME — never stored here.

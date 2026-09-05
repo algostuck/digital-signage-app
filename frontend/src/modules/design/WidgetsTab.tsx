@@ -88,7 +88,7 @@ export function WidgetsTab() {
                     </Typography.Text>
                     <StatusBadge status={widget.status} />
                   </Flex>
-                  <Typography.Paragraph type="secondary" className="!mb-0 !mt-1">
+                  <Typography.Paragraph type="secondary" style={{ marginBottom: 0, marginTop: 4 }}>
                     {widget.type} · schema v{current?.version_no ?? "?"}
                     {widget.fallback_json ? " · fallback set" : ""}
                   </Typography.Paragraph>
@@ -98,7 +98,7 @@ export function WidgetsTab() {
                         key={field.key}
                         title={`${field.type}${field.required ? " · required" : ""}`}
                       >
-                        <Tag className="!mr-0">{field.key}</Tag>
+                        <Tag style={{ marginInlineEnd: 0 }}>{field.key}</Tag>
                       </Tooltip>
                     ))}
                   </Flex>

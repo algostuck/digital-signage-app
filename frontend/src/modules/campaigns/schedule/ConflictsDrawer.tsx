@@ -81,12 +81,12 @@ export function ConflictsDrawer({
                   style={focused ? { outline: "2px solid currentColor", outlineOffset: 2, borderRadius: 8 } : undefined}
                 >
                   <div className="mb-1 flex flex-wrap items-center gap-2">
-                    <ToneTag tone={severityTone(conflict.severity)} className="!mr-0">
+                    <ToneTag tone={severityTone(conflict.severity)} style={{ marginInlineEnd: 0 }}>
                       {SEVERITY_LABEL[conflict.severity]}
                     </ToneTag>
                     <Typography.Text strong>{REASON_LABEL[conflict.reason]}</Typography.Text>
                   </div>
-                  <Typography.Paragraph className="!mb-2 text-xs" type="secondary">
+                  <Typography.Paragraph className="text-xs" style={{ marginBottom: 8 }} type="secondary">
                     {conflict.message}
                   </Typography.Paragraph>
                   <ul className="m-0 mb-2 list-none space-y-1 p-0 text-sm">
@@ -95,12 +95,12 @@ export function ConflictsDrawer({
                         <Button
                           type="link"
                           size="small"
-                          className="!h-auto !p-0 font-medium"
+                          className="font-medium" style={{ height: "auto", padding: 0 }}
                           onClick={() => onOpenCampaign(c.campaign_id)}
                         >
                           {c.campaign_name}
                         </Button>
-                        <ToneTag tone={statusTone(c.campaign_status)} className="!mr-0">
+                        <ToneTag tone={statusTone(c.campaign_status)} style={{ marginInlineEnd: 0 }}>
                           {statusLabel(c.campaign_status)}
                         </ToneTag>
                         <Typography.Text type="secondary" className="text-xs">

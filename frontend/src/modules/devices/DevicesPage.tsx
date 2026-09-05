@@ -331,7 +331,7 @@ export function DevicesPage() {
 
       {canManage && selected.size > 0 && (
         <div
-          className="mb-3 flex flex-wrap items-center gap-2 rounded-lg border border-blue-200 bg-blue-50 px-3 py-2"
+          className="mb-3 flex flex-wrap items-center gap-2 rounded-lg dsc-primary-bg px-3 py-2"
           role="region"
           aria-live="polite"
           aria-label="Bulk actions"
