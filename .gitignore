@@ -29,3 +29,6 @@ Thumbs.db
 
 # Build artifacts
 *.tsbuildinfo
+
+# Environment files for UAT / production live on the deploy host or in the secret manager
+deploy/env/*.env

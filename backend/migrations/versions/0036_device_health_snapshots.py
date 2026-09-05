@@ -46,6 +46,8 @@ def upgrade() -> None:
 
 
 def downgrade() -> None:
-    op.drop_index("ix_device_health_snapshots_organization_id", table_name="device_health_snapshots")
+    op.drop_index(
+        "ix_device_health_snapshots_organization_id", table_name="device_health_snapshots"
+    )
     op.drop_index("ix_device_health_snapshots_org_captured", table_name="device_health_snapshots")
     op.drop_table("device_health_snapshots")

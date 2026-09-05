@@ -1,0 +1,135 @@
+# Production-shaped stack: one file for UAT and PRODUCTION, configuration
+# from an environment file per target.
+#
+#   docker compose -f deploy/compose.prod.yml --env-file deploy/env/uat.env up -d
+#
+# Process types (see docs/runbook.md): API (several uvicorn workers),
+# worker, exactly one beat, a one-shot migration job, and the portal
+# (nginx: static bundle + /api proxy). PostgreSQL, Redis and object
+# storage are expected to be managed services in production; the
+# `postgres` and `redis` services below are for UAT / single-box installs
+# and are enabled with `--profile selfhosted`.
+
+name: signage-${DEPLOY_ENV:-uat}
+
+x-backend-env: &backend-env
+  ENVIRONMENT: ${ENVIRONMENT:-production}
+  LOG_JSON: "true"
+  LOG_LEVEL: ${LOG_LEVEL:-INFO}
+  DATABASE_URL: ${DATABASE_URL}
+  REDIS_URL: ${REDIS_URL}
+  JWT_SECRET: ${JWT_SECRET}
+  STORAGE_BACKEND: ${STORAGE_BACKEND:-s3}
+  S3_ENDPOINT: ${S3_ENDPOINT}
+  S3_BUCKET: ${S3_BUCKET}
+  S3_ACCESS_KEY: ${S3_ACCESS_KEY}
+  S3_SECRET_KEY: ${S3_SECRET_KEY}
+  S3_REGION: ${S3_REGION:-us-east-1}
+  CDN_URL: ${CDN_URL:-}
+  MEDIA_PROCESSING_INLINE: "false"
+  PUBLISHING_INLINE: "false"
+  CORS_ORIGINS: ${CORS_ORIGINS}
+  SIGNED_URL_TTL_SECONDS: ${SIGNED_URL_TTL_SECONDS:-900}
+
+services:
+  migrate:
+    image: ${BACKEND_IMAGE:-ghcr.io/algostuck/digital-signage-app/backend:latest}
+    command: sh -c "alembic upgrade head && SEED_DEMO=false python -m app.seed"
+    environment:
+      <<: *backend-env
+      SEED_PLATFORM_PASSWORD: ${SEED_PLATFORM_PASSWORD:-}
+    restart: "no"
+
+  api:
+    image: ${BACKEND_IMAGE:-ghcr.io/algostuck/digital-signage-app/backend:latest}
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --workers ${WEB_CONCURRENCY:-4} --proxy-headers --forwarded-allow-ips="*"
+    environment: *backend-env
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+    healthcheck:
+      test: ["CMD-SHELL", "python -c \"import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://127.0.0.1:8000/api/v1/health/ready', timeout=3).status == 200 else 1)\""]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  worker:
+    image: ${BACKEND_IMAGE:-ghcr.io/algostuck/digital-signage-app/backend:latest}
+    command: celery -A app.workers.celery_app worker -l info -Q default,media,publishing,maintenance --concurrency=${WORKER_CONCURRENCY:-4}
+    environment: *backend-env
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+    healthcheck:
+      test: ["CMD-SHELL", "celery -A app.workers.celery_app inspect ping -d celery@$$HOSTNAME --timeout 5 >/dev/null 2>&1 || exit 1"]
+      interval: 60s
+      timeout: 10s
+      retries: 3
+    restart: unless-stopped
+
+  beat:
+    image: ${BACKEND_IMAGE:-ghcr.io/algostuck/digital-signage-app/backend:latest}
+    command: celery -A app.workers.celery_app beat -l info
+    environment: *backend-env
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+    deploy:
+      replicas: 1   # exactly one scheduler
+    restart: unless-stopped
+
+  web:
+    image: ${FRONTEND_IMAGE:-ghcr.io/algostuck/digital-signage-app/frontend:latest}
+    ports:
+      - "${WEB_PORT:-80}:80"
+    depends_on:
+      api:
+        condition: service_healthy
+    restart: unless-stopped
+
+  # ---- self-hosted dependencies (UAT / single box) --------------------------
+  postgres:
+    profiles: ["selfhosted"]
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-signage}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB:-signage}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-signage} -d ${POSTGRES_DB:-signage}"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    restart: unless-stopped
+
+  redis:
+    profiles: ["selfhosted"]
+    image: redis:7-alpine
+    command: redis-server --appendonly yes
+    volumes:
+      - redisdata:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    restart: unless-stopped
+
+  minio:
+    profiles: ["selfhosted"]
+    image: minio/minio:latest
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: ${S3_ACCESS_KEY}
+      MINIO_ROOT_PASSWORD: ${S3_SECRET_KEY}
+    volumes:
+      - miniodata:/data
+    restart: unless-stopped
+
+volumes:
+  pgdata:
+  redisdata:
+  miniodata:

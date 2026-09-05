@@ -339,8 +339,31 @@ code does for each and a go-live checklist.
 | S2 | The platform administrator was seeded in every environment with the development password unless an env var overrode it. | Fixed — seeding in production refuses to run without `SEED_PLATFORM_PASSWORD`. |
 | S3 | The portal's `Content-Security-Policy` is not set by the API (it serves JSON); it belongs to the static host. | Carried to gate 12 as deployment configuration. |
 
+## 12. CI/CD and environments
+
+`docs/deployment.md`. The workflow already ran lint, the PostgreSQL test
+suite, a migration round-trip and the portal build. Added:
+
+- an **integration** stage that applies the schema, seeds the system data
+  and the demo dataset, starts the API and runs the three audit scripts
+  (isolation, journey, entitlements) plus the performance baseline, with
+  the reports kept as build artifacts — a pull request cannot merge if
+  tenancy, the product journey or the entitlement rules regress;
+- **images**: backend and frontend containers built on every run and
+  pushed to GHCR on main and on version tags; the frontend image is a new
+  nginx build (SPA fallback, `/api` proxied same-origin, security headers
+  including the `Content-Security-Policy` from the security review,
+  immutable caching for hashed assets);
+- a **deploy** stage: main → UAT automatically, version tags or a manual
+  dispatch → production behind an approval gate; it ships
+  `deploy/compose.prod.yml`, pulls the tagged images, runs the one-shot
+  `migrate` job, restarts the stack and checks `/api/v1/health/ready`;
+- `deploy/compose.prod.yml` (api with N workers, worker, single beat,
+  migrate, web; self-hosted PostgreSQL/Redis/MinIO behind a profile) and
+  the DEV / UAT / PRODUCTION environment files.
+
 ## Next gates
 
-12. CI/CD, 13. documentation freeze.
+13. documentation freeze.
 6. UX polish, performance, observability, production security review,
    CI/CD, documentation freeze — in that order.

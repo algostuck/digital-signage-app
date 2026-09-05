@@ -1,58 +1,93 @@
-One doc improvement worth making while answering — the runbook's "first deployment" step predates the SaaS core (tenants are now created from the Platform console). Updating it:
+# Deployment
 
-Also adding the missing `beat` service to docker-compose (the subscription lifecycle and monitoring sweeps need it):
+How the product moves from a commit to a running environment, and how
+DEV, UAT and PRODUCTION differ. The operational detail (backups, upgrades,
+rollback, daily checks) is in [runbook.md](runbook.md); the security
+go-live list is in [SECURITY_REVIEW.md](SECURITY_REVIEW.md).
 
-Everything you need is in place. Here's the complete guide for both:
+## Pipeline
 
-## Development
+`.github/workflows/ci.yml`, on every push and pull request:
 
-**Option A — native on this machine (what we've been running).** Requires: local PostgreSQL running (`digital_app_dev` with the settings already in [backend/.env](backend/.env)) and Node. Redis/Celery are *not* needed in dev — media processing and publishing run inline.
-
-After pulling changes, apply migrations and reseed (both idempotent):
-
-```bash
-cd backend && .venv/Scripts/python -m alembic upgrade head && .venv/Scripts/python -m app.seed
+```text
+Git push / PR
+ ├─ backend      ruff check + format check → pytest (PostgreSQL) → alembic upgrade → downgrade → upgrade
+ ├─ frontend     tsc → vite build (artifact: portal-dist)
+ ├─ integration  (needs backend) alembic + system seed + demo dataset → API up →
+ │               audit_tenant_isolation → audit_e2e_journey → audit_entitlements → audit_performance*
+ ├─ images       (needs backend, frontend) build backend + frontend images; push to GHCR on main / tags
+ └─ deploy       (needs integration, images) main → UAT · v* tag or dispatch → PRODUCTION (approval gate)
+                 scp deploy/ → pull images → run migrate → up -d → health check
 ```
 
-Then start the two processes (two terminals):
+`*` performance runs informationally on shared runners (`continue-on-error`);
+its report is uploaded with the other audit reports as a build artifact.
+
+The three audits are the same scripts a developer runs locally
+(`HARDENING_AUDIT.md`); a pull request cannot merge if tenant isolation,
+the end-to-end journey or the entitlement rules regress.
+
+### Deploy stage prerequisites
+
+Two GitHub *environments*, `uat` and `production` (the latter with
+required reviewers), each with the secrets `DEPLOY_HOST`, `DEPLOY_USER`,
+`DEPLOY_SSH_KEY`, `DEPLOY_ENV_FILE` (the full contents of the
+environment file below) and `HEALTH_URL`. The deploy host needs Docker
+with Compose and a `~/signage` directory; images are pulled from GHCR.
+
+## Environments
+
+| | DEV | UAT | PRODUCTION |
+|---|---|---|---|
+| Config | `backend/.env` from `.env.example` (`deploy/env/dev.env.example` shows the column) | `deploy/env/uat.env` from `uat.env.example` | `deploy/env/prod.env` from `prod.env.example`, or the secret manager |
+| `ENVIRONMENT` | `development` | `staging` | `production` (disables `/api/docs`, enables HSTS, refuses a weak `JWT_SECRET`, refuses the demo seeder) |
+| Stack | native (`README.md`) or `docker compose up` at the repo root | `deploy/compose.prod.yml --profile selfhosted` (bundled PostgreSQL, Redis, MinIO) | `deploy/compose.prod.yml` with managed PostgreSQL, Redis and object storage + CDN |
+| API processes | 1 uvicorn worker (`--reload`) | `WEB_CONCURRENCY=2` | `WEB_CONCURRENCY` ≈ CPU cores; scale replicas behind the load balancer |
+| Storage / media | `STORAGE_BACKEND=local`, inline media processing and publishing | S3 (MinIO), worker mode | S3 + `CDN_URL`, worker mode |
+| Data | demo tenants (`app.demo_seed`) | system seed + optional demo tenants for rehearsal | system seed only; tenants created from the Platform Console |
+| Images | built locally | `:main` (every green main build) | `:vX.Y.Z` tags, pinned in `prod.env` |
+| Logs | plain text | JSON | JSON, shipped, alert on `ERROR` and `job … failed` |
+| TLS | none | terminator in front of `web` | terminator / load balancer in front of `web` |
+
+## The production-shaped stack
+
+`deploy/compose.prod.yml` defines the process types from the runbook:
+
+| Service | Role |
+|---|---|
+| `migrate` | one-shot: `alembic upgrade head` + `SEED_DEMO=false python -m app.seed` (permissions, system roles, plans; the platform administrator only when `SEED_PLATFORM_PASSWORD` is set) |
+| `api` | uvicorn with `WEB_CONCURRENCY` workers, `--proxy-headers`; healthcheck on `/api/v1/health/ready` |
+| `worker` | Celery: media processing, deployment fan-out, maintenance sweeps |
+| `beat` | Celery beat — exactly one replica |
+| `web` | nginx: the built portal, history-mode fallback, `/api` proxied to `api` (same origin), security headers including `Content-Security-Policy`, long-lived caching for hashed assets |
+| `postgres`, `redis`, `minio` | only with `--profile selfhosted` (UAT / single box) |
 
 ```bash
-cd backend && .venv/Scripts/uvicorn app.main:app --host 127.0.0.1 --port 8000 --reload
+docker compose -f deploy/compose.prod.yml --env-file deploy/env/uat.env --profile selfhosted up -d
 ```
 
 ```bash
-cd frontend && npm run dev
+docker compose -f deploy/compose.prod.yml --env-file deploy/env/prod.env up -d
 ```
 
-Portal: http://localhost:5173 · API docs: http://localhost:8000/api/docs. Logins: `admin@demo-org.com` / `Admin@12345` (tenant), `platform@signage.cloud` / `Platform@12345` (Super Admin). If you want the background sweeps (offline detection, subscription lifecycle/dunning, usage snapshots) locally, you'd additionally need Redis plus `celery -A app.workers.celery_app worker -Q default,media,publishing,maintenance -P solo` and `celery -A app.workers.celery_app beat` (`-P solo` is required on Windows) — otherwise those features simply stay quiet in dev.
+First run on a fresh database: put `SEED_PLATFORM_PASSWORD` in the env file
+for the `migrate` job, sign in as `platform@signage.cloud`, change the
+password, remove the variable. Everything after that — tenants, owners,
+plans, subscriptions — is done from the Platform Console.
 
-Tests (PostgreSQL-only; auto-provisions `digital_app_test`):
+## Release and rollback
 
-```bash
-cd backend && .venv/Scripts/python -m pytest tests -q
-```
+1. Tag `vX.Y.Z` on main → CI builds and pushes the images with that tag
+   and opens the production deploy for approval.
+2. The deploy runs `migrate` (forward-only, backward-compatible within a
+   release window), then replaces the containers, then checks
+   `/api/v1/health/ready`.
+3. Rollback = point `BACKEND_IMAGE` / `FRONTEND_IMAGE` at the previous tag
+   and `up -d` again. Schema rollback is restore-from-backup, never
+   `alembic downgrade` in production (runbook §5).
 
-**Option B — Docker Compose (full stack: Postgres + Redis + MinIO + API + worker + beat).** I just added the missing `beat` service to [docker-compose.yml](docker-compose.yml). Note it uses its own database (`signage`), separate from your local `digital_app_dev`:
+## Local development
 
-```bash
-docker compose up --build
-```
-
-Then seed once (`docker compose exec api python -m app.seed`) and run the frontend natively with `npm run dev` (compose doesn't serve the frontend).
-
-## Production
-
-Full detail is in [docs/runbook.md](docs/runbook.md) — the short version:
-
-1. **Provision**: managed PostgreSQL, managed Redis, S3-compatible bucket + CDN.
-2. **Environment** (fail-closed items): `ENVIRONMENT=production` (disables /api/docs, enables HSTS), a random ≥32-char `JWT_SECRET` (the API refuses to boot with a weak one), `DATABASE_URL`, `REDIS_URL`, `STORAGE_BACKEND=s3` + `S3_*` + `CDN_URL`, `MEDIA_PROCESSING_INLINE=false`, `PUBLISHING_INLINE=false`, `CORS_ORIGINS` set to your portal origin only. Secrets via your platform's secret manager, never committed. Future payment-gateway keys (Stripe/Razorpay) also go here, never in the DB.
-3. **Schema + system seed**: `alembic upgrade head`, then `SEED_DEMO=false python -m app.seed` — seeds permissions, system roles and the four plans; no demo tenant, no demo passwords.
-4. **Create the Super Admin once** (one-off script/psql: an org + a user with `is_superuser=true`) — after that, all tenant onboarding happens from the Platform console: create tenant + owner, assign plan, manage subscriptions/payments.
-5. **Run three process types**:
-   - API: `uvicorn app.main:app --host 0.0.0.0 --port 8000 --workers 4` — stateless, scale horizontally behind TLS/load balancer
-   - Worker: `celery -A app.workers.celery_app worker -Q default,media,publishing,maintenance` — scale as needed
-   - Beat: `celery -A app.workers.celery_app beat` — **exactly one instance** (runs dunning, renewals, offline detection, retention pruning, usage snapshots)
-6. **Frontend**: `npm run build`, serve `frontend/dist/` from any static host/CDN, proxy `/api` to the API service.
-7. **Verify**: `GET /api/v1/health/ready` → `database: ok`, portal login works, `celery inspect ping` responds.
-
-Upgrades: backup → deploy new image alongside old → `alembic upgrade head` once → switch traffic → restart worker/beat → deploy frontend. Rollback prefers pointing traffic back at the previous image (migrations are backward-compatible within a release window); schema rollback is restore-from-dump, never `alembic downgrade` in production.
+See `README.md` ("Development (local, no Docker)") — PostgreSQL is the
+only dependency; the demo dataset and credentials are in
+`DEMO_CREDENTIALS.md` and `DEMO_DATA_CATALOG.md`.
