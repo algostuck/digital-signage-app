@@ -1,6 +1,8 @@
 import { FallOutlined, RiseOutlined } from "@ant-design/icons";
 import { Card, Statistic, Typography } from "antd";
 import type { ReactNode } from "react";
+import { useThemeMode } from "../../theme/ThemeProvider";
+import { STATUS_TEXT } from "./tone";
 
 interface StatCardProps {
   label: string;
@@ -11,11 +13,15 @@ interface StatCardProps {
   /** Supporting context under the number ("vs previous period"). */
   context?: string;
   valueColor?: string;
+  /** Status colour from the per-theme text palette (≥7:1); prefer over valueColor. */
+  tone?: "success" | "warning" | "error";
   loading?: boolean;
 }
 
 /** KPI card (brief §15): label → large number → trend → context. */
-export function StatCard({ label, value, icon, trend, context, valueColor, loading }: StatCardProps) {
+export function StatCard({ label, value, icon, trend, context, valueColor, tone, loading }: StatCardProps) {
+  const { mode } = useThemeMode();
+  const color = tone ? STATUS_TEXT[mode][tone] : valueColor;
   return (
     <Card size="small" loading={loading}>
       <Statistic
@@ -26,7 +32,7 @@ export function StatCard({ label, value, icon, trend, context, valueColor, loadi
           </span>
         }
         value={value}
-        styles={valueColor ? { content: { color: valueColor } } : undefined}
+        styles={color ? { content: { color } } : undefined}
       />
       {(trend != null || context) && (
         <div className="mt-1 flex items-baseline gap-2">

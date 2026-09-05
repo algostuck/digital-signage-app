@@ -8,9 +8,10 @@ import {
   Form,
   Input,
   Row,
-  Tag,
   Typography,
 } from "antd";
+import { ToneTag } from "../../components/ui/ToneTag";
+import { toneOf } from "../../components/ui/tone";
 import { useEffect, useState } from "react";
 import { api, ApiError } from "../../lib/api";
 import { useAuth } from "../../lib/auth";
@@ -116,13 +117,11 @@ export function WhiteLabelSection() {
                 <>
                   Custom domain{" "}
                   {customDomain && (
-                    <Tag
-                      color={data.domain_verified ? "success" : "warning"}
-                      variant="filled"
+                    <ToneTag tone={toneOf(data.domain_verified ? "success" : "warning")}
                       className="ms-1"
                     >
                       {data.domain_verified ? "verified" : "pending verification"}
-                    </Tag>
+                    </ToneTag>
                   )}
                 </>
               }

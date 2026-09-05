@@ -8,10 +8,11 @@ import {
   Select,
   Space,
   Table,
-  Tag,
   Typography,
   type TableProps,
 } from "antd";
+import { ToneTag } from "../../components/ui/ToneTag";
+import { toneOf } from "../../components/ui/tone";
 import { useState } from "react";
 import { api, ApiError } from "../../lib/api";
 import { useAuth } from "../../lib/auth";
@@ -174,9 +175,9 @@ export function PlanBillingSection() {
       title: "Status",
       dataIndex: "status",
       render: (status: string) => (
-        <Tag color={status === "paid" ? "success" : "warning"} variant="filled">
+        <ToneTag tone={toneOf(status === "paid" ? "success" : "warning")}>
           {status}
-        </Tag>
+        </ToneTag>
       ),
     },
     {
@@ -206,9 +207,9 @@ export function PlanBillingSection() {
             <Typography.Text strong className="text-lg">
               {sub.plan.name}
             </Typography.Text>
-            <Tag color={STATUS_COLOR[sub.status] ?? "default"} variant="filled">
+            <ToneTag tone={toneOf(STATUS_COLOR[sub.status] ?? "default")}>
               {sub.status.replace(/_/g, " ")}
-            </Tag>
+            </ToneTag>
             <Typography.Text type="secondary">
               {sub.billing_cycle} · renews {fmtDate(sub.current_period_end)}
             </Typography.Text>
@@ -284,14 +285,12 @@ export function PlanBillingSection() {
           {Object.entries(FEATURE_LABELS).map(([key, label]) => {
             const enabled = billing.entitlements[key] !== false;
             return (
-              <Tag
-                key={key}
-                color={enabled ? "success" : "default"}
+              <ToneTag
+                key={key} tone={toneOf(enabled ? "success" : "default")}
                 icon={enabled ? <CheckOutlined /> : <CloseOutlined />}
-                variant="filled"
               >
                 {label}
-              </Tag>
+              </ToneTag>
             );
           })}
         </Flex>

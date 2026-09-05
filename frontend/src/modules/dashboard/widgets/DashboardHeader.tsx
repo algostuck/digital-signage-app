@@ -78,7 +78,10 @@ export function DashboardHeader({
           </Typography.Text>
         </div>
 
-        <Space wrap align="center" size="small">
+        <Space wrap align="center" size="small" className="max-w-full" styles={{ item: { minWidth: 0, maxWidth: "100%" } }}>
+          {/* Six presets are wider than a phone; scroll the control rather
+              than let it push the page sideways. */}
+          <div className="max-w-full overflow-x-auto">
           <Segmented<RangePreset>
             value={range.preset}
             onChange={(value) => (value === "custom" ? setCustom(range.from, range.to) : setPreset(value))}
@@ -88,6 +91,7 @@ export function DashboardHeader({
             }))}
             aria-label="Time range"
           />
+          </div>
           {range.preset === "custom" && (
             <DatePicker.RangePicker
               value={[dayjs(range.from), dayjs(range.to)]}

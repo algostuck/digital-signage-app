@@ -1,5 +1,6 @@
 import { EditOutlined, PlusOutlined } from "@ant-design/icons";
-import { Button, Segmented, Space, Tag, Typography, type TableProps } from "antd";
+import { Button, Segmented, Space, Typography, type TableProps } from "antd";
+import { ToneTag } from "../../components/ui/ToneTag";
 import { useState } from "react";
 import { DataTable } from "../../components/ui/DataTable";
 import { FilterBar } from "../../components/ui/FilterBar";
@@ -40,7 +41,7 @@ export function PlansPage() {
         <div>
           <Space size={6}>
             <Typography.Text strong>{name}</Typography.Text>
-            {!p.is_active && <Tag variant="filled">Inactive</Tag>}
+            {!p.is_active && <ToneTag tone="default">Inactive</ToneTag>}
           </Space>
           <div>
             <Typography.Text type="secondary" className="text-xs">

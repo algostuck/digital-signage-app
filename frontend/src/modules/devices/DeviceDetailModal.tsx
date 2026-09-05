@@ -11,10 +11,11 @@ import {
   Popconfirm,
   Select,
   Space,
-  Tag,
   Timeline,
   Typography,
 } from "antd";
+import { ToneTag } from "../../components/ui/ToneTag";
+import { toneOf } from "../../components/ui/tone";
 import { useState } from "react";
 import { LoadingState } from "../../components/ui/states";
 import { StatusBadge } from "../../components/ui/StatusBadge";
@@ -180,7 +181,7 @@ export function DeviceDetailModal({ deviceId, onClose, onChanged }: Props) {
           <Typography.Text type="secondary" className="text-xs">
             Heartbeat {timeAgo(device.last_heartbeat_at)}
           </Typography.Text>
-          {device.has_credential && <Tag variant="filled">credential issued</Tag>}
+          {device.has_credential && <ToneTag tone="default">credential issued</ToneTag>}
         </Space>
 
         <Descriptions
@@ -283,14 +284,12 @@ export function DeviceDetailModal({ deviceId, onClose, onChanged }: Props) {
             <div className="mt-1">
               <Space size={[4, 8]} wrap>
                 {device.capabilities.map((c) => (
-                  <Tag
-                    key={c.capability_code}
-                    variant="filled"
-                    color={c.supported ? "success" : "default"}
+                  <ToneTag
+                    key={c.capability_code} tone={toneOf(c.supported ? "success" : "default")}
                     className={c.supported ? undefined : "line-through"}
                   >
                     {c.capability_code}
-                  </Tag>
+                  </ToneTag>
                 ))}
               </Space>
             </div>

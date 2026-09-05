@@ -10,10 +10,11 @@ import {
   Select,
   Space,
   Table,
-  Tag,
   Typography,
   type TableProps,
 } from "antd";
+import { ToneTag } from "../../components/ui/ToneTag";
+import { toneOf } from "../../components/ui/tone";
 import { useState } from "react";
 import { EmptyState } from "../../components/ui/states";
 import { StatusBadge } from "../../components/ui/StatusBadge";
@@ -98,9 +99,9 @@ export function MembersTab() {
       title: "Type",
       dataIndex: "kind",
       render: (kind: MemberRow["kind"]) => (
-        <Tag variant="filled" color={kind === "guest" ? "blue" : "default"}>
+        <ToneTag tone={toneOf(kind === "guest" ? "blue" : "default")}>
           {kind}
-        </Tag>
+        </ToneTag>
       ),
     },
     {

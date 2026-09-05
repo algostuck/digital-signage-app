@@ -136,7 +136,7 @@ export function CampaignsPage() {
           >
             <Flex justify="space-between" align="flex-start" gap="small">
               <Typography.Text strong ellipsis>
-                <RocketOutlined className="mr-2 text-slate-400" />
+                <RocketOutlined className="mr-2 text-slate-600 dark:text-slate-400" />
                 {campaign.name}
               </Typography.Text>
               <StatusBadge status={campaign.status} />

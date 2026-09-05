@@ -12,10 +12,10 @@ import {
   Input,
   Row,
   Space,
-  Tag,
   Tooltip,
   Typography,
 } from "antd";
+import { ToneTag } from "../../components/ui/ToneTag";
 import { useMemo, useState } from "react";
 import { ErrorState, LoadingState } from "../../components/ui/states";
 import { api, ApiError } from "../../lib/api";
@@ -61,7 +61,7 @@ export function RolesTab() {
               title={
                 <Space>
                   {role.name}
-                  {role.is_system && <Tag variant="filled">System</Tag>}
+                  {role.is_system && <ToneTag tone="default">System</ToneTag>}
                 </Space>
               }
               extra={
@@ -83,9 +83,9 @@ export function RolesTab() {
               </Typography.Text>
               <Flex wrap gap={4} className="mt-1">
                 {role.permissions.slice(0, 12).map((p) => (
-                  <Tag key={p.code} variant="filled" className="!me-0 text-xs">
+                  <ToneTag tone="default" key={p.code} className="!me-0 text-xs">
                     {p.code}
-                  </Tag>
+                  </ToneTag>
                 ))}
                 {role.permissions.length > 12 && (
                   <Typography.Text type="secondary" className="text-xs">

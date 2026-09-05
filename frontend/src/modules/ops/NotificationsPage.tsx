@@ -10,9 +10,10 @@ import {
   Select,
   Space,
   Tabs,
-  Tag,
   Typography,
 } from "antd";
+import { ToneTag } from "../../components/ui/ToneTag";
+import { toneOf } from "../../components/ui/tone";
 import { useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { PageHeader } from "../../components/ui/PageHeader";
@@ -135,9 +136,9 @@ function InboxTab() {
           renderItem={(row) => (
             <Card key={row.id} size="small" className={`mb-2 ${row.read_at ? "opacity-60" : ""}`}>
               <Flex wrap align="center" gap="small">
-                <Tag color={SEVERITY_COLORS[row.severity] ?? "default"} variant="filled">
+                <ToneTag tone={toneOf(SEVERITY_COLORS[row.severity] ?? "default")}>
                   {row.severity}
-                </Tag>
+                </ToneTag>
                 <div className="min-w-0 flex-1">
                   <Typography.Text strong={!row.read_at}>
                     {!row.read_at && <Badge status="processing" className="mr-2" />}

@@ -16,11 +16,11 @@ import {
   Popconfirm,
   Row,
   Space,
-  Tag,
   Tree,
   Typography,
   type TreeDataNode,
 } from "antd";
+import { ToneTag } from "../../components/ui/ToneTag";
 import { useMemo, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { PageHeader } from "../../components/ui/PageHeader";
@@ -175,11 +175,11 @@ export function LocationsPage() {
                 <Flex wrap justify="space-between" align="flex-start" gap="small">
                   <Space orientation="vertical" size={0}>
                     <Space align="center">
-                      <EnvironmentOutlined className="text-slate-400" />
+                      <EnvironmentOutlined className="text-slate-600 dark:text-slate-400" />
                       <Typography.Title level={5} className="!mb-0">
                         {detail.name}
                       </Typography.Title>
-                      {detail.code && <Tag variant="filled">{detail.code}</Tag>}
+                      {detail.code && <ToneTag tone="default">{detail.code}</ToneTag>}
                     </Space>
                     <Space size="small">
                       <Typography.Text type="secondary">

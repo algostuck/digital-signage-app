@@ -10,10 +10,11 @@ import {
   Select,
   Space,
   Table,
-  Tag,
   Typography,
   type TableProps,
 } from "antd";
+import { ToneTag } from "../../components/ui/ToneTag";
+import { toneOf } from "../../components/ui/tone";
 import { useState } from "react";
 import { EmptyState } from "../../components/ui/states";
 import { api, ApiError } from "../../lib/api";
@@ -111,12 +112,10 @@ export function ExportsTab() {
       dataIndex: "state",
       render: (_, row) => (
         <Space orientation="vertical" size={0}>
-          <Tag
-            variant="filled"
-            color={row.state === "idle" ? "success" : row.state === "error" ? "error" : "processing"}
+          <ToneTag tone={toneOf(row.state === "idle" ? "success" : row.state === "error" ? "error" : "processing")}
           >
             {row.state}
-          </Tag>
+          </ToneTag>
           {row.last_error && (
             <Typography.Text type="danger" className="text-xs" ellipsis={{ tooltip: row.last_error }}>
               {row.last_error}

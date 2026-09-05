@@ -11,10 +11,11 @@ import {
   Row,
   Space,
   Table,
-  Tag,
   Typography,
   type TableProps,
 } from "antd";
+import { ToneTag } from "../../components/ui/ToneTag";
+import { toneOf } from "../../components/ui/tone";
 import { useState } from "react";
 import { PageHeader } from "../../components/ui/PageHeader";
 import { StatCard } from "../../components/ui/StatCard";
@@ -135,18 +136,16 @@ export function SecurityPage() {
     {
       title: "Status",
       render: (_, v) => (
-        <Tag
-          variant="filled"
-          color={
+        <ToneTag tone={toneOf(
             v.state === "open"
               ? v.severity === "critical"
                 ? "error"
                 : "warning"
               : "success"
-          }
+          )}
         >
           {v.state} · {v.severity}
-        </Tag>
+        </ToneTag>
       ),
     },
     {
@@ -225,9 +224,9 @@ export function SecurityPage() {
               <StatCard
                 label="Open violations"
                 value={Object.values(summary.open_violations).reduce((a, b) => a + b, 0)}
-                valueColor={
+                tone={
                   Object.values(summary.open_violations).reduce((a, b) => a + b, 0)
-                    ? "#DC2626"
+                    ? "error"
                     : undefined
                 }
               />
@@ -236,7 +235,7 @@ export function SecurityPage() {
               <StatCard
                 label="Missing credentials"
                 value={summary.credentials_missing}
-                valueColor={summary.credentials_missing ? "#D97706" : undefined}
+                tone={summary.credentials_missing ? "warning" : undefined}
               />
             </Col>
             <Col xs={12} sm={6}>
@@ -275,9 +274,9 @@ export function SecurityPage() {
                     Apply to API keys
                   </Button>
                   {policies.map((p) => (
-                    <Tag key={p.id} variant="filled">
+                    <ToneTag tone="default" key={p.id}>
                       {p.scope_type}: {p.conditions.max_age_days}d ({p.severity})
-                    </Tag>
+                    </ToneTag>
                   ))}
                 </Space>
               </Form.Item>

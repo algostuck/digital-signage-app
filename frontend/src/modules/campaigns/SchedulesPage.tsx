@@ -21,6 +21,7 @@ import {
   Typography,
   type TableProps,
 } from "antd";
+import { ToneTag } from "../../components/ui/ToneTag";
 import type { Dayjs } from "dayjs";
 import { useState } from "react";
 import { PageHeader } from "../../components/ui/PageHeader";
@@ -256,9 +257,9 @@ export function SchedulesPage() {
                 </Typography.Text>
                 <Space orientation="vertical" size={4} className="mt-1 w-full">
                   {events.map((event) => (
-                    <Tag
+                    <ToneTag
                       key={`${event.schedule_id}-${event.date}`}
-                      color={
+                      tone={
                         event.kind === "blackout"
                           ? "default"
                           : event.conflict
@@ -267,8 +268,7 @@ export function SchedulesPage() {
                       }
                       icon={event.kind === "blackout" ? <StopOutlined /> : undefined}
                       // Conflicts get an outline as a second, non-colour cue.
-                      variant={event.conflict ? "outlined" : "filled"}
-                      className="!mr-0 w-full whitespace-normal"
+                      className={`!mr-0 w-full whitespace-normal ${event.conflict ? "outline outline-2 outline-current" : ""}`}
                       title={`${event.campaign_name} · priority ${event.campaign_priority}${
                         event.timezone ? ` · ${event.timezone}` : ""
                       }${event.kind === "blackout" ? " · blackout window" : ""}`}
@@ -281,7 +281,7 @@ export function SchedulesPage() {
                           {event.overnight ? "↦" : ""}
                         </>
                       )}
-                    </Tag>
+                    </ToneTag>
                   ))}
                 </Space>
               </Card>

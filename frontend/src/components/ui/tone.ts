@@ -23,7 +23,45 @@ const PALETTE: Record<Tone, Record<ThemeMode, { bg: string; fg: string }>> = {
   default: { light: { bg: "#F1F5F9", fg: "#1E293B" }, dark: { bg: "#1E293B", fg: "#E2E8F0" } },
 };
 
+/** Status colours for *text* (numbers, statistic values, coloured copy).
+ * Brand status fills measure 3.2–4.8:1 as text; these clear 7:1 per mode. */
+export const STATUS_TEXT: Record<ThemeMode, { success: string; warning: string; error: string }> = {
+  light: { success: "#065F46", warning: "#92400E", error: "#991B1B" },
+  dark: { success: "#4ADE80", warning: "#FBBF24", error: "#FCA5A5" },
+};
+
 export function toneStyle(tone: Tone, mode: ThemeMode): CSSProperties {
   const { bg, fg } = PALETTE[tone][mode];
   return { background: bg, color: fg, borderColor: "transparent" };
+}
+
+/** The nearest tone for an antd preset colour name, so status maps written
+ * against `<Tag color>` (success / error / blue / gold / …) keep their
+ * meaning when they move to `ToneTag`. Unknown names fall back to default. */
+export function toneOf(color: string | null | undefined): Tone {
+  switch ((color ?? "").toLowerCase()) {
+    case "success":
+    case "green":
+    case "lime":
+      return "success";
+    case "warning":
+    case "gold":
+    case "yellow":
+      return "warning";
+    case "error":
+    case "red":
+    case "volcano":
+    case "magenta":
+      return "error";
+    case "orange":
+      return "high";
+    case "processing":
+    case "blue":
+    case "geekblue":
+    case "cyan":
+    case "purple":
+      return "processing";
+    default:
+      return "default";
+  }
 }

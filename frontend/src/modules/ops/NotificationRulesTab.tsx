@@ -17,6 +17,7 @@ import {
   Tag,
   Typography,
 } from "antd";
+import { ToneTag } from "../../components/ui/ToneTag";
 import { useState } from "react";
 import { EmptyState, LoadingState } from "../../components/ui/states";
 import { StatusBadge } from "../../components/ui/StatusBadge";
@@ -119,9 +120,9 @@ export function NotificationRulesTab() {
             <Card key={rule.id} size="small">
               <Flex wrap align="center" gap="small">
                 <Typography.Text strong>{rule.name}</Typography.Text>
-                <Tag variant="filled" className="font-mono text-xs">
+                <ToneTag tone="default" className="font-mono text-xs">
                   {rule.event_type}
-                </Tag>
+                </ToneTag>
                 {rule.condition_json?.severity && (
                   <Typography.Text type="secondary" className="text-xs">
                     severity: {rule.condition_json.severity.join(", ")}
@@ -134,11 +135,11 @@ export function NotificationRulesTab() {
                     .join(" · ")}
                 </Typography.Text>
                 {rule.escalation_minutes && (
-                  <Tag color="error" variant="filled">
+                  <ToneTag tone="error">
                     escalate after {rule.escalation_minutes}m
-                  </Tag>
+                  </ToneTag>
                 )}
-                {!rule.active && <Tag variant="filled">inactive</Tag>}
+                {!rule.active && <ToneTag tone="default">inactive</ToneTag>}
                 <Space className="ms-auto">
                   <Button
                     type="link"

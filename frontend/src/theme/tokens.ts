@@ -13,7 +13,7 @@ export type ThemeMode = "light" | "dark";
  * both modes.
  */
 export const BRAND = {
-  primary: "#1D4ED8", // blue-700
+  primary: "#1E40AF", // blue-800 — white text on it measures 8.6:1
   success: "#059669",
   warning: "#D97706",
   error: "#DC2626",
@@ -60,7 +60,9 @@ export function buildTheme(mode: ThemeMode): ThemeConfig {
       colorPrimary: BRAND.primary,
       colorSuccess: BRAND.success,
       colorWarning: BRAND.warning,
-      colorError: BRAND.error,
+      // Danger text and buttons: red-800 clears 7:1 on white; the dark
+      // algorithm derives its own tints from the brand red.
+      colorError: dark ? BRAND.error : "#991B1B",
       colorInfo: BRAND.info,
       // Link/emphasis text needs to clear 7:1 against the page canvas, so
       // it cannot be the brand blue in either mode: blue-800 on light,
@@ -78,6 +80,12 @@ export function buildTheme(mode: ThemeMode): ThemeConfig {
       // Placeholders double as the visible label of cleared filters, so they
       // are held to the same 7:1 as secondary text rather than antd's 1.8:1.
       colorTextPlaceholder: dark ? "rgba(255, 255, 255, 0.72)" : "#475569",
+      // Status-coloured *text* (Typography type="success|warning|danger",
+      // Statistic value styles). The brand status seeds are tuned for fills
+      // and measure 3.8–4.5:1 as text; these shades clear 7:1 in each mode.
+      colorSuccessText: dark ? "#4ADE80" : "#065F46",
+      colorWarningText: dark ? "#FBBF24" : "#92400E",
+      colorErrorText: dark ? "#FCA5A5" : "#991B1B",
 
       colorBgLayout: dark ? "#0B1220" : "#F8FAFC",
       // Dark surfaces stay in the same navy family as the canvas and the
@@ -98,6 +106,11 @@ export function buildTheme(mode: ThemeMode): ThemeConfig {
       wireframe: false,
     },
     components: {
+      // Dark surfaces: danger buttons and the active page number keep their
+      // meaning but pick text/bg pairs that clear 7:1 on the dark card
+      // (the brand red measures 2.9:1 there; the derived primary 1.7:1).
+      Button: dark ? { colorError: "#FCA5A5", dangerColor: "#450A0A" } : {},
+      Pagination: dark ? { colorPrimary: "#93C5FD", itemActiveBg: "#172554" } : {},
       Layout: {
         // 55px: matches the sidebar's logo and account bands so the three
         // top edges line up, and sits at φ against the 34px menu rows.
@@ -108,6 +121,14 @@ export function buildTheme(mode: ThemeMode): ThemeConfig {
       },
       Menu: {
         ...MENU_TOKENS,
+        // Light-variant menus inside the content area (folder trees, tab
+        // rails) sit on the dark card in dark mode; the sidebar uses the
+        // dark variant and is unaffected.
+        itemColor: dark ? "rgba(255, 255, 255, 0.85)" : MENU_TOKENS.itemColor,
+        itemSelectedBg: dark ? "#172554" : MENU_TOKENS.itemSelectedBg,
+        itemSelectedColor: dark ? "#BFDBFE" : MENU_TOKENS.itemSelectedColor,
+        itemHoverBg: dark ? "rgba(255, 255, 255, 0.06)" : MENU_TOKENS.itemHoverBg,
+        itemHoverColor: dark ? "#FFFFFF" : MENU_TOKENS.itemHoverColor,
         // Golden rhythm: 34px rows against the 55px logo, header and
         // account bands (55 / 34 = 1.618). Fibonacci steps throughout —
         // 13px type, 21px submenu indent — keep the rail compact without

@@ -248,9 +248,36 @@ Schedule → Approval → Preview → Publish → live screen → Monitoring →
 Proof of play → Analytics, what to do when something goes wrong, and the
 clean-up.
 
+## 8. UX polish pass
+
+Every route was loaded as the organisation administrator at 375 px and
+1280 px in light mode and at the pane width in dark mode, and measured
+rather than eyeballed: page-level horizontal overflow, every text node's
+contrast against its composited background, images without alternative
+text, buttons without an accessible name, error/empty/loading states.
+
+| Found | Fixed by |
+|---|---|
+| Dashboard pushed the page sideways at 375 px (six range presets in a `Segmented`) | the control scrolls inside its own box; the header's `Space` items may shrink |
+| 24 pages used antd's *filled* tags for status, 2.5–4.4:1 in light and worse in dark | every filled tag is now a `ToneTag` (`toneOf()` maps the old antd colour names); the schedule calendar chips keep their outline as the non-colour conflict cue |
+| `Typography` success / warning / danger text at 3.8–4.8:1 | `colorSuccessText` / `colorWarningText` / `colorErrorText` tokens per theme |
+| Stat cards on Monitoring and Security hard-coded brand hexes (3.2–4.8:1 at 24 px) | `StatCard tone=` using the shared `STATUS_TEXT` palette |
+| Muted Tailwind copy (`text-slate-400/500`) at 2.5–4.8:1 | `slate-600` with `dark:` counterparts; light-only classes in the content library got dark variants |
+| Primary buttons at 6.7:1 (AA) | brand primary moved from blue-700 to blue-800 (8.6:1 with white); links were already blue-800 |
+| Danger text buttons at 4.8:1 light / 2.9:1 dark | light `colorError` red-800; dark `Button` tokens pair a pale red with dark text |
+| Dark mode: light-variant menus (folder tree) rendered slate-700 on the dark card (1.7:1); the active page number 1.7:1 | `Menu` and `Pagination` tokens made theme-aware |
+| Leaflet tiles flagged as images without alt | the map is `aria-hidden`; the city list beside it is the accessible twin |
+
+Result: every page ≥ 7.1:1 for all text in light mode at both widths and
+≥ 7.2:1 in dark mode; no page scrolls horizontally at 375 px (tables and
+the calendar scroll inside their own containers). The only unnamed
+buttons left are antd's own pagination arrows and input clear icons,
+which carry titles on their wrappers. Keyboard focus rings were verified
+on the dashboard in gate 1 of the dashboard QA.
+
 ## Next gates
 
-8. UX polish pass, 9. performance, 10. observability, 11. production
-   security review, 12. CI/CD, 13. documentation freeze.
+9. performance, 10. observability, 11. production security review,
+   12. CI/CD, 13. documentation freeze.
 6. UX polish, performance, observability, production security review,
    CI/CD, documentation freeze — in that order.

@@ -17,10 +17,10 @@ import {
   Select,
   Space,
   Tabs,
-  Tag,
   Typography,
   type TableProps,
 } from "antd";
+import { ToneTag } from "../../components/ui/ToneTag";
 import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import { DataTable } from "../../components/ui/DataTable";
@@ -603,9 +603,9 @@ function InvoicesTab({ tenant }: { tenant: TenantDetail }) {
         <Space size={4}>
           <StatusBadge status={inv.status} />
           {isOverdue(inv) && (
-            <Tag color="error" variant="filled">
+            <ToneTag tone="error">
               Overdue
-            </Tag>
+            </ToneTag>
           )}
         </Space>
       ),

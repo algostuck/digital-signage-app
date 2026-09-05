@@ -256,7 +256,7 @@ export function DevicesPage() {
           }}
           placeholder="Search name, serial, model…"
           aria-label="Search devices"
-          prefix={<SearchOutlined className="text-slate-400" />}
+          prefix={<SearchOutlined className="text-slate-600 dark:text-slate-400" />}
         />
         <Select
           className="w-44"

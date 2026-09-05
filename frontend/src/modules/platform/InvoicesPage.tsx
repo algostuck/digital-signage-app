@@ -1,5 +1,6 @@
 import { DownloadOutlined, SearchOutlined } from "@ant-design/icons";
-import { Button, Col, Input, Row, Select, Space, Tag, Typography, type TableProps } from "antd";
+import { Button, Col, Input, Row, Select, Space, Typography, type TableProps } from "antd";
+import { ToneTag } from "../../components/ui/ToneTag";
 import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { DataTable } from "../../components/ui/DataTable";
@@ -76,9 +77,9 @@ export function InvoicesPage() {
         <Space size={4}>
           <StatusBadge status={s} />
           {isOverdue(inv) && (
-            <Tag color="error" variant="filled">
+            <ToneTag tone="error">
               Overdue
-            </Tag>
+            </ToneTag>
           )}
         </Space>
       ),

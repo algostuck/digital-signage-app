@@ -13,6 +13,8 @@ import {
   Typography,
   type TableProps,
 } from "antd";
+import { ToneTag } from "../../components/ui/ToneTag";
+import { toneOf } from "../../components/ui/tone";
 import { useState, type FormEvent } from "react";
 import { EmptyState } from "../../components/ui/states";
 import { StatusBadge } from "../../components/ui/StatusBadge";
@@ -243,9 +245,9 @@ export function IntelligenceTab() {
                 <Space size="small" wrap>
                   <Typography.Text strong>{deviceName(a.device_id)}</Typography.Text>
                   <Tag color={a.score >= 2 ? "error" : "warning"}>score {a.score}</Tag>
-                  <Tag color={STATE_COLOR[a.state] ?? "default"} variant="filled">
+                  <ToneTag tone={toneOf(STATE_COLOR[a.state] ?? "default")}>
                     {a.state}
-                  </Tag>
+                  </ToneTag>
                 </Space>
                 <Space size="small" wrap>
                   <Button

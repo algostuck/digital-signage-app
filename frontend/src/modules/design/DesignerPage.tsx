@@ -22,9 +22,9 @@ import {
   Row,
   Select,
   Space,
-  Tag,
   Typography,
 } from "antd";
+import { ToneTag } from "../../components/ui/ToneTag";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { LoadingState } from "../../components/ui/states";
@@ -279,9 +279,9 @@ export function DesignerPage() {
             </Typography.Title>
             <StatusBadge status={layout.status} />
             {dirty && (
-              <Tag color="warning" variant="filled">
+              <ToneTag tone="warning">
                 Unsaved changes
-              </Tag>
+              </ToneTag>
             )}
           </Space>
         </div>

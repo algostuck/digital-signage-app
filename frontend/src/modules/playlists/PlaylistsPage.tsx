@@ -75,7 +75,7 @@ export function PlaylistsPage() {
               >
                 <Flex justify="space-between" align="flex-start" gap="small">
                   <Typography.Text strong ellipsis>
-                    <PlaySquareOutlined className="mr-2 text-slate-400" />
+                    <PlaySquareOutlined className="mr-2 text-slate-600 dark:text-slate-400" />
                     {playlist.name}
                   </Typography.Text>
                   <StatusBadge status={playlist.status} />

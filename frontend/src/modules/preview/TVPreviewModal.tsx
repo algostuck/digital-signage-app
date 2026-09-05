@@ -21,10 +21,11 @@ import {
   Row,
   Space,
   Tabs,
-  Tag,
   Tooltip,
   Typography,
 } from "antd";
+import { ToneTag } from "../../components/ui/ToneTag";
+import { toneOf } from "../../components/ui/tone";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { ErrorState, LoadingState } from "../../components/ui/states";
 import { StatusBadge } from "../../components/ui/StatusBadge";
@@ -249,9 +250,9 @@ export function TVPreviewModal({
       </Descriptions.Item>
       {manifest && (
         <Descriptions.Item label="Active now">
-          <Tag color={manifest.campaign_active_now ? "success" : "default"} variant="filled">
+          <ToneTag tone={toneOf(manifest.campaign_active_now ? "success" : "default")}>
             {manifest.campaign_active_now ? "In a schedule window" : "Outside every window"}
-          </Tag>
+          </ToneTag>
         </Descriptions.Item>
       )}
       {manifest?.variant && (
@@ -294,9 +295,9 @@ export function TVPreviewModal({
             (source.authoritative ? (
               <StatusBadge status="published" />
             ) : (
-              <Tag color="warning" variant="filled">
+              <ToneTag tone="warning">
                 Draft composition
-              </Tag>
+              </ToneTag>
             ))}
         </Space>
       }

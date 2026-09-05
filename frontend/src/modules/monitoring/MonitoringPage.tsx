@@ -14,10 +14,11 @@ import {
   Space,
   Table,
   Tabs,
-  Tag,
   Typography,
   type TableProps,
 } from "antd";
+import { ToneTag } from "../../components/ui/ToneTag";
+import { toneOf } from "../../components/ui/tone";
 import { useState } from "react";
 import { PageHeader } from "../../components/ui/PageHeader";
 import { StatCard } from "../../components/ui/StatCard";
@@ -119,26 +120,26 @@ function FleetHealthTab() {
           <StatCard label="Devices" value={org.total} />
         </Col>
         <Col xs={12} sm={8} xl={4}>
-          <StatCard label="Online" value={org.online} valueColor="#059669" />
+          <StatCard label="Online" value={org.online} tone="success" />
         </Col>
         <Col xs={12} sm={8} xl={4}>
-          <StatCard label="Warning" value={org.warning} valueColor={org.warning ? "#D97706" : undefined} />
+          <StatCard label="Warning" value={org.warning} tone={org.warning ? "warning" : undefined} />
         </Col>
         <Col xs={12} sm={8} xl={4}>
-          <StatCard label="Offline" value={org.offline} valueColor={org.offline ? "#DC2626" : undefined} />
+          <StatCard label="Offline" value={org.offline} tone={org.offline ? "error" : undefined} />
         </Col>
         <Col xs={12} sm={8} xl={4}>
           <StatCard
             label="Open incidents"
             value={org.open_incidents}
-            valueColor={org.open_incidents ? "#DC2626" : undefined}
+            tone={org.open_incidents ? "error" : undefined}
           />
         </Col>
         <Col xs={12} sm={8} xl={4}>
           <StatCard
             label="Outdated players"
             value={org.outdated_players}
-            valueColor={org.outdated_players ? "#D97706" : undefined}
+            tone={org.outdated_players ? "warning" : undefined}
           />
         </Col>
       </Row>
@@ -338,13 +339,11 @@ function IncidentsTab() {
             <Card key={incident.id} size="small">
               <Flex wrap align="center" gap="small">
                 <StatusBadge status={incident.state} />
-                <Tag
-                  color={incident.severity === "critical" ? "error" : "warning"}
+                <ToneTag tone={toneOf(incident.severity === "critical" ? "error" : "warning")}
                   icon={incident.severity === "critical" ? undefined : <ThunderboltOutlined />}
-                  variant="filled"
                 >
                   {incident.type}
-                </Tag>
+                </ToneTag>
                 <Typography.Text strong>{incident.title}</Typography.Text>
                 <Typography.Text type="secondary" className="text-xs">
                   opened {timeAgo(incident.opened_at)}

@@ -14,9 +14,10 @@ import {
   Row,
   Select,
   Space,
-  Tag,
   Typography,
 } from "antd";
+import { ToneTag } from "../../components/ui/ToneTag";
+import { toneOf } from "../../components/ui/tone";
 import { useState } from "react";
 import { EmptyState, LoadingState } from "../../components/ui/states";
 import { api, ApiError } from "../../lib/api";
@@ -111,12 +112,10 @@ export function GroupsTab() {
                       {group.name}
                     </Typography.Text>
                     <Space size="small" className="mt-1">
-                      <Tag
-                        variant="filled"
-                        color={group.group_type === "dynamic" ? "blue" : "default"}
+                      <ToneTag tone={toneOf(group.group_type === "dynamic" ? "blue" : "default")}
                       >
                         {group.group_type}
-                      </Tag>
+                      </ToneTag>
                       <Typography.Text type="secondary" className="text-sm">
                         {group.member_count} device{group.member_count === 1 ? "" : "s"}
                       </Typography.Text>

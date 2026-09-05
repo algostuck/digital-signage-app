@@ -16,9 +16,9 @@ import {
   List,
   Popconfirm,
   Space,
-  Tag,
   Typography,
 } from "antd";
+import { ToneTag } from "../../components/ui/ToneTag";
 import { useState } from "react";
 import { LoadingState } from "../../components/ui/states";
 import { StatusBadge } from "../../components/ui/StatusBadge";
@@ -128,9 +128,9 @@ export function AssetDetailModal({ assetId, onClose, onChanged }: Props) {
       <Space orientation="vertical" size="middle" className="w-full">
         <Space size="small" wrap>
           <StatusBadge status={asset.status} />
-          <Tag variant="filled" className="capitalize">
+          <ToneTag tone="default" className="capitalize">
             {asset.type}
-          </Tag>
+          </ToneTag>
           {version && <StatusBadge status={version.processing_status} />}
         </Space>
 
@@ -170,9 +170,9 @@ export function AssetDetailModal({ assetId, onClose, onChanged }: Props) {
         {asset.tags.length > 0 && (
           <Space size={[4, 8]} wrap>
             {asset.tags.map((t) => (
-              <Tag key={t.id} variant="filled">
+              <ToneTag tone="default" key={t.id}>
                 {t.key}={t.value}
-              </Tag>
+              </ToneTag>
             ))}
           </Space>
         )}

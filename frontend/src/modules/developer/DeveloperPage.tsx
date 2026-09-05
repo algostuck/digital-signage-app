@@ -1,6 +1,8 @@
 import { CloudServerOutlined, PlayCircleOutlined } from "@ant-design/icons";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Alert, Button, Card, Result, Space, Tag, Typography } from "antd";
+import { Alert, Button, Card, Result, Space, Typography } from "antd";
+import { ToneTag } from "../../components/ui/ToneTag";
+import { toneOf } from "../../components/ui/tone";
 import { useState } from "react";
 import { PageHeader } from "../../components/ui/PageHeader";
 import { LoadingState } from "../../components/ui/states";
@@ -206,12 +208,10 @@ export function DeveloperPage() {
                     <Typography.Text strong code>
                       {v.version}
                     </Typography.Text>
-                    <Tag
-                      color={LIFECYCLE_COLOR[v.lifecycle_state] ?? "default"}
-                      variant="filled"
+                    <ToneTag tone={toneOf(LIFECYCLE_COLOR[v.lifecycle_state] ?? "default")}
                     >
                       {v.lifecycle_state}
-                    </Tag>
+                    </ToneTag>
                     {v.sunset_at && (
                       <Typography.Text type="danger" className="text-xs">
                         sunset {new Date(v.sunset_at).toLocaleDateString()}

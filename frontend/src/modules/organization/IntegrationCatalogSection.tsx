@@ -1,5 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
-import { Card, Flex, List, Tag, Typography } from "antd";
+import { Card, Flex, List, Typography } from "antd";
+import { ToneTag } from "../../components/ui/ToneTag";
+import { toneOf } from "../../components/ui/tone";
 import { api } from "../../lib/api";
 import { useAuth } from "../../lib/auth";
 
@@ -41,16 +43,14 @@ export function IntegrationCatalogSection() {
                 <Typography.Text strong disabled={!c.available}>
                   {c.name}
                 </Typography.Text>
-                <Tag
-                  color={!c.available ? "default" : c.configured > 0 ? "success" : "default"}
-                  variant="filled"
+                <ToneTag tone={toneOf(!c.available ? "default" : c.configured > 0 ? "success" : "default")}
                 >
                   {!c.available
                     ? "plan locked"
                     : c.configured > 0
                       ? `${c.configured} configured`
                       : "not configured"}
-                </Tag>
+                </ToneTag>
               </Flex>
               <Typography.Paragraph type="secondary" className="!mb-0 mt-1 text-xs">
                 {c.description}

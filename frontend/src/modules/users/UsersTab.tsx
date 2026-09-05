@@ -127,7 +127,7 @@ export function UsersTab() {
           }}
           placeholder="Search by name or email…"
           aria-label="Search users"
-          prefix={<SearchOutlined className="text-slate-400" />}
+          prefix={<SearchOutlined className="text-slate-600 dark:text-slate-400" />}
         />
         {canManage && (
           <Button type="primary" icon={<PlusOutlined />} onClick={() => setCreateOpen(true)}>

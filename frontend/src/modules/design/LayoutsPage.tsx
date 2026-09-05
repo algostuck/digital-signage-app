@@ -109,7 +109,7 @@ function LayoutsTab() {
               >
                 <Flex justify="space-between" align="flex-start" gap="small">
                   <Typography.Text strong ellipsis>
-                    <AppstoreOutlined className="mr-2 text-slate-400" />
+                    <AppstoreOutlined className="mr-2 text-slate-600 dark:text-slate-400" />
                     {layout.name}
                   </Typography.Text>
                   <StatusBadge status={layout.status} />

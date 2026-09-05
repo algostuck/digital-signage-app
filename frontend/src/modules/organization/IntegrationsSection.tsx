@@ -15,6 +15,7 @@ import {
   Tag,
   Typography,
 } from "antd";
+import { ToneTag } from "../../components/ui/ToneTag";
 import { useState } from "react";
 import { EmptyState } from "../../components/ui/states";
 import { StatusBadge } from "../../components/ui/StatusBadge";
@@ -153,7 +154,7 @@ function WebhooksPanel() {
                   <Typography.Text type="secondary" className="text-xs">
                     {webhook.event_types_json.join(", ")}
                   </Typography.Text>
-                  {!webhook.active && <Tag variant="filled">inactive</Tag>}
+                  {!webhook.active && <ToneTag tone="default">inactive</ToneTag>}
                   <Space size="small" className="ms-auto">
                     <Button
                       size="small"
@@ -401,9 +402,9 @@ function ApiKeysPanel() {
                     {key.scopes_json.join(", ")}
                   </Typography.Text>
                   {key.revoked_at ? (
-                    <Tag color="error" variant="filled">
+                    <ToneTag tone="error">
                       revoked
-                    </Tag>
+                    </ToneTag>
                   ) : key.expires_at ? (
                     <Typography.Text type="secondary" className="text-xs">
                       expires {new Date(key.expires_at).toLocaleDateString()}

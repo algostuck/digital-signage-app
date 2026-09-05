@@ -203,7 +203,7 @@ export function LocationMapWidget({
 
       <div className="grid gap-4 lg:grid-cols-[1.618fr_1fr]">
         {!tilesFailed && (
-          <div className="overflow-hidden rounded-lg" style={{ height: 340 }}>
+          <div className="overflow-hidden rounded-lg" style={{ height: 340 }} aria-hidden>
             <MapContainer
               center={[22.5, 79]}
               zoom={4}

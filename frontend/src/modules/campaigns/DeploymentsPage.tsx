@@ -11,9 +11,9 @@ import {
   Row,
   Select,
   Space,
-  Tag,
   Typography,
 } from "antd";
+import { ToneTag } from "../../components/ui/ToneTag";
 import { useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { PageHeader } from "../../components/ui/PageHeader";
@@ -127,9 +127,9 @@ export function DeploymentsPage() {
                         {deployment.pending > 0 && ` · ${deployment.pending} pending`}
                       </Typography.Text>
                       {deployment.failed > 0 && (
-                        <Tag color="error" variant="filled">
+                        <ToneTag tone="error">
                           {deployment.failed} failed
-                        </Tag>
+                        </ToneTag>
                       )}
                     </Flex>
                   </div>

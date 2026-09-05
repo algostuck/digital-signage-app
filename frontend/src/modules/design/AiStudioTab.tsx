@@ -11,11 +11,12 @@ import {
   Select,
   Space,
   Table,
-  Tag,
   Tooltip,
   Typography,
   type TableProps,
 } from "antd";
+import { ToneTag } from "../../components/ui/ToneTag";
+import { toneOf } from "../../components/ui/tone";
 import { useState } from "react";
 import { EmptyState } from "../../components/ui/states";
 import { api, ApiError } from "../../lib/api";
@@ -70,15 +71,15 @@ function ConfidenceBadge({ output }: { output: AiOutputRow }) {
   const pct = Math.round(output.confidence * 100);
   return (
     <Space size={4} wrap>
-      <Tag color={SAFETY_COLOR[output.safety_status] ?? "default"} variant="filled">
+      <ToneTag tone={toneOf(SAFETY_COLOR[output.safety_status] ?? "default")}>
         {output.safety_status}
-      </Tag>
+      </ToneTag>
       <Tooltip title="Recommendation confidence (deterministic provider)">
-        <Tag color={pct >= 80 ? "success" : "warning"} variant="filled">
+        <ToneTag tone={toneOf(pct >= 80 ? "success" : "warning")}>
           {pct}% confidence
-        </Tag>
+        </ToneTag>
       </Tooltip>
-      {output.fallback && <Tag variant="filled">fallback result</Tag>}
+      {output.fallback && <ToneTag tone="default">fallback result</ToneTag>}
     </Space>
   );
 }
