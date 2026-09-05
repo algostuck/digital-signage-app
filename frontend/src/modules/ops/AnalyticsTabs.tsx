@@ -1,20 +1,11 @@
 import { DownloadOutlined } from "@ant-design/icons";
 import { useQuery } from "@tanstack/react-query";
-import {
-  Button,
-  DatePicker,
-  Flex,
-  Progress,
-  Select,
-  Space,
-  Table,
-  Typography,
-  type TableProps,
-} from "antd";
+import { Button, DatePicker, Flex, Progress, Select, Space, Typography, type TableProps } from "antd";
 import dayjs from "dayjs";
 import { useState } from "react";
 import { FilterBar } from "@/design-system";
-import { EmptyState } from "@/design-system";
+import { DataTable } from "@/design-system";
+
 import { api, ApiError } from "../../lib/api";
 import { useAuth } from "../../lib/auth";
 
@@ -183,15 +174,14 @@ export function ProofOfPlayTab() {
         <ExportButtons report="proof-of-play" filters={filters} />
       </FilterBar>
 
-      <Table<PopRow>
-        size="medium"
+      <DataTable<PopRow>
         rowKey={(row) => row.key_id ?? "none"}
         columns={columns}
         dataSource={rows}
         loading={query.isLoading}
         pagination={false}
         scroll={{ x: "max-content" }}
-        locale={{ emptyText: <EmptyState title="No playback events in this range" /> }}
+        emptyTitle="No playback events in this range"
       />
     </div>
   );
@@ -239,15 +229,13 @@ export function CampaignAnalyticsTab() {
       <Flex justify="flex-end" className="mb-4">
         <ExportButtons report="campaign-performance" filters={{}} />
       </Flex>
-      <Table<PerformanceRow>
-        size="medium"
+      <DataTable<PerformanceRow>
         rowKey="campaign_id"
         columns={performanceColumns}
         dataSource={rows}
         loading={query.isLoading}
         pagination={false}
-        scroll={{ x: "max-content" }}
-        locale={{ emptyText: <EmptyState title="No campaign activity yet" /> }}
+        emptyTitle="No campaign activity yet"
       />
     </div>
   );
@@ -325,15 +313,13 @@ export function UptimeTab() {
         />
         <ExportButtons report="device-uptime" filters={filters} />
       </FilterBar>
-      <Table<UptimeRow>
-        size="medium"
+      <DataTable<UptimeRow>
         rowKey="device_id"
         columns={columns}
         dataSource={rows}
         loading={query.isLoading}
         pagination={false}
-        scroll={{ x: "max-content" }}
-        locale={{ emptyText: <EmptyState title="No uptime data in this range" /> }}
+        emptyTitle="No uptime data in this range"
       />
     </div>
   );

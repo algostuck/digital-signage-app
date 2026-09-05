@@ -1,23 +1,10 @@
 import { BuildOutlined, SendOutlined } from "@ant-design/icons";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import {
-  Alert,
-  Button,
-  Card,
-  Col,
-  Form,
-  Input,
-  InputNumber,
-  Row,
-  Select,
-  Space,
-  Table,
-  Typography,
-  type TableProps,
-} from "antd";
+import { Alert, Button, Card, Col, Form, Input, InputNumber, Row, Select, Space, Typography, type TableProps } from "antd";
 import { useState } from "react";
 import { StatCard } from "@/design-system";
-import { EmptyState } from "@/design-system";
+import { DataTable } from "@/design-system";
+
 import { StatusBadge } from "@/design-system";
 import { api, ApiError } from "../../lib/api";
 import { useAuth } from "../../lib/auth";
@@ -249,22 +236,14 @@ export function BundlesTab() {
           binaries stay in storage and downloads resume via HTTP Range. Publishing supersedes
           the previous bundle of the same scope.
         </Typography.Paragraph>
-        <Table<BundleRow>
-          size="medium"
+        <DataTable<BundleRow>
           rowKey="id"
           columns={columns}
           dataSource={bundles}
           loading={bundlesQuery.isLoading}
-          scroll={{ x: "max-content" }}
           pagination={false}
-          locale={{
-            emptyText: (
-              <EmptyState
-                title="No bundles yet"
-                description="Build a bundle to prefetch content to devices ahead of playback."
-              />
-            ),
-          }}
+          emptyTitle="No bundles yet"
+        emptyDescription="Build a bundle to prefetch content to devices ahead of playback."
         />
       </Card>
 

@@ -1,8 +1,9 @@
 import { useQuery } from "@tanstack/react-query";
-import { Card, Space, Table, Tabs, Typography, type TableProps } from "antd";
+import { Card, Space, Tabs, Typography, type TableProps } from "antd";
 import { useState } from "react";
 import { PageHeader } from "@/design-system";
-import { EmptyState, LoadingState } from "@/design-system";
+import { DataTable } from "@/design-system";
+import { LoadingState } from "@/design-system";
 import { StatusBadge } from "@/design-system";
 import { api } from "../../lib/api";
 import { EntitlementGuard } from "@/design-system";
@@ -187,38 +188,32 @@ function OverviewTab() {
   return (
     <Space orientation="vertical" size="large" className="w-full">
       <Card size="small" title="Campaign deployments">
-        <Table<DeploymentRow>
-          size="medium"
+        <DataTable<DeploymentRow>
           rowKey="campaign_id"
           columns={deploymentColumns}
           dataSource={deployments}
           pagination={false}
-          scroll={{ x: "max-content" }}
-          locale={{ emptyText: <EmptyState title="No data yet" /> }}
+          emptyTitle="No data yet"
         />
       </Card>
 
       <Card size="small" title="Playback (proof-of-play foundation)">
-        <Table<PlaybackRow>
-          size="medium"
+        <DataTable<PlaybackRow>
           rowKey="asset_id"
           columns={playbackColumns}
           dataSource={playback}
           pagination={false}
-          scroll={{ x: "max-content" }}
-          locale={{ emptyText: <EmptyState title="No data yet" /> }}
+          emptyTitle="No data yet"
         />
       </Card>
 
       <Card size="small" title="Device health by location">
-        <Table<LocationRow>
-          size="medium"
+        <DataTable<LocationRow>
           rowKey="location_id"
           columns={locationColumns}
           dataSource={locations}
           pagination={false}
-          scroll={{ x: "max-content" }}
-          locale={{ emptyText: <EmptyState title="No data yet" /> }}
+          emptyTitle="No data yet"
         />
       </Card>
     </Space>

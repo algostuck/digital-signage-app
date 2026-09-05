@@ -1,23 +1,8 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import {
-  Alert,
-  Button,
-  Card,
-  Col,
-  Flex,
-  Form,
-  Input,
-  Row,
-  Select,
-  Space,
-  Table,
-  Tag,
-  Tooltip,
-  Typography,
-  type TableProps,
-} from "antd";
+import { Alert, Button, Card, Col, Flex, Form, Input, Row, Select, Space, Tag, Tooltip, Typography, type TableProps } from "antd";
 import { useState } from "react";
-import { EmptyState } from "@/design-system";
+
+import { DataTable } from "@/design-system";
 import { SectionCard } from "@/design-system";
 import { StatusBadge } from "@/design-system";
 import { api, ApiError } from "../../lib/api";
@@ -305,28 +290,24 @@ function SubscriptionsPanel() {
           </Card>
         )}
 
-        <Table<SubscriptionRow>
-          size="medium"
+        <DataTable<SubscriptionRow>
           rowKey="id"
           columns={subscriptionColumns}
           dataSource={subscriptions}
           pagination={false}
-          scroll={{ x: "max-content" }}
           loading={subscriptionsQuery.isLoading}
-          locale={{ emptyText: <EmptyState title="No consumers yet" /> }}
+          emptyTitle="No consumers yet"
         />
 
         {expanded && (
           <Card size="small" type="inner" title="Delivery log">
-            <Table<DeliveryRow>
-              size="medium"
+            <DataTable<DeliveryRow>
               rowKey="id"
               columns={deliveryColumns}
               dataSource={deliveries}
               pagination={false}
-              scroll={{ x: "max-content" }}
               loading={deliveriesQuery.isLoading}
-              locale={{ emptyText: <EmptyState title="No deliveries yet" /> }}
+              emptyTitle="No deliveries yet"
             />
           </Card>
         )}
@@ -397,15 +378,13 @@ function EventStreamPanel() {
         />
       }
     >
-      <Table<EventRow>
-        size="medium"
+      <DataTable<EventRow>
         rowKey="id"
         columns={columns}
         dataSource={events}
         pagination={false}
-        scroll={{ x: "max-content" }}
         loading={eventsQuery.isLoading}
-        locale={{ emptyText: <EmptyState title="No events recorded yet" /> }}
+        emptyTitle="No events recorded yet"
       />
     </SectionCard>
   );

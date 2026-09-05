@@ -6,23 +6,13 @@ import {
   SearchOutlined,
 } from "@ant-design/icons";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import {
-  App,
-  Button,
-  Input,
-  Popconfirm,
-  Select,
-  Space,
-  Table,
-  Tabs,
-  Typography,
-  type TableProps,
-} from "antd";
+import { App, Button, Input, Popconfirm, Select, Space, Tabs, Typography, type TableProps } from "antd";
 import { useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { FilterBar } from "@/design-system";
+import { DataTable } from "@/design-system";
 import { PageHeader } from "@/design-system";
-import { EmptyState } from "@/design-system";
+
 import { StatusBadge } from "@/design-system";
 import { api, ApiError } from "../../lib/api";
 import { useAuth } from "../../lib/auth";
@@ -399,13 +389,11 @@ export function DevicesPage() {
         </div>
       )}
 
-      <Table<Device>
-        size="medium"
+      <DataTable<Device>
         rowKey="id"
         columns={columns}
         dataSource={devices}
         loading={devicesQuery.isLoading}
-        scroll={{ x: "max-content" }}
         rowSelection={
           canManage
             ? {
@@ -417,14 +405,8 @@ export function DevicesPage() {
               }
             : undefined
         }
-        locale={{
-          emptyText: (
-            <EmptyState
-              title="No devices found"
-              description="Players register using the enrollment key and appear here for approval."
-            />
-          ),
-        }}
+        emptyTitle="No devices found"
+        emptyDescription="Players register using the enrollment key and appear here for approval."
         pagination={{
           current: page,
           pageSize,

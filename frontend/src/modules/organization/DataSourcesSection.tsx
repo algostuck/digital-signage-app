@@ -1,21 +1,8 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import {
-  Alert,
-  Button,
-  Card,
-  Col,
-  Form,
-  Input,
-  InputNumber,
-  Row,
-  Select,
-  Space,
-  Table,
-  Typography,
-  type TableProps,
-} from "antd";
+import { Alert, Button, Card, Col, Form, Input, InputNumber, Row, Select, Space, Typography, type TableProps } from "antd";
 import { useState } from "react";
-import { EmptyState } from "@/design-system";
+
+import { DataTable } from "@/design-system";
 import { SectionCard } from "@/design-system";
 import { StatusBadge } from "@/design-system";
 import { api, ApiError } from "../../lib/api";
@@ -272,15 +259,13 @@ export function DataSourcesSection() {
           </Card>
         )}
 
-        <Table<DataSourceRow>
-          size="medium"
+        <DataTable<DataSourceRow>
           rowKey="id"
           columns={columns}
           dataSource={sources}
           pagination={false}
-          scroll={{ x: "max-content" }}
           loading={sourcesQuery.isLoading}
-          locale={{ emptyText: <EmptyState title="No data sources yet" /> }}
+          emptyTitle="No data sources yet"
         />
 
         {testResult && (

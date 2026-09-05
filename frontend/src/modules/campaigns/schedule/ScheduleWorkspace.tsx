@@ -10,25 +10,10 @@ import {
   WarningOutlined,
 } from "@ant-design/icons";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import {
-  App,
-  Badge,
-  Button,
-  Col,
-  Collapse,
-  Grid,
-  Modal,
-  Popconfirm,
-  Row,
-  Segmented,
-  Space,
-  Spin,
-  Table,
-  Typography,
-  type TableProps,
-} from "antd";
+import { App, Badge, Button, Col, Collapse, Grid, Modal, Popconfirm, Row, Segmented, Space, Spin, Typography, type TableProps } from "antd";
 import { useCallback, useMemo, useState, type ReactNode } from "react";
 import { PageHeader } from "@/design-system";
+import { DataTable } from "@/design-system";
 import { ErrorState, LoadingState } from "@/design-system";
 import { ToneTag } from "@/design-system";
 import { api, ApiError } from "../../../lib/api";
@@ -455,13 +440,11 @@ export function ScheduleWorkspace() {
             key: "all",
             label: `All schedule windows (${schedulesQuery.data?.data?.length ?? 0})`,
             children: (
-              <Table<Schedule>
-                size="small"
+              <DataTable<Schedule>
                 rowKey="id"
                 columns={scheduleColumns}
                 dataSource={schedulesQuery.data?.data ?? []}
                 loading={schedulesQuery.isLoading}
-                scroll={{ x: "max-content" }}
                 pagination={{ pageSize: 20, hideOnSinglePage: true }}
               />
             ),

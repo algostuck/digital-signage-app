@@ -1,7 +1,8 @@
 import { CheckOutlined, CloseOutlined, DownloadOutlined } from "@ant-design/icons";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Alert, Button, Flex, Select, Space, Table, Typography, type TableProps } from "antd";
+import { Alert, Button, Flex, Select, Space, Typography, type TableProps } from "antd";
 import { ToneTag } from "@/design-system";
+import { DataTable } from "@/design-system";
 import { SectionCard } from "@/design-system";
 import { toneOf } from "@/design-system";
 import { useState } from "react";
@@ -289,13 +290,11 @@ export function PlanBillingSection() {
 
       {invoices.length > 0 && (
         <SectionCard title="Invoices">
-          <Table<InvoiceRow>
-            size="medium"
+          <DataTable<InvoiceRow>
             rowKey="id"
             columns={invoiceColumns}
             dataSource={invoices}
             pagination={false}
-            scroll={{ x: "max-content" }}
             loading={invoicesQuery.isLoading}
           />
         </SectionCard>

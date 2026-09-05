@@ -1,24 +1,9 @@
 import { PlusOutlined } from "@ant-design/icons";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import {
-  Alert,
-  Button,
-  Card,
-  Flex,
-  Form,
-  Input,
-  InputNumber,
-  Modal,
-  Popconfirm,
-  Select,
-  Space,
-  Table,
-  Tag,
-  Typography,
-  type TableProps,
-} from "antd";
+import { Alert, Button, Card, Flex, Form, Input, InputNumber, Modal, Popconfirm, Select, Space, Tag, Typography, type TableProps } from "antd";
 import { useState } from "react";
-import { EmptyState } from "@/design-system";
+
+import { DataTable } from "@/design-system";
 import { StatusBadge } from "@/design-system";
 import { api, ApiError } from "../../lib/api";
 import { useAuth } from "../../lib/auth";
@@ -230,26 +215,22 @@ export function ExperimentsTab() {
       </Flex>
 
       <Card size="small" title="Experiments">
-        <Table<ExperimentRow>
-          size="medium"
+        <DataTable<ExperimentRow>
           rowKey="id"
           columns={columns}
           dataSource={experiments}
           loading={experimentsQuery.isLoading}
           pagination={false}
-          scroll={{ x: "max-content" }}
-          locale={{ emptyText: <EmptyState title="No experiments yet." /> }}
+          emptyTitle="No experiments yet."
         />
 
         {resultsFor && resultsQuery.data?.data && (
           <Card size="small" type="inner" className="mt-3" title="Results by arm">
-            <Table<ResultArm>
-              size="medium"
+            <DataTable<ResultArm>
               rowKey="arm"
               columns={resultColumns}
               dataSource={resultsQuery.data.data.arms}
               pagination={false}
-              scroll={{ x: "max-content" }}
             />
           </Card>
         )}

@@ -1,26 +1,11 @@
 import { PlusOutlined } from "@ant-design/icons";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import {
-  Alert,
-  Button,
-  Card,
-  DatePicker,
-  Form,
-  Input,
-  InputNumber,
-  Popconfirm,
-  Select,
-  Space,
-  Table,
-  Tabs,
-  TimePicker,
-  Typography,
-  type TableProps,
-} from "antd";
+import { Alert, Button, Card, DatePicker, Form, Input, InputNumber, Popconfirm, Select, Space, Tabs, TimePicker, Typography, type TableProps } from "antd";
 import dayjs, { type Dayjs } from "dayjs";
 import { useState } from "react";
 import { PageHeader } from "@/design-system";
-import { EmptyState } from "@/design-system";
+import { DataTable } from "@/design-system";
+
 import { StatusBadge } from "@/design-system";
 import { api, ApiError } from "../../lib/api";
 import { useAuth } from "../../lib/auth";
@@ -282,14 +267,12 @@ export function AdsPage() {
           </Form>
         </Card>
       )}
-      <Table<InventoryRow>
-        size="medium"
+      <DataTable<InventoryRow>
         rowKey="id"
         columns={inventoryColumns}
         dataSource={inventory}
         loading={inventoryQuery.isLoading}
-        scroll={{ x: "max-content" }}
-        locale={{ emptyText: <EmptyState title="No inventory yet" /> }}
+        emptyTitle="No inventory yet"
       />
     </Space>
   );
@@ -370,14 +353,12 @@ export function AdsPage() {
       <Typography.Text type="secondary" className="text-xs">
         New bookings await approval in the Approvals inbox before confirming.
       </Typography.Text>
-      <Table<BookingRow>
-        size="medium"
+      <DataTable<BookingRow>
         rowKey="id"
         columns={bookingColumns}
         dataSource={bookings}
         loading={bookingsQuery.isLoading}
-        scroll={{ x: "max-content" }}
-        locale={{ emptyText: <EmptyState title="No bookings yet" /> }}
+        emptyTitle="No bookings yet"
       />
     </Space>
   );

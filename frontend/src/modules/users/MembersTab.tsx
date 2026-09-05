@@ -1,22 +1,11 @@
 import { UserAddOutlined } from "@ant-design/icons";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import {
-  Alert,
-  Button,
-  Card,
-  Form,
-  Input,
-  Popconfirm,
-  Select,
-  Space,
-  Table,
-  Typography,
-  type TableProps,
-} from "antd";
+import { Alert, Button, Card, Form, Input, Popconfirm, Select, Space, Typography, type TableProps } from "antd";
 import { ToneTag } from "@/design-system";
+import { DataTable } from "@/design-system";
 import { toneOf } from "@/design-system";
 import { useState } from "react";
-import { EmptyState } from "@/design-system";
+
 import { StatusBadge } from "@/design-system";
 import { api, ApiError } from "../../lib/api";
 import { useAuth } from "../../lib/auth";
@@ -143,15 +132,13 @@ export function MembersTab() {
         organization granted a role here.
       </Typography.Text>
 
-      <Table<MemberRow>
-        size="medium"
+      <DataTable<MemberRow>
         rowKey="user_id"
         columns={columns}
         dataSource={members}
         loading={membersQuery.isLoading}
         pagination={false}
-        scroll={{ x: "max-content" }}
-        locale={{ emptyText: <EmptyState title="No members yet" /> }}
+        emptyTitle="No members yet"
       />
 
       {canManage && (

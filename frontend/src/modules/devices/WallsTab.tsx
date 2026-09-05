@@ -5,22 +5,10 @@ import {
   StopOutlined,
 } from "@ant-design/icons";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import {
-  Alert,
-  Button,
-  Card,
-  Flex,
-  Form,
-  Input,
-  InputNumber,
-  Select,
-  Space,
-  Table,
-  Typography,
-  type TableProps,
-} from "antd";
+import { Alert, Button, Card, Flex, Form, Input, InputNumber, Select, Space, Typography, type TableProps } from "antd";
 import { useState } from "react";
-import { EmptyState } from "@/design-system";
+
+import { DataTable } from "@/design-system";
 import { StatusBadge } from "@/design-system";
 import { api, ApiError } from "../../lib/api";
 import { useAuth } from "../../lib/auth";
@@ -284,22 +272,14 @@ export function WallsTab() {
       )}
 
       <Card size="small" title="Video walls">
-        <Table<WallSummary>
-          size="medium"
+        <DataTable<WallSummary>
           rowKey="id"
           columns={wallColumns}
           dataSource={walls}
           loading={wallsQuery.isLoading}
-          scroll={{ x: "max-content" }}
           pagination={false}
-          locale={{
-            emptyText: (
-              <EmptyState
-                title="No walls yet"
-                description="Create a wall to synchronize playback across a grid of displays."
-              />
-            ),
-          }}
+          emptyTitle="No walls yet"
+        emptyDescription="Create a wall to synchronize playback across a grid of displays."
         />
 
         {wall && selected && (
@@ -334,14 +314,12 @@ export function WallsTab() {
                   </Button>
                 )}
               </Flex>
-              <Table<WallMemberState>
-                size="small"
+              <DataTable<WallMemberState>
                 rowKey="member_id"
                 columns={memberColumns}
                 dataSource={wall.members}
-                scroll={{ x: "max-content" }}
                 pagination={false}
-                locale={{ emptyText: <EmptyState title="No members yet" /> }}
+                emptyTitle="No members yet"
               />
               {canManage && (
                 <Space size="small" wrap align="end">

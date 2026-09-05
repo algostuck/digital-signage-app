@@ -1,22 +1,11 @@
 import { CaretRightOutlined, DeleteOutlined, PlusOutlined } from "@ant-design/icons";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import {
-  Alert,
-  Button,
-  Card,
-  Form,
-  Input,
-  Popconfirm,
-  Select,
-  Space,
-  Table,
-  Typography,
-  type TableProps,
-} from "antd";
+import { Alert, Button, Card, Form, Input, Popconfirm, Select, Space, Typography, type TableProps } from "antd";
 import { ToneTag } from "@/design-system";
+import { DataTable } from "@/design-system";
 import { toneOf } from "@/design-system";
 import { useState } from "react";
-import { EmptyState } from "@/design-system";
+
 import { api, ApiError } from "../../lib/api";
 import { useAuth } from "../../lib/auth";
 import { ExportButtons } from "./AnalyticsTabs";
@@ -216,15 +205,13 @@ export function ExportsTab() {
         </Form>
       </Card>
 
-      <Table<ExportRow>
-        size="medium"
+      <DataTable<ExportRow>
         rowKey="id"
         columns={columns}
         dataSource={rows}
         loading={exportsQuery.isLoading}
         pagination={false}
-        scroll={{ x: "max-content" }}
-        locale={{ emptyText: <EmptyState title="No scheduled exports yet" /> }}
+        emptyTitle="No scheduled exports yet"
       />
 
       {error && <Alert type="error" message={error} showIcon role="alert" />}
@@ -277,15 +264,13 @@ export function AdsReportTab() {
   return (
     <Space orientation="vertical" size="medium" className="w-full">
       <ExportButtons report="ad-performance" filters={{}} />
-      <Table<AdPerfRow>
-        size="medium"
+      <DataTable<AdPerfRow>
         rowKey="booking_id"
         columns={adColumns}
         dataSource={rows}
         loading={reportQuery.isLoading}
         pagination={false}
-        scroll={{ x: "max-content" }}
-        locale={{ emptyText: <EmptyState title="No ad bookings yet" /> }}
+        emptyTitle="No ad bookings yet"
       />
     </Space>
   );

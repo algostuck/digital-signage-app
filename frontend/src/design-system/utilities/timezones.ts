@@ -18,6 +18,7 @@ export function timeZoneOptions(): { value: string; label: string }[] {
 
 /** Locales the product ships copy for; extend when translations land. */
 export const LOCALE_OPTIONS = [
+  { value: "en", label: "English" },
   { value: "en-IN", label: "English (India)" },
   { value: "en-GB", label: "English (UK)" },
   { value: "en-US", label: "English (US)" },

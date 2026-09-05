@@ -1,24 +1,10 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import {
-  Alert,
-  Button,
-  Card,
-  Col,
-  Form,
-  Input,
-  InputNumber,
-  Row,
-  Select,
-  Space,
-  Table,
-  Tooltip,
-  Typography,
-  type TableProps,
-} from "antd";
+import { Alert, Button, Card, Col, Form, Input, InputNumber, Row, Select, Space, Tooltip, Typography, type TableProps } from "antd";
 import { ToneTag } from "@/design-system";
+import { DataTable } from "@/design-system";
 import { toneOf } from "@/design-system";
 import { useState } from "react";
-import { EmptyState } from "@/design-system";
+
 import { api, ApiError } from "../../lib/api";
 import { useAuth } from "../../lib/auth";
 
@@ -334,15 +320,13 @@ export function AiStudioTab() {
       )}
 
       <Card size="small" title="Recent AI activity (explainability trail)">
-        <Table<AiRequestRow>
-          size="medium"
+        <DataTable<AiRequestRow>
           rowKey="id"
           columns={activityColumns}
           dataSource={requests}
           loading={requestsQuery.isLoading}
           pagination={false}
-          scroll={{ x: "max-content" }}
-          locale={{ emptyText: <EmptyState title="No AI activity yet." /> }}
+          emptyTitle="No AI activity yet."
         />
       </Card>
     </Space>

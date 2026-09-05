@@ -1,18 +1,8 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import {
-  Alert,
-  Button,
-  Card,
-  Input,
-  Popconfirm,
-  Select,
-  Space,
-  Table,
-  Typography,
-  type TableProps,
-} from "antd";
+import { Alert, Button, Card, Input, Popconfirm, Select, Space, Typography, type TableProps } from "antd";
 import { useState, type FormEvent } from "react";
-import { EmptyState } from "@/design-system";
+
+import { DataTable } from "@/design-system";
 import { StatusBadge } from "@/design-system";
 import { api, ApiError } from "../../lib/api";
 import { useAuth } from "../../lib/auth";
@@ -261,15 +251,13 @@ export function DecisioningTab() {
           )
         }
       >
-        <Table<PolicyRow>
-          size="medium"
+        <DataTable<PolicyRow>
           rowKey="id"
           columns={policyColumns}
           dataSource={policies}
           loading={policiesQuery.isLoading}
           pagination={false}
-          scroll={{ x: "max-content" }}
-          locale={{ emptyText: <EmptyState title="No decision policies yet." /> }}
+          emptyTitle="No decision policies yet."
         />
 
         {selected && canManage && (
@@ -349,22 +337,14 @@ export function DecisioningTab() {
       </Card>
 
       <Card size="small" title="Decision log">
-        <Table<LogRow>
-          size="medium"
+        <DataTable<LogRow>
           rowKey="id"
           columns={logColumns}
           dataSource={logs}
           loading={logQuery.isLoading}
           pagination={false}
-          scroll={{ x: "max-content" }}
-          locale={{
-            emptyText: (
-              <EmptyState
-                title="No decisions logged"
-                description="Log entries record actual switches only."
-              />
-            ),
-          }}
+          emptyTitle="No decisions logged"
+        emptyDescription="Log entries record actual switches only."
         />
       </Card>
 

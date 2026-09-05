@@ -1,23 +1,8 @@
 import { CheckOutlined, ThunderboltOutlined } from "@ant-design/icons";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import {
-  Alert,
-  Button,
-  Card,
-  Col,
-  Flex,
-  Form,
-  Input,
-  InputNumber,
-  Row,
-  Segmented,
-  Space,
-  Table,
-  Tabs,
-  Typography,
-  type TableProps,
-} from "antd";
+import { Alert, Button, Card, Col, Flex, Form, Input, InputNumber, Row, Segmented, Space, Tabs, Typography, type TableProps } from "antd";
 import { ToneTag } from "@/design-system";
+import { DataTable } from "@/design-system";
 import { toneOf } from "@/design-system";
 import { useState } from "react";
 import { PageHeader } from "@/design-system";
@@ -147,9 +132,7 @@ function FleetHealthTab() {
       <Row gutter={[16, 16]}>
         <Col xs={24} lg={12}>
           <Card size="small" title="By location (subtree rollup)">
-            <Table<HealthRow>
-              size="small"
-              scroll={{ x: "max-content" }}
+            <DataTable<HealthRow>
               columns={healthColumns}
               dataSource={health.locations.map((row) => ({
                 key: row.id,
@@ -158,15 +141,13 @@ function FleetHealthTab() {
                 ...row,
               }))}
               pagination={false}
-              locale={{ emptyText: <EmptyState title="No devices assigned yet" /> }}
+              emptyTitle="No devices assigned yet"
             />
           </Card>
         </Col>
         <Col xs={24} lg={12}>
           <Card size="small" title="By group">
-            <Table<HealthRow>
-              size="small"
-              scroll={{ x: "max-content" }}
+            <DataTable<HealthRow>
               columns={healthColumns}
               dataSource={health.groups.map((row) => ({
                 key: row.id,
@@ -178,7 +159,7 @@ function FleetHealthTab() {
                   : {}),
               }))}
               pagination={false}
-              locale={{ emptyText: <EmptyState title="No devices assigned yet" /> }}
+              emptyTitle="No devices assigned yet"
             />
           </Card>
         </Col>

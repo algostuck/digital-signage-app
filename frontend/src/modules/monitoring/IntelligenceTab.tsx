@@ -1,22 +1,11 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import {
-  Alert,
-  Button,
-  Card,
-  Descriptions,
-  Input,
-  Select,
-  Space,
-  Table,
-  Tag,
-  Typography,
-  type TableProps,
-} from "antd";
+import { Alert, Button, Card, Descriptions, Input, Select, Space, Tag, Typography, type TableProps } from "antd";
 import { ToneTag } from "@/design-system";
+import { DataTable } from "@/design-system";
 import { EntityList } from "@/design-system";
 import { toneOf } from "@/design-system";
 import { useState, type FormEvent } from "react";
-import { EmptyState } from "@/design-system";
+
 import { StatusBadge } from "@/design-system";
 import { api, ApiError } from "../../lib/api";
 import { useAuth } from "../../lib/auth";
@@ -215,22 +204,14 @@ export function IntelligenceTab() {
           )
         }
       >
-        <Table<RuleRow>
-          size="medium"
+        <DataTable<RuleRow>
           rowKey="id"
           columns={ruleColumns}
           dataSource={rules}
           loading={rulesQuery.isLoading}
           pagination={false}
-          scroll={{ x: "max-content" }}
-          locale={{
-            emptyText: (
-              <EmptyState
-                title="No detection rules yet"
-                description="Anomalies appear once a rule is active (hourly scan)."
-              />
-            ),
-          }}
+          emptyTitle="No detection rules yet"
+        emptyDescription="Anomalies appear once a rule is active (hourly scan)."
         />
       </Card>
 

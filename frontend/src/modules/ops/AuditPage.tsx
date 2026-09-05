@@ -1,10 +1,11 @@
 import { useQuery } from "@tanstack/react-query";
-import { Input, Select, Table, Typography, type TableProps } from "antd";
+import { Input, Select, Typography, type TableProps } from "antd";
 import { useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { FilterBar } from "@/design-system";
+import { DataTable } from "@/design-system";
 import { PageHeader } from "@/design-system";
-import { EmptyState } from "@/design-system";
+
 import { api } from "../../lib/api";
 import { timeAgo } from "../devices/types";
 import { ExportButtons } from "./AnalyticsTabs";
@@ -168,14 +169,12 @@ export function AuditPage() {
         />
       </FilterBar>
 
-      <Table<AuditRow>
-        size="medium"
+      <DataTable<AuditRow>
         rowKey="id"
         columns={columns}
         dataSource={rows}
         loading={auditQuery.isLoading}
-        scroll={{ x: "max-content" }}
-        locale={{ emptyText: <EmptyState title="No audit entries match" /> }}
+        emptyTitle="No audit entries match"
         pagination={{
           current: page,
           pageSize,

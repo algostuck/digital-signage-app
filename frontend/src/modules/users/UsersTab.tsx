@@ -1,21 +1,9 @@
 import { PlusOutlined, SearchOutlined } from "@ant-design/icons";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import {
-  Alert,
-  Button,
-  Flex,
-  Form,
-  Input,
-  Modal,
-  Popconfirm,
-  Select,
-  Space,
-  Table,
-  Typography,
-  type TableProps,
-} from "antd";
+import { Alert, Button, Flex, Form, Input, Modal, Popconfirm, Select, Space, Typography, type TableProps } from "antd";
 import { useState } from "react";
-import { ErrorState, EmptyState } from "@/design-system";
+import { ErrorState } from "@/design-system";
+import { DataTable } from "@/design-system";
 import { StatusBadge } from "@/design-system";
 import { api, ApiError } from "../../lib/api";
 import { useAuth } from "../../lib/auth";
@@ -139,14 +127,12 @@ export function UsersTab() {
       {usersQuery.isError ? (
         <ErrorState title="Failed to load users" onRetry={() => usersQuery.refetch()} />
       ) : (
-        <Table<UserRow>
-          size="medium"
+        <DataTable<UserRow>
           rowKey="id"
           columns={columns}
           dataSource={users}
           loading={usersQuery.isLoading}
-          scroll={{ x: "max-content" }}
-          locale={{ emptyText: <EmptyState title="No users match your search" /> }}
+          emptyTitle="No users match your search"
           pagination={{
             current: page,
             pageSize,

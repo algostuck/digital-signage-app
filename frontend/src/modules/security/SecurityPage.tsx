@@ -1,25 +1,13 @@
 import { SyncOutlined } from "@ant-design/icons";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import {
-  Alert,
-  Button,
-  Card,
-  Col,
-  Form,
-  InputNumber,
-  Popconfirm,
-  Row,
-  Space,
-  Table,
-  Typography,
-  type TableProps,
-} from "antd";
+import { Alert, Button, Card, Col, Form, InputNumber, Popconfirm, Row, Space, Typography, type TableProps } from "antd";
 import { ToneTag } from "@/design-system";
+import { DataTable } from "@/design-system";
 import { toneOf } from "@/design-system";
 import { useState } from "react";
 import { PageHeader } from "@/design-system";
 import { StatCard } from "@/design-system";
-import { EmptyState } from "@/design-system";
+
 import { api, ApiError } from "../../lib/api";
 import { useAuth } from "../../lib/auth";
 
@@ -291,27 +279,23 @@ export function SecurityPage() {
 
         {canManage && violations.length > 0 && (
           <Card size="small" title="Policy violations">
-            <Table<ViolationRow>
-              size="medium"
+            <DataTable<ViolationRow>
               rowKey="id"
               columns={violationColumns}
               dataSource={violations}
               loading={violationsQuery.isLoading}
-              scroll={{ x: "max-content" }}
               pagination={false}
             />
           </Card>
         )}
 
         <Card size="small" title="Device identities">
-          <Table<IdentityRow>
-            size="medium"
+          <DataTable<IdentityRow>
             rowKey="device_id"
             columns={identityColumns}
             dataSource={identities}
             loading={identitiesQuery.isLoading}
-            scroll={{ x: "max-content" }}
-            locale={{ emptyText: <EmptyState title="No device identities yet" /> }}
+            emptyTitle="No device identities yet"
           />
         </Card>
 
