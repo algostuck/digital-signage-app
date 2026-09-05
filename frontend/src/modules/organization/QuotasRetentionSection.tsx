@@ -81,7 +81,7 @@ export function QuotasRetentionSection() {
   ];
 
   return (
-    <Space orientation="vertical" size="middle" className="w-full">
+    <Space orientation="vertical" size="medium" className="w-full">
       <Card size="small" title="Usage & limits">
         <Typography.Paragraph type="secondary" className="!mb-3">
           Limits come from your subscription plan (and any platform override).

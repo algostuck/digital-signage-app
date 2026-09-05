@@ -545,7 +545,7 @@ export function SimulatorPage() {
         </Col>
 
         <Col xs={24} xl={9}>
-          <Space orientation="vertical" size="middle" className="w-full">
+          <Space orientation="vertical" size="medium" className="w-full">
             <Card size="small" title="Device">
               <Form form={form} layout="vertical" onFinish={(v) => void register(v)} disabled={phase === "running" || phase === "registering" || phase === "pending"}>
                 <Form.Item name="enrollment_key" label="Enrollment key" rules={[{ required: true }]} extra={canManage ? "Prefilled from Devices › Show enrollment key." : "Ask an administrator for the tenant's enrollment key."}>

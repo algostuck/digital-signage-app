@@ -1,88 +1,47 @@
-import {
-  CheckCircleOutlined,
-  ClockCircleOutlined,
-  CloseCircleOutlined,
-  EditOutlined,
-  ExclamationCircleOutlined,
-  InboxOutlined,
-  MinusCircleOutlined,
-  PauseCircleOutlined,
-  SyncOutlined,
-} from "@ant-design/icons";
-import { Tag } from "antd";
+import { Badge, Tag, Typography } from "antd";
 import { useThemeMode } from "../theme/ThemeProvider";
-import { toneStyle, type Tone } from "../tokens/tone";
-import type { ReactNode } from "react";
+import { statusMeta, type StatusDomain } from "../tokens/status";
+import { toneStyle } from "../tokens/tone";
 
-interface StatusMeta {
-  color: string;
-  icon: ReactNode;
+export interface StatusBadgeProps {
+  status: string | null | undefined;
+  /** Domain vocabulary (device, campaign, deployment…); `generic` by default. */
+  domain?: StatusDomain;
+  /** Override the label from the vocabulary (rare — e.g. counts). */
+  label?: string;
+  size?: "small" | "medium";
+  /** Dense lists: a status dot + text instead of a pill. */
+  dot?: boolean;
 }
 
 /**
- * Single source of truth for status → color+icon+text across the app.
- * Never communicates state through color alone (brief §26/§35) — every
- * status carries an icon and its own text label too.
+ * The one way to show a status (docs/design-system/COMPONENT_CATALOGUE.md):
+ * tone + icon + label from the status vocabulary, so state is never
+ * carried by colour alone and the same status looks the same on every
+ * screen. Pass the raw backend value; the vocabulary supplies the words.
  */
-const STATUS_META: Record<string, StatusMeta> = {
-  active: { color: "success", icon: <CheckCircleOutlined /> },
-  online: { color: "success", icon: <CheckCircleOutlined /> },
-  ready: { color: "success", icon: <CheckCircleOutlined /> },
-  published: { color: "success", icon: <CheckCircleOutlined /> },
-  approved: { color: "success", icon: <CheckCircleOutlined /> },
-  acknowledged: { color: "success", icon: <CheckCircleOutlined /> },
-  confirmed: { color: "success", icon: <CheckCircleOutlined /> },
-  completed: { color: "success", icon: <CheckCircleOutlined /> },
-
-  invited: { color: "warning", icon: <ClockCircleOutlined /> },
-  warning: { color: "warning", icon: <ExclamationCircleOutlined /> },
-  pending: { color: "warning", icon: <ClockCircleOutlined /> },
-  pending_approval: { color: "warning", icon: <ClockCircleOutlined /> },
-  paused: { color: "warning", icon: <PauseCircleOutlined /> },
-  partial: { color: "warning", icon: <ExclamationCircleOutlined /> },
-  stale: { color: "warning", icon: <ExclamationCircleOutlined /> },
-  degraded: { color: "warning", icon: <ExclamationCircleOutlined /> },
-  flagged: { color: "warning", icon: <ExclamationCircleOutlined /> },
-
-  publishing: { color: "processing", icon: <SyncOutlined spin /> },
-  processing: { color: "processing", icon: <SyncOutlined spin /> },
-  syncing: { color: "processing", icon: <SyncOutlined spin /> },
-  updating: { color: "processing", icon: <SyncOutlined spin /> },
-  running: { color: "processing", icon: <SyncOutlined spin /> },
-
-  offline: { color: "error", icon: <CloseCircleOutlined /> },
-  critical: { color: "error", icon: <CloseCircleOutlined /> },
-  rejected: { color: "error", icon: <CloseCircleOutlined /> },
-  failed: { color: "error", icon: <CloseCircleOutlined /> },
-  error: { color: "error", icon: <CloseCircleOutlined /> },
-  suspended: { color: "error", icon: <CloseCircleOutlined /> },
-
-  deactivated: { color: "default", icon: <MinusCircleOutlined /> },
-  disabled: { color: "default", icon: <MinusCircleOutlined /> },
-  decommissioned: { color: "default", icon: <MinusCircleOutlined /> },
-  draft: { color: "default", icon: <EditOutlined /> },
-  archived: { color: "default", icon: <InboxOutlined /> },
-  expired: { color: "default", icon: <MinusCircleOutlined /> },
-  queued: { color: "default", icon: <ClockCircleOutlined /> },
-  cancelled: { color: "default", icon: <MinusCircleOutlined /> },
-  resolved: { color: "default", icon: <CheckCircleOutlined /> },
-};
-
-function toLabel(status: string): string {
-  return status
-    .split("_")
-    .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
-    .join(" ");
-}
-
-export function StatusBadge({ status }: { status: string }) {
+export function StatusBadge({ status, domain = "generic", label, size = "medium", dot }: StatusBadgeProps) {
   const { mode } = useThemeMode();
-  const meta = STATUS_META[status] ?? { color: "default", icon: <MinusCircleOutlined /> };
-  // Explicit pill colours rather than antd's filled variant: that variant's
-  // text measures 2.9–5.6:1 in dark mode, below AA for several statuses.
+  const meta = statusMeta(status, domain);
+  const text = label ?? meta.label;
+  if (dot) {
+    return (
+      <Badge
+        color={meta.color}
+        text={<Typography.Text style={{ fontSize: size === "small" ? 12 : undefined }}>{text}</Typography.Text>}
+      />
+    );
+  }
   return (
-    <Tag icon={meta.icon} style={toneStyle(meta.color as Tone, mode)}>
-      {toLabel(status)}
+    <Tag
+      icon={meta.icon}
+      style={{
+        ...toneStyle(meta.tone, mode),
+        marginInlineEnd: 0,
+        ...(size === "small" ? { fontSize: 12, lineHeight: "18px", paddingInline: 6 } : {}),
+      }}
+    >
+      {text}
     </Tag>
   );
 }

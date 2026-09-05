@@ -8,7 +8,6 @@ import {
   Form,
   Input,
   InputNumber,
-  List,
   Modal,
   Popconfirm,
   Space,
@@ -16,6 +15,7 @@ import {
   Typography,
 } from "antd";
 import { ToneTag } from "@/design-system";
+import { EntityList } from "@/design-system";
 import { useState } from "react";
 import { EmptyState } from "@/design-system";
 import { StatusBadge } from "@/design-system";
@@ -65,7 +65,7 @@ export function IntegrationsSection() {
   const canKeys = hasPermission("api_keys.manage");
   if (!canWebhooks && !canKeys) return null;
   return (
-    <Space orientation="vertical" size="middle" className="w-full">
+    <Space orientation="vertical" size="medium" className="w-full">
       {canWebhooks && <WebhooksPanel />}
       {canKeys && <ApiKeysPanel />}
     </Space>
@@ -144,11 +144,13 @@ function WebhooksPanel() {
             description="Deliveries are signed with HMAC-SHA256 and retried with backoff into a replayable dead-letter state."
           />
         ) : (
-          <List
-            size="small"
-            dataSource={webhooks}
+          <EntityList
+            dense
+            items={webhooks}
+            rowKey="id"
+            aria-label="Webhook subscriptions"
             renderItem={(webhook) => (
-              <List.Item className="!block">
+              <div>
                 <Flex wrap align="center" gap="small">
                   <Typography.Text code>{webhook.url}</Typography.Text>
                   <Typography.Text type="secondary" className="text-xs">
@@ -186,7 +188,7 @@ function WebhooksPanel() {
                   </Space>
                 </Flex>
                 {expanded === webhook.id && <WebhookDeliveries webhookId={webhook.id} />}
-              </List.Item>
+              </div>
             )}
           />
         )}
@@ -223,12 +225,12 @@ function WebhookDeliveries({ webhookId }: { webhookId: string }) {
       No deliveries yet.
     </Typography.Paragraph>
   ) : (
-    <List
-      size="small"
-      className="mt-2"
-      dataSource={rows}
+    <EntityList
+      dense
+      style={{ marginTop: 8 }}
+      items={rows}
+      rowKey="id"
       renderItem={(row) => (
-        <List.Item className="!py-1">
           <Flex wrap align="center" gap="small">
             <StatusBadge status={row.state} />
             <Typography.Text code className="text-xs">
@@ -250,7 +252,6 @@ function WebhookDeliveries({ webhookId }: { webhookId: string }) {
               </Button>
             )}
           </Flex>
-        </List.Item>
       )}
     />
   );
@@ -388,11 +389,12 @@ function ApiKeysPanel() {
             description="Keys are scoped, expirable, revocable — and shown only once."
           />
         ) : (
-          <List
-            size="small"
-            dataSource={keys}
+          <EntityList
+            dense
+            items={keys}
+            rowKey="id"
+            aria-label="API keys"
             renderItem={(key) => (
-              <List.Item>
                 <Flex wrap align="center" gap="small" className="w-full">
                   <Typography.Text strong>{key.name}</Typography.Text>
                   <Typography.Text code className="text-xs">
@@ -426,7 +428,6 @@ function ApiKeysPanel() {
                     </Popconfirm>
                   )}
                 </Flex>
-              </List.Item>
             )}
           />
         )}

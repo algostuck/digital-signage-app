@@ -8,7 +8,6 @@ import {
   Form,
   Input,
   InputNumber,
-  List,
   Modal,
   Popconfirm,
   Progress,
@@ -20,6 +19,7 @@ import {
 } from "antd";
 import { useState } from "react";
 import { PageHeader } from "@/design-system";
+import { EntityList } from "@/design-system";
 import { EmptyState, LoadingState } from "@/design-system";
 import { StatusBadge } from "@/design-system";
 import { api, ApiError } from "../../lib/api";
@@ -131,7 +131,7 @@ export function ReleasesPage() {
           />
         </Card>
       ) : (
-        <Space orientation="vertical" size="middle" className="w-full">
+        <Space orientation="vertical" size="medium" className="w-full">
           {releases.map((release) => (
             <ReleaseCard
               key={release.id}
@@ -262,22 +262,22 @@ function RingRow({ ring }: { ring: Ring }) {
         (devicesQuery.isLoading ? (
           <LoadingState rows={2} />
         ) : (
-          <List
-            size="small"
-            className="mt-2"
-            dataSource={devicesQuery.data?.data ?? []}
+          <EntityList
+            dense
+            style={{ marginTop: 8 }}
+            items={devicesQuery.data?.data ?? []}
+            rowKey="device_id"
+            emptyTitle="No devices in this ring yet"
             renderItem={(row) => (
-              <List.Item className="!px-0 !py-1">
-                <Space size="small">
-                  <Typography.Text>{row.device_name}</Typography.Text>
-                  <StatusBadge status={row.state} />
-                  {row.failure_reason && (
-                    <Typography.Text type="danger" className="text-xs">
-                      {row.failure_reason}
-                    </Typography.Text>
-                  )}
-                </Space>
-              </List.Item>
+              <Space size="small">
+                <Typography.Text>{row.device_name}</Typography.Text>
+                <StatusBadge status={row.state} />
+                {row.failure_reason && (
+                  <Typography.Text type="danger" className="text-xs">
+                    {row.failure_reason}
+                  </Typography.Text>
+                )}
+              </Space>
             )}
           />
         ))}

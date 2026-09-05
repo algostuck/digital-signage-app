@@ -82,7 +82,7 @@ export function OrganizationSettingsPage() {
     return <ErrorState title="Failed to load organization." />;
 
   const generalTab = (
-    <Space orientation="vertical" size="middle" className="w-full">
+    <Space orientation="vertical" size="medium" className="w-full">
       <Card size="small" title="Organization profile">
         <Form
           form={form}
@@ -142,14 +142,14 @@ export function OrganizationSettingsPage() {
   );
 
   const planTab = (
-    <Space orientation="vertical" size="middle" className="w-full">
+    <Space orientation="vertical" size="medium" className="w-full">
       <PlanBillingSection />
       <QuotasRetentionSection />
     </Space>
   );
 
   const integrationsTab = (
-    <Space orientation="vertical" size="middle" className="w-full">
+    <Space orientation="vertical" size="medium" className="w-full">
       <IntegrationCatalogSection />
       <IntegrationsSection />
       <EventBusSection />
@@ -158,7 +158,7 @@ export function OrganizationSettingsPage() {
   );
 
   const brandingTab = (
-    <Space orientation="vertical" size="middle" className="w-full">
+    <Space orientation="vertical" size="medium" className="w-full">
       <WhiteLabelSection />
       <SsoSection />
     </Space>

@@ -7,7 +7,6 @@ import {
   Drawer,
   Flex,
   Image,
-  List,
   Popconfirm,
   Select,
   Space,
@@ -15,6 +14,7 @@ import {
   Typography,
 } from "antd";
 import { ToneTag } from "@/design-system";
+import { EntityList } from "@/design-system";
 import { toneOf } from "@/design-system";
 import { useState } from "react";
 import { LoadingState } from "@/design-system";
@@ -174,7 +174,7 @@ export function DeviceDetailModal({ deviceId, onClose, onChanged }: Props) {
         ) : undefined
       }
     >
-      <Space orientation="vertical" size="middle" className="w-full">
+      <Space orientation="vertical" size="medium" className="w-full">
         <Space size="small" wrap align="center">
           <StatusBadge status={device.status} />
           <StatusBadge status={device.connection_status} />
@@ -347,21 +347,20 @@ export function DeviceDetailModal({ deviceId, onClose, onChanged }: Props) {
         {commands.length > 0 && (
           <div>
             <SectionLabel>Recent commands</SectionLabel>
-            <List
-              size="small"
-              dataSource={commands.slice(0, 5)}
+            <EntityList
+              dense
+              items={commands.slice(0, 5)}
+              rowKey="id"
               renderItem={(c) => (
-                <List.Item className="!px-0 !py-1">
-                  <Space size="small">
-                    <Typography.Text code className="text-xs">
-                      {c.command_type}
-                    </Typography.Text>
-                    <StatusBadge status={c.status} />
-                    <Typography.Text type="secondary" className="text-xs">
-                      {timeAgo(c.created_at)}
-                    </Typography.Text>
-                  </Space>
-                </List.Item>
+                <Space size="small">
+                  <Typography.Text code className="text-xs">
+                    {c.command_type}
+                  </Typography.Text>
+                  <StatusBadge status={c.status} />
+                  <Typography.Text type="secondary" className="text-xs">
+                    {timeAgo(c.created_at)}
+                  </Typography.Text>
+                </Space>
               )}
             />
           </div>

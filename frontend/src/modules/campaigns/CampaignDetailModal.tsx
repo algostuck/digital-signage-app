@@ -303,7 +303,7 @@ export function CampaignDetailModal({ campaignId, onClose, onChanged }: Props) {
         </Flex>
       }
     >
-      <Space orientation="vertical" size="middle" className="w-full">
+      <Space orientation="vertical" size="medium" className="w-full">
         {status !== "archived" && (
           <Steps
             size="small"

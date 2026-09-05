@@ -168,7 +168,7 @@ export function GroupsTab() {
           onOk={() => runAction.mutate({ id: actionGroup.id, command_type: command })}
           destroyOnHidden
         >
-          <Space orientation="vertical" size="middle" className="w-full">
+          <Space orientation="vertical" size="medium" className="w-full">
             <Typography.Text type="secondary">
               Queue a remote command for all {actionGroup.member_count} active member device(s).
             </Typography.Text>
@@ -266,7 +266,7 @@ function GroupBuilderModal({
       }}
       destroyOnHidden
     >
-      <Space orientation="vertical" size="middle" className="w-full">
+      <Space orientation="vertical" size="medium" className="w-full">
         <div>
           <Typography.Text type="secondary" className="text-xs font-medium uppercase tracking-wide">
             Name

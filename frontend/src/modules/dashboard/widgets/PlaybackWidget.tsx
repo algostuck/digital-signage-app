@@ -1,7 +1,7 @@
 import { Col, Row, Statistic, Typography } from "antd";
 import { useNavigate } from "react-router-dom";
 import { EntitlementGuard } from "@/design-system";
-import { ChartFrame } from "../charts/ChartFrame";
+import { ChartFrame } from "@/design-system";
 import { RankBar } from "../charts/RankBar";
 import { useThemeMode } from "@/design-system";
 import { STATUS_COLORS, STATUS_TEXT } from "../charts/theme";

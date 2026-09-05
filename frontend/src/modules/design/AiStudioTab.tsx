@@ -193,7 +193,7 @@ export function AiStudioTab() {
   ];
 
   return (
-    <Space orientation="vertical" size="middle" className="w-full">
+    <Space orientation="vertical" size="medium" className="w-full">
       <Typography.Text type="secondary" className="text-xs">
         Results are <strong>recommendations</strong> from the configured AI
         provider (currently deterministic rules — no external model). Each
@@ -335,7 +335,7 @@ export function AiStudioTab() {
 
       <Card size="small" title="Recent AI activity (explainability trail)">
         <Table<AiRequestRow>
-          size="middle"
+          size="medium"
           rowKey="id"
           columns={activityColumns}
           dataSource={requests}

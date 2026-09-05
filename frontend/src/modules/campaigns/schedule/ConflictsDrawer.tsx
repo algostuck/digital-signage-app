@@ -1,7 +1,8 @@
 import { CalendarOutlined, DesktopOutlined, ExportOutlined } from "@ant-design/icons";
-import { Button, Drawer, Empty, List, Segmented, Space, Typography } from "antd";
+import { Button, Drawer, Empty, Segmented, Space, Typography } from "antd";
 import { useState } from "react";
 import { ToneTag } from "@/design-system";
+import { EntityList } from "@/design-system";
 import type { ConflictSeverity, ScheduleConflict } from "../types";
 import { formatDayShort, windowLabel } from "./dates";
 import { REASON_LABEL, SEVERITY_LABEL, severityTone, statusLabel, statusTone } from "./palette";
@@ -66,18 +67,19 @@ export function ConflictsDrawer({
       {visible.length === 0 ? (
         <Empty description="No conflicts at this severity" />
       ) : (
-        <List
-          dataSource={visible}
+        <EntityList
+          items={visible}
           rowKey="id"
+          aria-label="Conflicts"
           renderItem={(conflict) => {
             const [first, second] = conflict.campaigns;
             const focused = conflict.id === focusId;
             return (
-              <List.Item
-                className={focused ? "rounded-md ring-2 ring-offset-1" : undefined}
-                data-testid={`conflict-${conflict.id}`}
-              >
-                <div className="w-full">
+                <div
+                  className="w-full"
+                  data-testid={`conflict-${conflict.id}`}
+                  style={focused ? { outline: "2px solid currentColor", outlineOffset: 2, borderRadius: 8 } : undefined}
+                >
                   <div className="mb-1 flex flex-wrap items-center gap-2">
                     <ToneTag tone={severityTone(conflict.severity)} className="!mr-0">
                       {SEVERITY_LABEL[conflict.severity]}
@@ -147,7 +149,6 @@ export function ConflictsDrawer({
                     </Button>
                   </Space>
                 </div>
-              </List.Item>
             );
           }}
         />

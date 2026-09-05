@@ -1,7 +1,7 @@
 import { BulbOutlined } from "@ant-design/icons";
 import { Button, Typography } from "antd";
 import { Link } from "react-router-dom";
-import { ChartFrame } from "../charts/ChartFrame";
+import { ChartFrame } from "@/design-system";
 import type { Insight } from "../types";
 
 /** Fleet-intelligence findings. Only present when the plan includes

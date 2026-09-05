@@ -1,5 +1,5 @@
 import { Component, type ErrorInfo, type ReactNode } from "react";
-import { ChartFrame } from "./charts/ChartFrame";
+import { ChartFrame } from "@/design-system";
 
 interface Props {
   title: string;

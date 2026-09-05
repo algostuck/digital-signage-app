@@ -536,7 +536,7 @@ function QuotasTab({ tenant }: { tenant: TenantDetail }) {
     <Row gutter={[16, 16]}>
       <Col xs={24} xl={12}>
         <Card size="small" title="Usage against effective limits">
-          <Space orientation="vertical" size="middle" className="w-full">
+          <Space orientation="vertical" size="medium" className="w-full">
             <UsageBar label="Devices" metric={usage.devices} />
             <UsageBar label="Users" metric={usage.users} />
             <UsageBar label="Storage" metric={usage.storage_mb} unit="MB" />

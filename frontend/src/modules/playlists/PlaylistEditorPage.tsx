@@ -15,7 +15,6 @@ import {
   Flex,
   Form,
   InputNumber,
-  List,
   Modal,
   Popconfirm,
   Radio,
@@ -27,6 +26,7 @@ import {
 import { useState } from "react";
 import { useParams } from "react-router-dom";
 import { PageHeader } from "@/design-system";
+import { EntityList } from "@/design-system";
 import { EmptyState, LoadingState } from "@/design-system";
 import { StatusBadge } from "@/design-system";
 import { api, ApiError } from "../../lib/api";
@@ -187,12 +187,13 @@ export function PlaylistEditorPage() {
           />
         </Card>
       ) : (
-        <List
-          className="mt-4"
-          dataSource={playlist.items}
+        <EntityList
+          style={{ marginTop: 16 }}
+          items={playlist.items}
+          rowKey="id"
+          aria-label="Playlist items"
           renderItem={(item, index) => (
             <ItemRow
-              key={item.id}
               item={item}
               index={index}
               total={playlist.items.length}
@@ -261,7 +262,7 @@ function ItemRow({
   );
 
   return (
-    <List.Item className={item.enabled ? undefined : "opacity-50"}>
+    <div style={{ opacity: item.enabled ? 1 : 0.5 }}>
       <Flex align="center" gap="middle" wrap className="w-full">
         <Typography.Text strong type="secondary" className="w-6 text-center">
           {item.position}
@@ -346,7 +347,7 @@ function ItemRow({
           </Typography.Text>
         )}
       </Flex>
-    </List.Item>
+    </div>
   );
 }
 

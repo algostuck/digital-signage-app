@@ -196,7 +196,7 @@ export function PlanBillingSection() {
   ];
 
   return (
-    <Space orientation="vertical" size="middle" className="w-full">
+    <Space orientation="vertical" size="medium" className="w-full">
       <Card size="small" title="Plan & billing">
         {sub == null ? (
           <Typography.Text type="secondary">
@@ -299,7 +299,7 @@ export function PlanBillingSection() {
       {invoices.length > 0 && (
         <Card size="small" title="Invoices">
           <Table<InvoiceRow>
-            size="middle"
+            size="medium"
             rowKey="id"
             columns={invoiceColumns}
             dataSource={invoices}

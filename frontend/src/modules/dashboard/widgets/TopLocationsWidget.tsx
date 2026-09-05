@@ -1,5 +1,5 @@
 import { useNavigate } from "react-router-dom";
-import { ChartFrame } from "../charts/ChartFrame";
+import { ChartFrame } from "@/design-system";
 import { RankBar } from "../charts/RankBar";
 import { STATUS_COLORS } from "../charts/theme";
 import type { TopLocation } from "../types";

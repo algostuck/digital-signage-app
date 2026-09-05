@@ -9,7 +9,6 @@ import {
   Form,
   Input,
   InputNumber,
-  List,
   Modal,
   Popconfirm,
   Select,
@@ -18,6 +17,7 @@ import {
   Typography,
 } from "antd";
 import { ToneTag } from "@/design-system";
+import { EntityList } from "@/design-system";
 import { useState } from "react";
 import { EmptyState, LoadingState } from "@/design-system";
 import { StatusBadge } from "@/design-system";
@@ -198,19 +198,13 @@ function DeliveryList({ ruleId }: { ruleId: string }) {
   const rows = deliveriesQuery.data?.data ?? [];
   if (deliveriesQuery.isLoading) return <LoadingState rows={2} />;
   return (
-    <List
-      size="small"
-      className="mt-2"
-      dataSource={rows}
-      locale={{
-        emptyText: (
-          <Typography.Text type="secondary" className="text-xs">
-            No deliveries yet for this rule.
-          </Typography.Text>
-        ),
-      }}
+    <EntityList
+      dense
+      style={{ marginTop: 8 }}
+      items={rows}
+      rowKey="id"
+      emptyTitle="No deliveries yet for this rule"
       renderItem={(row) => (
-        <List.Item className="!px-0">
           <Flex wrap align="center" gap="small">
             <StatusBadge status={row.state} />
             <Typography.Text code className="text-xs">
@@ -227,7 +221,6 @@ function DeliveryList({ ruleId }: { ruleId: string }) {
               </Typography.Text>
             )}
           </Flex>
-        </List.Item>
       )}
     />
   );

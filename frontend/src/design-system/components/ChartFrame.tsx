@@ -1,14 +1,15 @@
-import { Card, Skeleton, Typography } from "antd";
+import { Card, Skeleton, Typography, theme } from "antd";
 import type { ReactNode } from "react";
-import { EmptyState, ErrorState } from "@/design-system";
+import { HEADING } from "../tokens/scale";
+import { EmptyState, ErrorState } from "./states";
 
 interface ChartFrameProps {
   title: ReactNode;
-  /** Right-hand slot — usually a "View all" link. */
+  /** Right-hand slot — a "View all" link, a range Segmented. */
   extra?: ReactNode;
   /** One sentence stating what the visual shows, in words. Rendered as
-   * secondary text and available to assistive tech, so nothing on the
-   * dashboard is conveyed only by a picture. */
+   * secondary text and available to assistive tech, so nothing is
+   * conveyed only by a picture. */
   summary?: ReactNode;
   loading?: boolean;
   error?: unknown;
@@ -19,12 +20,15 @@ interface ChartFrameProps {
   emptyAction?: ReactNode;
   minHeight?: number;
   children: ReactNode;
-  /** Section heading level for the card title (h2 by default). */
   id?: string;
 }
 
-/** Every dashboard widget renders through this so all of them share one
- * loading / empty / error contract and degrade independently. */
+/**
+ * The container for every chart and dashboard panel
+ * (docs/design-system/COMPONENT_CATALOGUE.md): Card + level-5 title +
+ * summary + one loading / empty / error contract, so panels degrade
+ * independently and read the same everywhere.
+ */
 export function ChartFrame({
   title,
   extra,
@@ -40,12 +44,13 @@ export function ChartFrame({
   children,
   id,
 }: ChartFrameProps) {
+  const { token } = theme.useToken();
   let body: ReactNode;
   if (error) {
     body = (
       <ErrorState
         title="Unable to load this section"
-        description="The rest of the dashboard is unaffected."
+        description="The rest of the page is unaffected."
         onRetry={onRetry}
       />
     );
@@ -61,17 +66,13 @@ export function ChartFrame({
     <Card
       size="small"
       id={id}
-      title={
-        <Typography.Text strong className="text-[15px]">
-          {title}
-        </Typography.Text>
-      }
+      title={<Typography.Title level={HEADING.card}>{title}</Typography.Title>}
       extra={extra}
-      className="h-full"
+      style={{ height: "100%" }}
       styles={{ body: { minHeight } }}
     >
       {summary && !loading && !error && !empty && (
-        <Typography.Paragraph type="secondary" className="!mb-3 text-[13px]">
+        <Typography.Paragraph type="secondary" style={{ marginBottom: token.marginSM, fontSize: token.fontSizeSM }}>
           {summary}
         </Typography.Paragraph>
       )}

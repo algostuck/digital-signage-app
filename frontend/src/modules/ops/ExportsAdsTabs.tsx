@@ -173,7 +173,7 @@ export function ExportsTab() {
   ];
 
   return (
-    <Space orientation="vertical" size="middle" className="w-full">
+    <Space orientation="vertical" size="medium" className="w-full">
       <Typography.Text type="secondary" className="text-xs">
         Scheduled exports run nightly for the previous day and land as CSV in
         the platform object storage — the hand-off point to your own
@@ -217,7 +217,7 @@ export function ExportsTab() {
       </Card>
 
       <Table<ExportRow>
-        size="middle"
+        size="medium"
         rowKey="id"
         columns={columns}
         dataSource={rows}
@@ -275,10 +275,10 @@ export function AdsReportTab() {
 
   const rows = reportQuery.data?.data ?? [];
   return (
-    <Space orientation="vertical" size="middle" className="w-full">
+    <Space orientation="vertical" size="medium" className="w-full">
       <ExportButtons report="ad-performance" filters={{}} />
       <Table<AdPerfRow>
-        size="middle"
+        size="medium"
         rowKey="booking_id"
         columns={adColumns}
         dataSource={rows}

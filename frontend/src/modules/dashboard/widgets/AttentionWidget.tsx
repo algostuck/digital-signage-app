@@ -1,7 +1,7 @@
 import { CheckCircleOutlined } from "@ant-design/icons";
 import { Button, Typography } from "antd";
 import { Link } from "react-router-dom";
-import { ChartFrame } from "../charts/ChartFrame";
+import { ChartFrame } from "@/design-system";
 import type { AttentionItem } from "../types";
 import { SeverityTag } from "./shared";
 

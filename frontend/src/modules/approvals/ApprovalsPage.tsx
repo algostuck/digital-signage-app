@@ -6,7 +6,6 @@ import {
   Card,
   Flex,
   Input,
-  List,
   Modal,
   Space,
   Tabs,
@@ -17,6 +16,7 @@ import {
 import { useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { PageHeader } from "@/design-system";
+import { EntityList } from "@/design-system";
 import { EmptyState, ErrorState, LoadingState } from "@/design-system";
 import { StatusBadge } from "@/design-system";
 import { api, ApiError } from "../../lib/api";
@@ -101,10 +101,13 @@ export function ApprovalsPage() {
       <EmptyState title="Nothing here" description="Submitted items appear in this queue." />
     </Card>
   ) : (
-    <List
-      dataSource={rows}
+    <EntityList
+      items={rows}
+      rowKey="id"
+      split={false}
+      aria-label="Approval requests"
       renderItem={(request) => (
-        <Card size="small" className="mb-2">
+        <Card size="small">
           <Flex wrap align="center" gap="small">
             <Tag className="capitalize">{request.entity_type}</Tag>
             <Typography.Text strong>

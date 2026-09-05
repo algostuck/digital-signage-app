@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { Card, Flex, List, Typography } from "antd";
+import { Card, Col, Flex, Row, Typography } from "antd";
 import { ToneTag } from "@/design-system";
 import { toneOf } from "@/design-system";
 import { api } from "../../lib/api";
@@ -33,12 +33,10 @@ export function IntegrationCatalogSection() {
         Everything the platform connects to, in one place — configure each
         in its section below (locked items need a plan upgrade).
       </Typography.Paragraph>
-      <List
-        grid={{ gutter: 12, xs: 1, sm: 2, lg: 3 }}
-        dataSource={connectors}
-        renderItem={(c) => (
-          <List.Item className="!mb-3">
-            <Card size="small">
+      <Row gutter={[12, 12]}>
+        {connectors.map((c) => (
+          <Col key={c.key} xs={24} sm={12} lg={8}>
+            <Card size="small" style={{ height: "100%" }}>
               <Flex align="center" justify="space-between" gap="small">
                 <Typography.Text strong disabled={!c.available}>
                   {c.name}
@@ -56,9 +54,9 @@ export function IntegrationCatalogSection() {
                 {c.description}
               </Typography.Paragraph>
             </Card>
-          </List.Item>
-        )}
-      />
+          </Col>
+        ))}
+      </Row>
     </Card>
   );
 }

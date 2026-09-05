@@ -243,7 +243,7 @@ export function WallsTab() {
   ];
 
   return (
-    <Space orientation="vertical" size="middle" className="w-full">
+    <Space orientation="vertical" size="medium" className="w-full">
       {canManage && (
         <Card size="small">
           <Form
@@ -285,7 +285,7 @@ export function WallsTab() {
 
       <Card size="small" title="Video walls">
         <Table<WallSummary>
-          size="middle"
+          size="medium"
           rowKey="id"
           columns={wallColumns}
           dataSource={walls}

@@ -6,13 +6,13 @@ import {
   Card,
   Checkbox,
   Flex,
-  List,
   Select,
   Space,
   Tabs,
   Typography,
 } from "antd";
 import { ToneTag } from "@/design-system";
+import { EntityList } from "@/design-system";
 import { toneOf } from "@/design-system";
 import { useState } from "react";
 import { useSearchParams } from "react-router-dom";
@@ -131,10 +131,13 @@ function InboxTab() {
           />
         </Card>
       ) : (
-        <List
-          dataSource={rows}
+        <EntityList
+          items={rows}
+          rowKey="id"
+          split={false}
+          aria-label="Notifications"
           renderItem={(row) => (
-            <Card key={row.id} size="small" className={`mb-2 ${row.read_at ? "opacity-60" : ""}`}>
+            <Card size="small" style={{ opacity: row.read_at ? 0.65 : 1 }}>
               <Flex wrap align="center" gap="small">
                 <ToneTag tone={toneOf(SEVERITY_COLORS[row.severity] ?? "default")}>
                   {row.severity}

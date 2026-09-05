@@ -137,14 +137,14 @@ export function MembersTab() {
   ];
 
   return (
-    <Space orientation="vertical" size="middle" className="w-full">
+    <Space orientation="vertical" size="medium" className="w-full">
       <Typography.Text type="secondary">
         Home users belong to this organization; guests are users from another
         organization granted a role here.
       </Typography.Text>
 
       <Table<MemberRow>
-        size="middle"
+        size="medium"
         rowKey="user_id"
         columns={columns}
         dataSource={members}

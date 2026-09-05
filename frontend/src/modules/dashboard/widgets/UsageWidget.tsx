@@ -1,6 +1,6 @@
 import { Progress, Typography } from "antd";
 import { StatusBadge } from "@/design-system";
-import { ChartFrame } from "../charts/ChartFrame";
+import { ChartFrame } from "@/design-system";
 import type { UsageBlock, UsageMetric } from "../types";
 import { ViewAll } from "./shared";
 

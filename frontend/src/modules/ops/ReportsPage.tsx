@@ -188,7 +188,7 @@ function OverviewTab() {
     <Space orientation="vertical" size="large" className="w-full">
       <Card size="small" title="Campaign deployments">
         <Table<DeploymentRow>
-          size="middle"
+          size="medium"
           rowKey="campaign_id"
           columns={deploymentColumns}
           dataSource={deployments}
@@ -200,7 +200,7 @@ function OverviewTab() {
 
       <Card size="small" title="Playback (proof-of-play foundation)">
         <Table<PlaybackRow>
-          size="middle"
+          size="medium"
           rowKey="asset_id"
           columns={playbackColumns}
           dataSource={playback}
@@ -212,7 +212,7 @@ function OverviewTab() {
 
       <Card size="small" title="Device health by location">
         <Table<LocationRow>
-          size="middle"
+          size="medium"
           rowKey="location_id"
           columns={locationColumns}
           dataSource={locations}

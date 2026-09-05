@@ -197,7 +197,7 @@ function RoleDrawer({
           <Input />
         </Form.Item>
         <Form.Item label="Permissions">
-          <Space orientation="vertical" size="middle" className="w-full">
+          <Space orientation="vertical" size="medium" className="w-full">
             {grouped.map(([domain, perms]) => (
               <div key={domain}>
                 <Typography.Text

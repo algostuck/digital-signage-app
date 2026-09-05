@@ -1,6 +1,6 @@
 import { Typography } from "antd";
 import { Link } from "react-router-dom";
-import { ChartFrame } from "../charts/ChartFrame";
+import { ChartFrame } from "@/design-system";
 import type { ActivityItem } from "../types";
 import { ENTITY_ROUTES, humanizeAction, ViewAll, When } from "./shared";
 

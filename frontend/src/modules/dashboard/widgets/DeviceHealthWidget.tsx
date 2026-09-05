@@ -1,6 +1,6 @@
 import { Typography } from "antd";
 import { useNavigate } from "react-router-dom";
-import { ChartFrame } from "../charts/ChartFrame";
+import { ChartFrame } from "@/design-system";
 import { Donut } from "../charts/Donut";
 import { STATUS_COLORS, statusLabel } from "../charts/theme";
 import { TrendLine } from "../charts/TrendLine";

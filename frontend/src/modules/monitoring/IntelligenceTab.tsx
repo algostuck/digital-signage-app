@@ -5,7 +5,6 @@ import {
   Card,
   Descriptions,
   Input,
-  List,
   Select,
   Space,
   Table,
@@ -14,6 +13,7 @@ import {
   type TableProps,
 } from "antd";
 import { ToneTag } from "@/design-system";
+import { EntityList } from "@/design-system";
 import { toneOf } from "@/design-system";
 import { useState, type FormEvent } from "react";
 import { EmptyState } from "@/design-system";
@@ -179,7 +179,7 @@ export function IntelligenceTab() {
   ];
 
   return (
-    <Space orientation="vertical" size="middle" className="w-full">
+    <Space orientation="vertical" size="medium" className="w-full">
       <Typography.Text type="secondary" className="text-xs">
         Anomalies are explainable statistics over existing telemetry — every
         score shows its evidence, recommendations never auto-execute, and
@@ -216,7 +216,7 @@ export function IntelligenceTab() {
         }
       >
         <Table<RuleRow>
-          size="middle"
+          size="medium"
           rowKey="id"
           columns={ruleColumns}
           dataSource={rules}
@@ -235,12 +235,12 @@ export function IntelligenceTab() {
       </Card>
 
       <Card size="small" title="Anomalies">
-        <List
-          dataSource={anomalies}
+        <EntityList
+          items={anomalies}
+          rowKey="id"
           loading={anomaliesQuery.isLoading}
-          locale={{ emptyText: <EmptyState title="No anomalies detected." /> }}
+          emptyTitle="No anomalies detected."
           renderItem={(a) => (
-            <List.Item>
               <Space orientation="vertical" size="small" className="w-full">
                 <Space size="small" wrap>
                   <Typography.Text strong>{deviceName(a.device_id)}</Typography.Text>
@@ -305,7 +305,6 @@ export function IntelligenceTab() {
                   </Card>
                 )}
               </Space>
-            </List.Item>
           )}
         />
       </Card>

@@ -7,7 +7,7 @@ import { Link } from "react-router-dom";
 import "leaflet/dist/leaflet.css";
 import { toneStyle } from "@/design-system";
 import { useThemeMode } from "@/design-system";
-import { ChartFrame } from "../charts/ChartFrame";
+import { ChartFrame } from "@/design-system";
 import { STATUS_COLORS } from "../charts/theme";
 import type { GeoAnchor } from "../types";
 import { ViewAll } from "./shared";

@@ -3,7 +3,7 @@ import { Link } from "react-router-dom";
 import { DataTable } from "@/design-system";
 import { StatusBadge } from "@/design-system";
 import { ToneTag } from "@/design-system";
-import { ChartFrame } from "../charts/ChartFrame";
+import { ChartFrame } from "@/design-system";
 import { STATUS_COLORS } from "../charts/theme";
 import type { CampaignsBlock, TopCampaign } from "../types";
 import { ViewAll, When } from "./shared";
@@ -122,7 +122,7 @@ export function CampaignWidget({
           )}
           <DataTable<TopCampaign>
             rowKey="id"
-            size="small"
+            density="compact"
             columns={columns}
             dataSource={campaigns.top}
             pagination={false}

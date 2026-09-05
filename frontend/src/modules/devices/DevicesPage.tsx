@@ -400,7 +400,7 @@ export function DevicesPage() {
       )}
 
       <Table<Device>
-        size="middle"
+        size="medium"
         rowKey="id"
         columns={columns}
         dataSource={devices}

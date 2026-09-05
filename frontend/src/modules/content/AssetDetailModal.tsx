@@ -13,12 +13,12 @@ import {
   Drawer,
   Flex,
   Image,
-  List,
   Popconfirm,
   Space,
   Typography,
 } from "antd";
 import { ToneTag } from "@/design-system";
+import { EntityList } from "@/design-system";
 import { useState } from "react";
 import { LoadingState } from "@/design-system";
 import { StatusBadge } from "@/design-system";
@@ -125,7 +125,7 @@ export function AssetDetailModal({ assetId, onClose, onChanged }: Props) {
         </Flex>
       }
     >
-      <Space orientation="vertical" size="middle" className="w-full">
+      <Space orientation="vertical" size="medium" className="w-full">
         <Space size="small" wrap>
           <StatusBadge status={asset.status} />
           <ToneTag tone="default" className="capitalize">
@@ -181,18 +181,18 @@ export function AssetDetailModal({ assetId, onClose, onChanged }: Props) {
           <Typography.Text type="secondary" className="text-xs font-medium uppercase tracking-wide">
             Versions
           </Typography.Text>
-          <List
-            size="small"
-            dataSource={versionsQuery.data?.data ?? []}
+          <EntityList
+            dense
+            items={versionsQuery.data?.data ?? []}
+            rowKey="id"
+            emptyTitle="No versions yet"
             renderItem={(v) => (
-              <List.Item className="!px-0 !py-1">
-                <Space size="small" wrap>
-                  <Typography.Text>
-                    v{v.version_no} · {v.original_filename} · {formatBytes(v.size_bytes)}
-                  </Typography.Text>
-                  <StatusBadge status={v.processing_status} />
-                </Space>
-              </List.Item>
+              <Space size="small" wrap>
+                <Typography.Text>
+                  v{v.version_no} · {v.original_filename} · {formatBytes(v.size_bytes)}
+                </Typography.Text>
+                <StatusBadge domain="content" status={v.processing_status} />
+              </Space>
             )}
           />
         </div>

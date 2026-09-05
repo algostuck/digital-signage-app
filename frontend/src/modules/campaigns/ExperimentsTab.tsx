@@ -215,7 +215,7 @@ export function ExperimentsTab() {
   ];
 
   return (
-    <Space orientation="vertical" size="middle" className="mt-4 w-full">
+    <Space orientation="vertical" size="medium" className="mt-4 w-full">
       <Flex justify="space-between" align="flex-start" gap="middle" wrap>
         <Typography.Text type="secondary" className="text-xs">
           An experiment A/B-tests a campaign's variants: each device lands in a
@@ -231,7 +231,7 @@ export function ExperimentsTab() {
 
       <Card size="small" title="Experiments">
         <Table<ExperimentRow>
-          size="middle"
+          size="medium"
           rowKey="id"
           columns={columns}
           dataSource={experiments}
@@ -244,7 +244,7 @@ export function ExperimentsTab() {
         {resultsFor && resultsQuery.data?.data && (
           <Card size="small" type="inner" className="mt-3" title="Results by arm">
             <Table<ResultArm>
-              size="middle"
+              size="medium"
               rowKey="arm"
               columns={resultColumns}
               dataSource={resultsQuery.data.data.arms}

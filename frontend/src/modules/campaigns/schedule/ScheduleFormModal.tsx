@@ -7,7 +7,6 @@ import {
   Form,
   Input,
   InputNumber,
-  List,
   Modal,
   Select,
   Space,
@@ -18,6 +17,7 @@ import {
 import dayjs, { type Dayjs } from "dayjs";
 import { useState } from "react";
 import { ToneTag } from "@/design-system";
+import { EntityList } from "@/design-system";
 import { api, ApiError } from "../../../lib/api";
 import type { CampaignSummary, ConflictOverlap, Schedule, ScheduleConflict } from "../types";
 import { WEEKDAYS } from "../types";
@@ -274,15 +274,14 @@ export function ScheduleFormModal({
             }
           />
           {conflicts.length > 0 && (
-            <List
-              size="small"
-              className="mt-2"
-              dataSource={conflicts}
+            <EntityList
+              dense
+              style={{ marginTop: 8 }}
+              items={conflicts}
               rowKey="id"
               renderItem={(c) => {
                 const other = c.campaigns.find((x) => x.schedule_id !== "proposed") ?? c.campaigns[1];
                 return (
-                  <List.Item>
                     <Space size={6} wrap>
                       <ToneTag tone={severityTone(c.severity)} className="!mr-0">
                         {SEVERITY_LABEL[c.severity]}
@@ -296,7 +295,6 @@ export function ScheduleFormModal({
                         · {c.screens_affected.count} screen{c.screens_affected.count === 1 ? "" : "s"}
                       </Typography.Text>
                     </Space>
-                  </List.Item>
                 );
               }}
             />

@@ -184,7 +184,7 @@ export function ProofOfPlayTab() {
       </FilterBar>
 
       <Table<PopRow>
-        size="middle"
+        size="medium"
         rowKey={(row) => row.key_id ?? "none"}
         columns={columns}
         dataSource={rows}
@@ -240,7 +240,7 @@ export function CampaignAnalyticsTab() {
         <ExportButtons report="campaign-performance" filters={{}} />
       </Flex>
       <Table<PerformanceRow>
-        size="middle"
+        size="medium"
         rowKey="campaign_id"
         columns={performanceColumns}
         dataSource={rows}
@@ -326,7 +326,7 @@ export function UptimeTab() {
         <ExportButtons report="device-uptime" filters={filters} />
       </FilterBar>
       <Table<UptimeRow>
-        size="middle"
+        size="medium"
         rowKey="device_id"
         columns={columns}
         dataSource={rows}

@@ -140,7 +140,7 @@ export function UsersTab() {
         <ErrorState title="Failed to load users" onRetry={() => usersQuery.refetch()} />
       ) : (
         <Table<UserRow>
-          size="middle"
+          size="medium"
           rowKey="id"
           columns={columns}
           dataSource={users}

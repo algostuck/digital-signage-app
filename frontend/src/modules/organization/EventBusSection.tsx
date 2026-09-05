@@ -56,7 +56,7 @@ export function EventBusSection() {
   const { hasPermission } = useAuth();
   if (!hasPermission("webhooks.manage")) return null;
   return (
-    <Space orientation="vertical" size="middle" className="w-full">
+    <Space orientation="vertical" size="medium" className="w-full">
       <SubscriptionsPanel />
       <EventStreamPanel />
     </Space>
@@ -226,7 +226,7 @@ function SubscriptionsPanel() {
         </Button>
       }
     >
-      <Space orientation="vertical" size="middle" className="w-full">
+      <Space orientation="vertical" size="medium" className="w-full">
         <Typography.Text type="secondary">
           Normalized domain events pushed as signed HTTPS deliveries
           (HMAC-SHA256, retries, replayable dead-letter).
@@ -306,7 +306,7 @@ function SubscriptionsPanel() {
         )}
 
         <Table<SubscriptionRow>
-          size="middle"
+          size="medium"
           rowKey="id"
           columns={subscriptionColumns}
           dataSource={subscriptions}
@@ -319,7 +319,7 @@ function SubscriptionsPanel() {
         {expanded && (
           <Card size="small" type="inner" title="Delivery log">
             <Table<DeliveryRow>
-              size="middle"
+              size="medium"
               rowKey="id"
               columns={deliveryColumns}
               dataSource={deliveries}
@@ -399,7 +399,7 @@ function EventStreamPanel() {
       }
     >
       <Table<EventRow>
-        size="middle"
+        size="medium"
         rowKey="id"
         columns={columns}
         dataSource={events}

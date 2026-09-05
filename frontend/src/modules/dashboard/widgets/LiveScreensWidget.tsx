@@ -7,7 +7,7 @@ import { DeviceTVPreview } from "../../preview";
 import { usePlayback, type PlaybackSlot } from "../../preview/playback";
 import { TVScreen } from "../../preview/TVScreen";
 import { useDevicePreviewSource } from "../../preview/usePreviewSource";
-import { ChartFrame } from "../charts/ChartFrame";
+import { ChartFrame } from "@/design-system";
 import type { NowPlayingItem } from "../types";
 
 /** One screen, rendered by the TV preview engine from its real manifest —

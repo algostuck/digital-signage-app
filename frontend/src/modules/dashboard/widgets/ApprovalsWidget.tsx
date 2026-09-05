@@ -1,6 +1,6 @@
 import { Button, Typography } from "antd";
 import { Link } from "react-router-dom";
-import { ChartFrame } from "../charts/ChartFrame";
+import { ChartFrame } from "@/design-system";
 import type { ApprovalItem } from "../types";
 import { ViewAll, When } from "./shared";
 

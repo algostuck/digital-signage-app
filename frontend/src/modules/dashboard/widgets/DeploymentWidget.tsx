@@ -2,7 +2,7 @@ import { Progress, Typography } from "antd";
 import { Link } from "react-router-dom";
 import { StatusBadge } from "@/design-system";
 import { ToneTag } from "@/design-system";
-import { ChartFrame } from "../charts/ChartFrame";
+import { ChartFrame } from "@/design-system";
 import { StackedColumn } from "../charts/StackedColumn";
 import { STATUS_COLORS } from "../charts/theme";
 import type { DeploymentsBlock } from "../types";

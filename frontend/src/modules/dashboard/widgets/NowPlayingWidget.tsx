@@ -3,7 +3,7 @@ import { Avatar, Typography } from "antd";
 import { Link } from "react-router-dom";
 import { StatusBadge } from "@/design-system";
 import { ToneTag } from "@/design-system";
-import { ChartFrame } from "../charts/ChartFrame";
+import { ChartFrame } from "@/design-system";
 import type { NowPlayingItem } from "../types";
 import { ViewAll, When } from "./shared";
 

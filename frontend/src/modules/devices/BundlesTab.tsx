@@ -159,7 +159,7 @@ export function BundlesTab() {
   ];
 
   return (
-    <Space orientation="vertical" size="middle" className="w-full">
+    <Space orientation="vertical" size="medium" className="w-full">
       {metrics && (
         <Row gutter={[12, 12]}>
           <Col xs={12} sm={6}>
@@ -250,7 +250,7 @@ export function BundlesTab() {
           the previous bundle of the same scope.
         </Typography.Paragraph>
         <Table<BundleRow>
-          size="middle"
+          size="medium"
           rowKey="id"
           columns={columns}
           dataSource={bundles}

@@ -168,7 +168,7 @@ export function TenantCreateDrawer({ open, onClose }: { open: boolean; onClose()
         <Form.Item noStyle shouldUpdate={(a, b) => a.plan_code !== b.plan_code}>
           {({ getFieldValue }) =>
             getFieldValue("plan_code") ? (
-              <Space size="middle" align="start">
+              <Space size="medium" align="start">
                 <Form.Item name="billing_cycle" label="Billing cycle">
                   <Select
                     className="w-36"

@@ -169,7 +169,7 @@ export function AuditPage() {
       </FilterBar>
 
       <Table<AuditRow>
-        size="middle"
+        size="medium"
         rowKey="id"
         columns={columns}
         dataSource={rows}

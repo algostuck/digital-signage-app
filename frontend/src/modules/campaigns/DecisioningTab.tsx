@@ -231,7 +231,7 @@ export function DecisioningTab() {
   ];
 
   return (
-    <Space orientation="vertical" size="middle" className="w-full">
+    <Space orientation="vertical" size="medium" className="w-full">
       <Typography.Text type="secondary" className="text-xs">
         Rules pin, boost or exclude among the campaigns whose schedule window
         is live right now — schedule windows are never overridden, mandatory
@@ -262,7 +262,7 @@ export function DecisioningTab() {
         }
       >
         <Table<PolicyRow>
-          size="middle"
+          size="medium"
           rowKey="id"
           columns={policyColumns}
           dataSource={policies}
@@ -350,7 +350,7 @@ export function DecisioningTab() {
 
       <Card size="small" title="Decision log">
         <Table<LogRow>
-          size="middle"
+          size="medium"
           rowKey="id"
           columns={logColumns}
           dataSource={logs}

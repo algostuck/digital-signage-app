@@ -292,7 +292,7 @@ export function SecurityPage() {
         {canManage && violations.length > 0 && (
           <Card size="small" title="Policy violations">
             <Table<ViolationRow>
-              size="middle"
+              size="medium"
               rowKey="id"
               columns={violationColumns}
               dataSource={violations}
@@ -305,7 +305,7 @@ export function SecurityPage() {
 
         <Card size="small" title="Device identities">
           <Table<IdentityRow>
-            size="middle"
+            size="medium"
             rowKey="device_id"
             columns={identityColumns}
             dataSource={identities}

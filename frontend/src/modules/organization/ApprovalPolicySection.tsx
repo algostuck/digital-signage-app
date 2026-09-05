@@ -1,5 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { App, Card, Checkbox, List, Space, Typography } from "antd";
+import { App, Card, Checkbox, Space, Typography } from "antd";
+import { EntityList } from "@/design-system";
 import { api, ApiError } from "../../lib/api";
 
 interface Policy {
@@ -38,11 +39,11 @@ export function ApprovalPolicySection({ canManage }: { canManage: boolean }) {
         Govern which submissions need review and whether the submitter may decide
         their own request (maker-checker).
       </Typography.Paragraph>
-      <List
-        size="small"
-        dataSource={policies}
+      <EntityList
+        dense
+        items={policies}
+        rowKey="entity_type"
         renderItem={(policy) => (
-          <List.Item>
             <Space wrap size="large">
               <Typography.Text strong className="w-24 inline-block capitalize">
                 {policy.entity_type}s
@@ -63,7 +64,6 @@ export function ApprovalPolicySection({ canManage }: { canManage: boolean }) {
                 Maker-checker (no self-approval)
               </Checkbox>
             </Space>
-          </List.Item>
         )}
       />
     </Card>

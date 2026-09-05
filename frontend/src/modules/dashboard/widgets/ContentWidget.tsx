@@ -3,7 +3,7 @@ import { Avatar, Typography } from "antd";
 import { Link, useNavigate } from "react-router-dom";
 import { StatusBadge } from "@/design-system";
 import { ToneTag } from "@/design-system";
-import { ChartFrame } from "../charts/ChartFrame";
+import { ChartFrame } from "@/design-system";
 import { Donut } from "../charts/Donut";
 import { SERIES_COLORS } from "../charts/theme";
 import type { ContentBlock } from "../types";

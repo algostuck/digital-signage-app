@@ -184,7 +184,7 @@ export function DataSourcesSection() {
         )
       }
     >
-      <Space orientation="vertical" size="middle" className="w-full">
+      <Space orientation="vertical" size="medium" className="w-full">
         <Typography.Text type="secondary">
           Live REST/JSON and RSS feeds for dynamic widgets. Fetched
           server-side with SSRF guards; devices only receive validated
@@ -273,7 +273,7 @@ export function DataSourcesSection() {
         )}
 
         <Table<DataSourceRow>
-          size="middle"
+          size="medium"
           rowKey="id"
           columns={columns}
           dataSource={sources}

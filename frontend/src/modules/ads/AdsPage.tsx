@@ -221,7 +221,7 @@ export function AdsPage() {
     });
 
   const inventoryTab = (
-    <Space orientation="vertical" size="middle" className="w-full">
+    <Space orientation="vertical" size="medium" className="w-full">
       {canManage && (
         <Card size="small">
           <Form
@@ -283,7 +283,7 @@ export function AdsPage() {
         </Card>
       )}
       <Table<InventoryRow>
-        size="middle"
+        size="medium"
         rowKey="id"
         columns={inventoryColumns}
         dataSource={inventory}
@@ -295,7 +295,7 @@ export function AdsPage() {
   );
 
   const bookingsTab = (
-    <Space orientation="vertical" size="middle" className="w-full">
+    <Space orientation="vertical" size="medium" className="w-full">
       {canManage && (
         <Card size="small">
           <Form
@@ -371,7 +371,7 @@ export function AdsPage() {
         New bookings await approval in the Approvals inbox before confirming.
       </Typography.Text>
       <Table<BookingRow>
-        size="middle"
+        size="medium"
         rowKey="id"
         columns={bookingColumns}
         dataSource={bookings}
