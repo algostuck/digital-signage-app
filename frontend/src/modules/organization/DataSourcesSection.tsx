@@ -16,6 +16,7 @@ import {
 } from "antd";
 import { useState } from "react";
 import { EmptyState } from "@/design-system";
+import { SectionCard } from "@/design-system";
 import { StatusBadge } from "@/design-system";
 import { api, ApiError } from "../../lib/api";
 import { useAuth } from "../../lib/auth";
@@ -173,10 +174,9 @@ export function DataSourcesSection() {
   ];
 
   return (
-    <Card
-      size="small"
+    <SectionCard
       title="Data sources"
-      extra={
+      actions={
         canManage && (
           <Button type="primary" onClick={() => setCreateOpen((v) => !v)}>
             {createOpen ? "Close" : "Add source"}
@@ -305,6 +305,6 @@ export function DataSourcesSection() {
 
         {error && <Alert type="error" message={error} showIcon role="alert" />}
       </Space>
-    </Card>
+    </SectionCard>
   );
 }

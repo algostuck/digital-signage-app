@@ -1,16 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import {
-  Alert,
-  Button,
-  Card,
-  Col,
-  ColorPicker,
-  Form,
-  Input,
-  Row,
-  Typography,
-} from "antd";
+import { Alert, Button, Col, ColorPicker, Form, Input, Row, Typography } from "antd";
 import { ToneTag } from "@/design-system";
+import { SectionCard } from "@/design-system";
 import { toneOf } from "@/design-system";
 import { useEffect, useState } from "react";
 import { api, ApiError } from "../../lib/api";
@@ -94,7 +85,7 @@ export function WhiteLabelSection() {
   if (!canManage || query.isError || !data) return null;
 
   return (
-    <Card size="small" title="White label">
+    <SectionCard title="White label">
       <Typography.Paragraph type="secondary" className="!mb-3">
         Theme + custom-domain metadata (DNS routing and verification are
         handled with the platform administrator) + the sender identity used
@@ -176,6 +167,6 @@ export function WhiteLabelSection() {
           role={message.kind === "error" ? "alert" : undefined}
         />
       )}
-    </Card>
+    </SectionCard>
   );
 }

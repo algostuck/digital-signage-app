@@ -1,5 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Alert, Button, Card, Col, Form, InputNumber, Progress, Row, Space, Typography } from "antd";
+import { Alert, Button, Col, Form, InputNumber, Progress, Row, Space, Typography } from "antd";
+import { SectionCard } from "@/design-system";
 import { useEffect, useState } from "react";
 import { api, ApiError } from "../../lib/api";
 import { useAuth } from "../../lib/auth";
@@ -82,7 +83,7 @@ export function QuotasRetentionSection() {
 
   return (
     <Space orientation="vertical" size="medium" className="w-full">
-      <Card size="small" title="Usage & limits">
+      <SectionCard title="Usage & limits">
         <Typography.Paragraph type="secondary" className="!mb-3">
           Limits come from your subscription plan (and any platform override).
           To change them, upgrade your plan or contact the platform
@@ -114,10 +115,10 @@ export function QuotasRetentionSection() {
             );
           })}
         </Row>
-      </Card>
+      </SectionCard>
 
       {canSettings && retention && (
-        <Card size="small" title="Data retention (days)">
+        <SectionCard title="Data retention (days)">
           <Typography.Paragraph type="secondary" className="!mb-3">
             Pruned by the maintenance sweep. Platform floors apply — audit logs
             cannot go below {retention.audit_logs?.floor ?? 90} days.
@@ -154,7 +155,7 @@ export function QuotasRetentionSection() {
               Save retention policy
             </Button>
           </Form>
-        </Card>
+        </SectionCard>
       )}
 
       {ok && <Alert type="success" message={ok} showIcon />}

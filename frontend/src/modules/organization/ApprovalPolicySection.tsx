@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { App, Card, Checkbox, Space, Typography } from "antd";
+import { App, Checkbox, Space, Typography } from "antd";
 import { EntityList } from "@/design-system";
+import { SectionCard } from "@/design-system";
 import { api, ApiError } from "../../lib/api";
 
 interface Policy {
@@ -34,7 +35,7 @@ export function ApprovalPolicySection({ canManage }: { canManage: boolean }) {
   const policies = policiesQuery.data?.data ?? [];
 
   return (
-    <Card size="small" title="Approval policies" loading={policiesQuery.isLoading}>
+    <SectionCard title="Approval policies" loading={policiesQuery.isLoading}>
       <Typography.Paragraph type="secondary" className="!mb-2">
         Govern which submissions need review and whether the submitter may decide
         their own request (maker-checker).
@@ -66,6 +67,6 @@ export function ApprovalPolicySection({ canManage }: { canManage: boolean }) {
             </Space>
         )}
       />
-    </Card>
+    </SectionCard>
   );
 }

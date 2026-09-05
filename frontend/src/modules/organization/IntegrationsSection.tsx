@@ -1,20 +1,8 @@
 import { PlusOutlined } from "@ant-design/icons";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import {
-  Alert,
-  Button,
-  Card,
-  Flex,
-  Form,
-  Input,
-  InputNumber,
-  Modal,
-  Popconfirm,
-  Space,
-  Tag,
-  Typography,
-} from "antd";
+import { Alert, Button, Flex, Form, Input, InputNumber, Modal, Popconfirm, Space, Tag, Typography } from "antd";
 import { ToneTag } from "@/design-system";
+import { SectionCard } from "@/design-system";
 import { EntityList } from "@/design-system";
 import { useState } from "react";
 import { EmptyState } from "@/design-system";
@@ -125,11 +113,10 @@ function WebhooksPanel() {
   const webhooks = webhooksQuery.data?.data ?? [];
 
   return (
-    <Card
-      size="small"
+    <SectionCard
       title="Webhook integrations"
       loading={webhooksQuery.isLoading}
-      extra={
+      actions={
         <Button type="primary" icon={<PlusOutlined />} onClick={() => setCreateOpen(true)}>
           New webhook
         </Button>
@@ -203,7 +190,7 @@ function WebhooksPanel() {
           }}
         />
       )}
-    </Card>
+    </SectionCard>
   );
 }
 
@@ -370,11 +357,10 @@ function ApiKeysPanel() {
   const keys = keysQuery.data?.data ?? [];
 
   return (
-    <Card
-      size="small"
+    <SectionCard
       title="API keys"
       loading={keysQuery.isLoading}
-      extra={
+      actions={
         <Button type="primary" icon={<PlusOutlined />} onClick={() => setCreateOpen(true)}>
           New API key
         </Button>
@@ -442,7 +428,7 @@ function ApiKeysPanel() {
           }}
         />
       )}
-    </Card>
+    </SectionCard>
   );
 }
 

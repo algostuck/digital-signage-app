@@ -16,7 +16,7 @@ import {
 } from "antd";
 import dayjs, { type Dayjs } from "dayjs";
 import { useState } from "react";
-import { ToneTag } from "@/design-system";
+import { timeZoneOptions, ToneTag } from "@/design-system";
 import { EntityList } from "@/design-system";
 import { api, ApiError } from "../../../lib/api";
 import type { CampaignSummary, ConflictOverlap, Schedule, ScheduleConflict } from "../types";
@@ -53,13 +53,6 @@ interface DryRun {
 
 function minuteToDayjs(minute: number): Dayjs {
   return dayjs().hour(Math.floor(minute / 60) % 24).minute(minute % 60).second(0).millisecond(0);
-}
-
-function timeZones(): string[] {
-  const intl = Intl as unknown as { supportedValuesOf?: (key: string) => string[] };
-  const zones = intl.supportedValuesOf?.("timeZone") ?? [];
-  const common = ["Asia/Kolkata", "Asia/Dubai", "Asia/Singapore", "Europe/London", "UTC"];
-  return [...common, ...zones.filter((z) => !common.includes(z))];
 }
 
 /**
@@ -254,7 +247,7 @@ export function ScheduleFormModal({
           </Form.Item>
         </Flex>
         <Form.Item name="timezone" label="Timezone" extra="Leave empty to inherit the screen → location → organisation zone.">
-          <Select showSearch allowClear placeholder="Inherit" options={timeZones().map((z) => ({ value: z, label: z }))} />
+          <Select showSearch allowClear placeholder="Inherit" options={timeZoneOptions()} />
         </Form.Item>
       </Form>
 

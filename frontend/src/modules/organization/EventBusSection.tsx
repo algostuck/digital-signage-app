@@ -18,6 +18,7 @@ import {
 } from "antd";
 import { useState } from "react";
 import { EmptyState } from "@/design-system";
+import { SectionCard } from "@/design-system";
 import { StatusBadge } from "@/design-system";
 import { api, ApiError } from "../../lib/api";
 import { useAuth } from "../../lib/auth";
@@ -217,10 +218,9 @@ function SubscriptionsPanel() {
   ];
 
   return (
-    <Card
-      size="small"
+    <SectionCard
       title="Event bus — consumers"
-      extra={
+      actions={
         <Button type="primary" onClick={() => setCreateOpen((v) => !v)}>
           {createOpen ? "Close" : "Add consumer"}
         </Button>
@@ -333,7 +333,7 @@ function SubscriptionsPanel() {
 
         {error && <Alert type="error" message={error} showIcon role="alert" />}
       </Space>
-    </Card>
+    </SectionCard>
   );
 }
 
@@ -382,10 +382,9 @@ function EventStreamPanel() {
   ];
 
   return (
-    <Card
-      size="small"
+    <SectionCard
       title="Recent domain events"
-      extra={
+      actions={
         <Select
           aria-label="Filter by event type"
           value={typeFilter}
@@ -408,6 +407,6 @@ function EventStreamPanel() {
         loading={eventsQuery.isLoading}
         locale={{ emptyText: <EmptyState title="No events recorded yet" /> }}
       />
-    </Card>
+    </SectionCard>
   );
 }

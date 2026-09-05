@@ -1,8 +1,8 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Alert, Button, Card, Col, Form, Input, Row, Space, Tabs } from "antd";
+import { Alert, Button, Col, Form, Input, Row, Select, Space, Tabs } from "antd";
 import { useEffect, useState } from "react";
 import { PageHeader } from "@/design-system";
-import { ErrorState, LoadingState } from "@/design-system";
+import { ErrorState, LoadingState, LOCALE_OPTIONS, SectionCard, timeZoneOptions } from "@/design-system";
 import { api, ApiError } from "../../lib/api";
 import { useAuth } from "../../lib/auth";
 import { ApprovalPolicySection } from "./ApprovalPolicySection";
@@ -83,7 +83,7 @@ export function OrganizationSettingsPage() {
 
   const generalTab = (
     <Space orientation="vertical" size="medium" className="w-full">
-      <Card size="small" title="Organization profile">
+      <SectionCard title="Organization profile" description="Name, time zone and default locale for everyone in this tenant.">
         <Form
           form={form}
           layout="vertical"
@@ -97,7 +97,7 @@ export function OrganizationSettingsPage() {
               <Form.Item
                 name="name"
                 label="Organization name"
-                rules={[{ required: true, message: "Organization name is required" }]}
+                rules={[{ required: true, message: "Enter the organization name." }]}
               >
                 <Input disabled={!canManage} />
               </Form.Item>
@@ -105,19 +105,19 @@ export function OrganizationSettingsPage() {
             <Col xs={24} sm={8}>
               <Form.Item
                 name="timezone"
-                label="Timezone (IANA, e.g. Asia/Kolkata)"
-                rules={[{ required: true, message: "Timezone is required" }]}
+                label="Time zone"
+                rules={[{ required: true, message: "Choose a time zone." }]}
               >
-                <Input disabled={!canManage} />
+                <Select showSearch disabled={!canManage} options={timeZoneOptions()} optionFilterProp="label" />
               </Form.Item>
             </Col>
             <Col xs={24} sm={8}>
               <Form.Item
                 name="locale"
                 label="Default locale"
-                rules={[{ required: true, message: "Default locale is required" }]}
+                rules={[{ required: true, message: "Choose a default locale." }]}
               >
-                <Input disabled={!canManage} />
+                <Select disabled={!canManage} options={LOCALE_OPTIONS} />
               </Form.Item>
             </Col>
           </Row>
@@ -136,7 +136,7 @@ export function OrganizationSettingsPage() {
             </Button>
           )}
         </Form>
-      </Card>
+      </SectionCard>
       <ApprovalPolicySection canManage={canManage} />
     </Space>
   );

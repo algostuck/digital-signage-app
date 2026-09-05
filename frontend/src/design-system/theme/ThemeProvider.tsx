@@ -64,7 +64,20 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
 
   return (
     <ThemeContext.Provider value={value}>
-      <ConfigProvider theme={buildTheme(mode)}>
+      <ConfigProvider
+        theme={buildTheme(mode)}
+        // Form defaults for the whole product (DESIGN_SYSTEM_USAGE.md §2):
+        // scroll to the first error on submit and actionable messages.
+        form={{
+          scrollToFirstError: { behavior: "smooth", block: "center" },
+          validateMessages: {
+            required: "Enter ${label}.",
+            types: { email: "Enter a valid email address.", url: "Enter a valid URL.", number: "Enter a number." },
+            string: { min: "Use at least ${min} characters.", max: "Use at most ${max} characters." },
+            number: { min: "Enter ${min} or more.", max: "Enter ${max} or less.", range: "Enter a value between ${min} and ${max}." },
+          },
+        }}
+      >
         <AntApp>{children}</AntApp>
       </ConfigProvider>
     </ThemeContext.Provider>

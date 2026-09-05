@@ -72,4 +72,5 @@ export {
   formatTime,
 } from "./utilities/format";
 export { useFeedback } from "./utilities/feedback";
+export { LOCALE_OPTIONS, timeZoneNames, timeZoneOptions } from "./utilities/timezones";
 export { useReducedMotion } from "./utilities/useReducedMotion";

@@ -1,17 +1,8 @@
 import { CheckOutlined, CloseOutlined, DownloadOutlined } from "@ant-design/icons";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import {
-  Alert,
-  Button,
-  Card,
-  Flex,
-  Select,
-  Space,
-  Table,
-  Typography,
-  type TableProps,
-} from "antd";
+import { Alert, Button, Flex, Select, Space, Table, Typography, type TableProps } from "antd";
 import { ToneTag } from "@/design-system";
+import { SectionCard } from "@/design-system";
 import { toneOf } from "@/design-system";
 import { useState } from "react";
 import { api, ApiError } from "../../lib/api";
@@ -197,7 +188,7 @@ export function PlanBillingSection() {
 
   return (
     <Space orientation="vertical" size="medium" className="w-full">
-      <Card size="small" title="Plan & billing">
+      <SectionCard title="Plan & billing">
         {sub == null ? (
           <Typography.Text type="secondary">
             No subscription — this organization runs without plan limits.
@@ -294,10 +285,10 @@ export function PlanBillingSection() {
             );
           })}
         </Flex>
-      </Card>
+      </SectionCard>
 
       {invoices.length > 0 && (
-        <Card size="small" title="Invoices">
+        <SectionCard title="Invoices">
           <Table<InvoiceRow>
             size="medium"
             rowKey="id"
@@ -307,7 +298,7 @@ export function PlanBillingSection() {
             scroll={{ x: "max-content" }}
             loading={invoicesQuery.isLoading}
           />
-        </Card>
+        </SectionCard>
       )}
 
       {message && (

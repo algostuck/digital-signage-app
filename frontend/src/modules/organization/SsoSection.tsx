@@ -1,16 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import {
-  Alert,
-  Button,
-  Card,
-  Col,
-  Form,
-  Input,
-  Row,
-  Space,
-  Switch,
-  Typography,
-} from "antd";
+import { Alert, Button, Col, Form, Input, Row, Space, Switch, Typography } from "antd";
+import { SectionCard } from "@/design-system";
 import { useEffect, useState } from "react";
 import { api, ApiError } from "../../lib/api";
 import { useAuth } from "../../lib/auth";
@@ -111,7 +101,7 @@ export function SsoSection() {
   }
 
   return (
-    <Card size="small" title="Enterprise SSO (OIDC)">
+    <SectionCard title="Enterprise SSO (OIDC)">
       <Typography.Paragraph type="secondary" className="!mb-3">
         The IdP authenticates; roles stay platform-managed via claim
         mapping. The client secret is referenced by an environment-variable
@@ -200,6 +190,6 @@ export function SsoSection() {
           role={message.kind === "error" ? "alert" : undefined}
         />
       )}
-    </Card>
+    </SectionCard>
   );
 }

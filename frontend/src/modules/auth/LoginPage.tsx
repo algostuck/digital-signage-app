@@ -1,19 +1,19 @@
+import { LockOutlined, MailOutlined } from "@ant-design/icons";
 import { Alert, Button, Form, Input, Typography } from "antd";
 import { useState } from "react";
 import { Link, Navigate, useLocation, useNavigate } from "react-router-dom";
 import { ApiError } from "../../lib/api";
 import { useAuth } from "../../lib/auth";
-import { AuthShell, useAuthButtonStyle } from "./AuthShell";
-import { FloatingField, PILL_INPUT } from "./FloatingField";
+import { AuthShell } from "./AuthShell";
 
-/** SCR-01 Login / Authentication. */
+/** SCR-01 Login / Authentication — a standard vertical antd Form
+ * (docs/design-system/DESIGN_SYSTEM_USAGE.md §2) inside the brand shell. */
 export function LoginPage() {
   const { user, login } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
-  const buttonStyle = useAuthButtonStyle();
 
   if (user) {
     return <Navigate to="/dashboard" replace />;
@@ -39,55 +39,28 @@ export function LoginPage() {
   }
 
   return (
-    <AuthShell>
-      {error && (
-        <Alert type="error" message={error} showIcon className="mb-5" role="alert" />
-      )}
-      <Form
-        name="login"
-        layout="vertical"
-        onFinish={onFinish}
-        requiredMark={false}
-        aria-label="Sign in"
-        size="large"
-      >
-        <FloatingField
-          label="E-mail"
-          htmlFor="login_email"
+    <AuthShell title="Sign in" description="Use your organisation account to continue.">
+      {error && <Alert type="error" title={error} showIcon style={{ marginBottom: 20 }} role="alert" />}
+      <Form name="login" layout="vertical" onFinish={onFinish} aria-label="Sign in" size="large">
+        <Form.Item
           name="email"
+          label="Email"
           rules={[
             { required: true, message: "Enter your email address." },
             { type: "email", message: "Enter a valid email address." },
           ]}
         >
-          {/* No placeholder: antd renders it at ~1.8:1, and the floating
-              label already names the field. */}
-          <Input autoFocus autoComplete="email" style={PILL_INPUT} />
-        </FloatingField>
-        <FloatingField
-          label="Password"
-          htmlFor="login_password"
-          name="password"
-          rules={[{ required: true, message: "Enter your password." }]}
-        >
-          <Input.Password autoComplete="current-password" style={PILL_INPUT} />
-        </FloatingField>
-
-        <Button
-          type="primary"
-          htmlType="submit"
-          loading={submitting}
-          shape="round"
-          size="large"
-          className="min-w-[132px]"
-          style={{ ...buttonStyle, marginTop: 13 }}
-        >
-          Login
+          <Input autoFocus autoComplete="email" prefix={<MailOutlined aria-hidden />} />
+        </Form.Item>
+        <Form.Item name="password" label="Password" rules={[{ required: true, message: "Enter your password." }]}>
+          <Input.Password autoComplete="current-password" prefix={<LockOutlined aria-hidden />} />
+        </Form.Item>
+        <Button type="primary" htmlType="submit" loading={submitting} size="large" block style={{ marginTop: 8 }}>
+          Sign in
         </Button>
       </Form>
-
-      <Typography.Paragraph className="!mb-0" style={{ marginTop: 34 }}>
-        <Link to="/forgot-password">Forgot Password?</Link>
+      <Typography.Paragraph style={{ marginTop: 24, marginBottom: 0 }}>
+        <Link to="/forgot-password">Forgot your password?</Link>
       </Typography.Paragraph>
     </AuthShell>
   );

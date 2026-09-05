@@ -1,6 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { Card, Col, Flex, Row, Typography } from "antd";
 import { ToneTag } from "@/design-system";
+import { SectionCard } from "@/design-system";
 import { toneOf } from "@/design-system";
 import { api } from "../../lib/api";
 import { useAuth } from "../../lib/auth";
@@ -28,7 +29,7 @@ export function IntegrationCatalogSection() {
   const connectors = query.data?.data ?? [];
 
   return (
-    <Card size="small" title="Integration catalog" loading={query.isLoading}>
+    <SectionCard title="Integration catalog" loading={query.isLoading}>
       <Typography.Paragraph type="secondary" className="!mb-3">
         Everything the platform connects to, in one place — configure each
         in its section below (locked items need a plan upgrade).
@@ -57,6 +58,6 @@ export function IntegrationCatalogSection() {
           </Col>
         ))}
       </Row>
-    </Card>
+    </SectionCard>
   );
 }
