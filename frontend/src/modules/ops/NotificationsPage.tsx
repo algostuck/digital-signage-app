@@ -12,12 +12,12 @@ import {
   Tabs,
   Typography,
 } from "antd";
-import { ToneTag } from "../../components/ui/ToneTag";
-import { toneOf } from "../../components/ui/tone";
+import { ToneTag } from "@/design-system";
+import { toneOf } from "@/design-system";
 import { useState } from "react";
 import { useSearchParams } from "react-router-dom";
-import { PageHeader } from "../../components/ui/PageHeader";
-import { EmptyState, LoadingState } from "../../components/ui/states";
+import { PageHeader } from "@/design-system";
+import { EmptyState, LoadingState } from "@/design-system";
 import { api } from "../../lib/api";
 import { timeAgo } from "../devices/types";
 import { NotificationRulesTab } from "./NotificationRulesTab";

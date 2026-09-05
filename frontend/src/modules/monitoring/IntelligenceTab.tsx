@@ -13,11 +13,11 @@ import {
   Typography,
   type TableProps,
 } from "antd";
-import { ToneTag } from "../../components/ui/ToneTag";
-import { toneOf } from "../../components/ui/tone";
+import { ToneTag } from "@/design-system";
+import { toneOf } from "@/design-system";
 import { useState, type FormEvent } from "react";
-import { EmptyState } from "../../components/ui/states";
-import { StatusBadge } from "../../components/ui/StatusBadge";
+import { EmptyState } from "@/design-system";
+import { StatusBadge } from "@/design-system";
 import { api, ApiError } from "../../lib/api";
 import { useAuth } from "../../lib/auth";
 

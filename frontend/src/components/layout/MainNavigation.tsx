@@ -9,7 +9,7 @@ import {
   toMenuItems,
 } from "../../config/navigation";
 import { useAuth } from "../../lib/auth";
-import { useThemeMode } from "../../theme/ThemeProvider";
+import { useThemeMode } from "@/design-system";
 
 interface Props {
   collapsed: boolean;

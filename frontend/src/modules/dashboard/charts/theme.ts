@@ -1,6 +1,6 @@
 import { theme } from "antd";
-import { BRAND } from "../../../theme/tokens";
-import { useThemeMode } from "../../../theme/ThemeProvider";
+import { BRAND } from "@/design-system";
+import { useThemeMode } from "@/design-system";
 
 /** Colour is never the only signal on a chart — every series also has a
  * label and a text summary beside it — but when colour is used it comes
@@ -17,7 +17,7 @@ export const STATUS_COLORS = {
   pending: BRAND.warning,
 } as const;
 
-export { STATUS_TEXT } from "../../../components/ui/tone";
+export { STATUS_TEXT } from "@/design-system";
 
 /** Ordered categorical palette for non-status series (content types,
  * campaign status). Six steps, all distinguishable on light and dark. */

@@ -28,9 +28,9 @@ import {
   type TableProps,
 } from "antd";
 import { useCallback, useMemo, useState, type ReactNode } from "react";
-import { PageHeader } from "../../../components/ui/PageHeader";
-import { ErrorState, LoadingState } from "../../../components/ui/states";
-import { ToneTag } from "../../../components/ui/ToneTag";
+import { PageHeader } from "@/design-system";
+import { ErrorState, LoadingState } from "@/design-system";
+import { ToneTag } from "@/design-system";
 import { api, ApiError } from "../../../lib/api";
 import { useAuth } from "../../../lib/auth";
 import { CampaignDetailModal } from "../CampaignDetailModal";

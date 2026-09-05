@@ -8,7 +8,7 @@ import {
   useState,
   type ReactNode,
 } from "react";
-import { buildTheme, type ThemeMode } from "./tokens";
+import { buildTheme, type ThemeMode } from "./buildTheme";
 
 const STORAGE_KEY = "dsc.theme";
 

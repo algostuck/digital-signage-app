@@ -1,6 +1,6 @@
 import { Tabs } from "antd";
 import { useState } from "react";
-import { PageHeader } from "../../components/ui/PageHeader";
+import { PageHeader } from "@/design-system";
 import { MembersTab } from "./MembersTab";
 import { RolesTab } from "./RolesTab";
 import { UsersTab } from "./UsersTab";

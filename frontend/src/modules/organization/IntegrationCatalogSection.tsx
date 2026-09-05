@@ -1,7 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { Card, Flex, List, Typography } from "antd";
-import { ToneTag } from "../../components/ui/ToneTag";
-import { toneOf } from "../../components/ui/tone";
+import { ToneTag } from "@/design-system";
+import { toneOf } from "@/design-system";
 import { api } from "../../lib/api";
 import { useAuth } from "../../lib/auth";
 

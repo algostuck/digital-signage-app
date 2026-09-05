@@ -7,9 +7,9 @@ import {
 } from "@ant-design/icons";
 import { Button, Card, Col, Empty, Flex, Row, Space, Typography } from "antd";
 import { Link } from "react-router-dom";
-import { PageHeader } from "../../components/ui/PageHeader";
-import { StatCard } from "../../components/ui/StatCard";
-import { StatusBadge } from "../../components/ui/StatusBadge";
+import { PageHeader } from "@/design-system";
+import { StatCard } from "@/design-system";
+import { StatusBadge } from "@/design-system";
 import { formatDate, formatMoney, isOverdue, usePlanRequests, usePlans, usePlatformInvoices, useTenants } from "./api";
 import { PlatformGuard } from "./PlatformGuard";
 

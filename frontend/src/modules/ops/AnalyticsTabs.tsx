@@ -13,8 +13,8 @@ import {
 } from "antd";
 import dayjs from "dayjs";
 import { useState } from "react";
-import { FilterBar } from "../../components/ui/FilterBar";
-import { EmptyState } from "../../components/ui/states";
+import { FilterBar } from "@/design-system";
+import { EmptyState } from "@/design-system";
 import { api, ApiError } from "../../lib/api";
 import { useAuth } from "../../lib/auth";
 

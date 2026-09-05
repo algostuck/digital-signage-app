@@ -19,9 +19,9 @@ import {
   Upload,
 } from "antd";
 import { useState } from "react";
-import { PageHeader } from "../../components/ui/PageHeader";
-import { EmptyState, LoadingState } from "../../components/ui/states";
-import { StatusBadge } from "../../components/ui/StatusBadge";
+import { PageHeader } from "@/design-system";
+import { EmptyState, LoadingState } from "@/design-system";
+import { StatusBadge } from "@/design-system";
 import { api, ApiError } from "../../lib/api";
 import { useAuth } from "../../lib/auth";
 import { timeAgo, type DeviceGroup } from "../devices/types";

@@ -1,8 +1,8 @@
 import { PlayCircleOutlined } from "@ant-design/icons";
 import { Avatar, Typography } from "antd";
 import { Link } from "react-router-dom";
-import { StatusBadge } from "../../../components/ui/StatusBadge";
-import { ToneTag } from "../../../components/ui/ToneTag";
+import { StatusBadge } from "@/design-system";
+import { ToneTag } from "@/design-system";
 import { ChartFrame } from "../charts/ChartFrame";
 import type { NowPlayingItem } from "../types";
 import { ViewAll, When } from "./shared";

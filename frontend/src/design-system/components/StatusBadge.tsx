@@ -10,8 +10,8 @@ import {
   SyncOutlined,
 } from "@ant-design/icons";
 import { Tag } from "antd";
-import { useThemeMode } from "../../theme/ThemeProvider";
-import { toneStyle, type Tone } from "./tone";
+import { useThemeMode } from "../theme/ThemeProvider";
+import { toneStyle, type Tone } from "../tokens/tone";
 import type { ReactNode } from "react";
 
 interface StatusMeta {

@@ -23,8 +23,8 @@ import {
   Typography,
 } from "antd";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { PageHeader } from "../../components/ui/PageHeader";
-import { ToneTag } from "../../components/ui/ToneTag";
+import { PageHeader } from "@/design-system";
+import { ToneTag } from "@/design-system";
 import { api, ApiError } from "../../lib/api";
 import { useAuth } from "../../lib/auth";
 import { TVScreen } from "../preview/TVScreen";

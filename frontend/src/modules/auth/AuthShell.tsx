@@ -1,6 +1,6 @@
 import { ConfigProvider, Grid, Typography, theme } from "antd";
 import type { CSSProperties, ReactNode } from "react";
-import { useThemeMode } from "../../theme/ThemeProvider";
+import { useThemeMode } from "@/design-system";
 import { HeroIllustration } from "./HeroIllustration";
 
 /** Brand gradient for the hero panel. Every stop clears 7:1 against white

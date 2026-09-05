@@ -17,7 +17,7 @@ import {
 } from "antd";
 import dayjs, { type Dayjs } from "dayjs";
 import { useState } from "react";
-import { ToneTag } from "../../../components/ui/ToneTag";
+import { ToneTag } from "@/design-system";
 import { api, ApiError } from "../../../lib/api";
 import type { CampaignSummary, ConflictOverlap, Schedule, ScheduleConflict } from "../types";
 import { WEEKDAYS } from "../types";

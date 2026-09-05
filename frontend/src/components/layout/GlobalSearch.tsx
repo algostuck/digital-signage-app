@@ -3,7 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { AutoComplete, Flex, Typography, theme } from "antd";
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { StatusBadge } from "../ui/StatusBadge";
+import { StatusBadge } from "@/design-system";
 import { api } from "../../lib/api";
 
 interface SearchRow {

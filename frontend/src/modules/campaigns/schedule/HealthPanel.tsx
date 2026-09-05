@@ -7,10 +7,10 @@ import {
   WarningOutlined,
 } from "@ant-design/icons";
 import { Button, Card, Col, Progress, Row, Skeleton, Space, Typography } from "antd";
-import { StatCard } from "../../../components/ui/StatCard";
-import { STATUS_TEXT } from "../../../components/ui/tone";
-import { ToneTag } from "../../../components/ui/ToneTag";
-import { useThemeMode } from "../../../theme/ThemeProvider";
+import { StatCard } from "@/design-system";
+import { STATUS_TEXT } from "@/design-system";
+import { ToneTag } from "@/design-system";
+import { useThemeMode } from "@/design-system";
 import type { CalendarData } from "../types";
 
 /** The five real numbers of the visible range. Nothing here is invented:

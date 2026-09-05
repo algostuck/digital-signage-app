@@ -5,7 +5,7 @@ import ReactDOM from "react-dom/client";
 import { RouterProvider } from "react-router-dom";
 import { AuthProvider } from "./lib/auth";
 import { router } from "./routes";
-import { ThemeProvider } from "./theme/ThemeProvider";
+import { ThemeProvider } from "@/design-system";
 import "./index.css";
 
 const queryClient = new QueryClient({

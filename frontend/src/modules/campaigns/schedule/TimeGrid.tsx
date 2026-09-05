@@ -1,6 +1,6 @@
 import { Popover, theme, Typography } from "antd";
 import { useEffect, useRef, useState, type CSSProperties, type PointerEvent, type ReactNode } from "react";
-import { useThemeMode } from "../../../theme/ThemeProvider";
+import { useThemeMode } from "@/design-system";
 import type { CalendarEvent } from "../types";
 import { addDays, DAY_MINUTES, dayNumber, minuteLabel, weekdayShort, windowLabel } from "./dates";
 import { EventIcons, eventLabel, eventStyle } from "./EventChip";

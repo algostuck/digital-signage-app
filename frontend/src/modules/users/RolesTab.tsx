@@ -15,9 +15,9 @@ import {
   Tooltip,
   Typography,
 } from "antd";
-import { ToneTag } from "../../components/ui/ToneTag";
+import { ToneTag } from "@/design-system";
 import { useMemo, useState } from "react";
-import { ErrorState, LoadingState } from "../../components/ui/states";
+import { ErrorState, LoadingState } from "@/design-system";
 import { api, ApiError } from "../../lib/api";
 import { useAuth } from "../../lib/auth";
 import type { Permission, Role } from "./types";

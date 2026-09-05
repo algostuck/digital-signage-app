@@ -1,8 +1,8 @@
 import { LockOutlined, PlayCircleOutlined } from "@ant-design/icons";
 import { Card, Typography } from "antd";
 import type { ReactNode } from "react";
-import { EmptyState } from "../../../components/ui/states";
-import { ToneTag } from "../../../components/ui/ToneTag";
+import { EmptyState } from "@/design-system";
+import { ToneTag } from "@/design-system";
 import type { CalendarEvent } from "../types";
 import { formatDayLong } from "./dates";
 

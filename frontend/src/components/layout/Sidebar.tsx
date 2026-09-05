@@ -1,5 +1,5 @@
-import { SIDEBAR_BG } from "../../theme/tokens";
-import { useThemeMode } from "../../theme/ThemeProvider";
+import { SIDEBAR_BG } from "@/design-system";
+import { useThemeMode } from "@/design-system";
 import { AccountMenu } from "./AccountMenu";
 import { MainNavigation } from "./MainNavigation";
 import { SidebarLogo } from "./SidebarLogo";

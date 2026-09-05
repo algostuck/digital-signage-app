@@ -15,8 +15,8 @@ import {
   type TableProps,
 } from "antd";
 import { useState } from "react";
-import { ErrorState, EmptyState } from "../../components/ui/states";
-import { StatusBadge } from "../../components/ui/StatusBadge";
+import { ErrorState, EmptyState } from "@/design-system";
+import { StatusBadge } from "@/design-system";
 import { api, ApiError } from "../../lib/api";
 import { useAuth } from "../../lib/auth";
 import type { Role, UserRow } from "./types";

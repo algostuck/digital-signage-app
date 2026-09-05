@@ -1,11 +1,11 @@
 import { CloudServerOutlined, PlayCircleOutlined } from "@ant-design/icons";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Alert, Button, Card, Result, Space, Typography } from "antd";
-import { ToneTag } from "../../components/ui/ToneTag";
-import { toneOf } from "../../components/ui/tone";
+import { ToneTag } from "@/design-system";
+import { toneOf } from "@/design-system";
 import { useState } from "react";
-import { PageHeader } from "../../components/ui/PageHeader";
-import { LoadingState } from "../../components/ui/states";
+import { PageHeader } from "@/design-system";
+import { LoadingState } from "@/design-system";
 import { api, ApiError } from "../../lib/api";
 import { useAuth } from "../../lib/auth";
 

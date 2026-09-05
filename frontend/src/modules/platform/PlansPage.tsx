@@ -1,10 +1,10 @@
 import { EditOutlined, PlusOutlined } from "@ant-design/icons";
 import { Button, Segmented, Space, Typography, type TableProps } from "antd";
-import { ToneTag } from "../../components/ui/ToneTag";
+import { ToneTag } from "@/design-system";
 import { useState } from "react";
-import { DataTable } from "../../components/ui/DataTable";
-import { FilterBar } from "../../components/ui/FilterBar";
-import { PageHeader } from "../../components/ui/PageHeader";
+import { DataTable } from "@/design-system";
+import { FilterBar } from "@/design-system";
+import { PageHeader } from "@/design-system";
 import { formatMoney, usePlans, useTenants } from "./api";
 import { PlanDrawer } from "./PlanDrawer";
 import { PlatformGuard, PLATFORM_CRUMB } from "./PlatformGuard";

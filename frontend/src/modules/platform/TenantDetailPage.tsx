@@ -20,13 +20,13 @@ import {
   Typography,
   type TableProps,
 } from "antd";
-import { ToneTag } from "../../components/ui/ToneTag";
+import { ToneTag } from "@/design-system";
 import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
-import { DataTable } from "../../components/ui/DataTable";
-import { PageHeader } from "../../components/ui/PageHeader";
-import { ErrorState, LoadingState } from "../../components/ui/states";
-import { StatusBadge } from "../../components/ui/StatusBadge";
+import { DataTable } from "@/design-system";
+import { PageHeader } from "@/design-system";
+import { ErrorState, LoadingState } from "@/design-system";
+import { StatusBadge } from "@/design-system";
 import { api } from "../../lib/api";
 import {
   formatDate,

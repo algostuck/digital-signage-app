@@ -1,7 +1,7 @@
 import { CalendarOutlined, DesktopOutlined, ExportOutlined } from "@ant-design/icons";
 import { Button, Drawer, Empty, List, Segmented, Space, Typography } from "antd";
 import { useState } from "react";
-import { ToneTag } from "../../../components/ui/ToneTag";
+import { ToneTag } from "@/design-system";
 import type { ConflictSeverity, ScheduleConflict } from "../types";
 import { formatDayShort, windowLabel } from "./dates";
 import { REASON_LABEL, SEVERITY_LABEL, severityTone, statusLabel, statusTone } from "./palette";

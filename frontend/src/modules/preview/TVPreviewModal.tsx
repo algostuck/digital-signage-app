@@ -24,11 +24,11 @@ import {
   Tooltip,
   Typography,
 } from "antd";
-import { ToneTag } from "../../components/ui/ToneTag";
-import { toneOf } from "../../components/ui/tone";
+import { ToneTag } from "@/design-system";
+import { toneOf } from "@/design-system";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { ErrorState, LoadingState } from "../../components/ui/states";
-import { StatusBadge } from "../../components/ui/StatusBadge";
+import { ErrorState, LoadingState } from "@/design-system";
+import { StatusBadge } from "@/design-system";
 import { formatDuration } from "../playlists/types";
 import { TVScreen } from "./TVScreen";
 import { formatClock, usePlayback, type PlaybackSlot } from "./playback";

@@ -1,5 +1,5 @@
 import { Progress, Typography } from "antd";
-import { StatusBadge } from "../../../components/ui/StatusBadge";
+import { StatusBadge } from "@/design-system";
 import { ChartFrame } from "../charts/ChartFrame";
 import type { UsageBlock, UsageMetric } from "../types";
 import { ViewAll } from "./shared";

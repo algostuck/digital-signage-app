@@ -1,5 +1,5 @@
 import type { CSSProperties } from "react";
-import type { ThemeMode } from "../../theme/tokens";
+import type { ThemeMode } from "../tokens/brand";
 
 export type Tone = "success" | "warning" | "error" | "processing" | "default" | "high";
 

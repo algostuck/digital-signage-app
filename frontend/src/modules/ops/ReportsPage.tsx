@@ -1,11 +1,11 @@
 import { useQuery } from "@tanstack/react-query";
 import { Card, Space, Table, Tabs, Typography, type TableProps } from "antd";
 import { useState } from "react";
-import { PageHeader } from "../../components/ui/PageHeader";
-import { EmptyState, LoadingState } from "../../components/ui/states";
-import { StatusBadge } from "../../components/ui/StatusBadge";
+import { PageHeader } from "@/design-system";
+import { EmptyState, LoadingState } from "@/design-system";
+import { StatusBadge } from "@/design-system";
 import { api } from "../../lib/api";
-import { EntitlementGuard } from "../../components/ui/EntitlementGuard";
+import { EntitlementGuard } from "@/design-system";
 import { CampaignAnalyticsTab, ProofOfPlayTab, UptimeTab } from "./AnalyticsTabs";
 import { AdsReportTab, ExportsTab } from "./ExportsAdsTabs";
 

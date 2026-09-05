@@ -1,37 +1,18 @@
 import { theme as antdTheme, type ThemeConfig } from "antd";
+import { BRAND, SHELL, SIDEBAR_BG, type ThemeMode } from "../tokens/brand";
 
-export type ThemeMode = "light" | "dark";
+export type { ThemeMode } from "../tokens/brand";
 
 /**
- * Single source of truth for the design system's visual tokens.
- * See docs/UI_UX_DESIGN_SYSTEM.md for the rationale behind each value.
- * Change brand colour / semantics here only — never override colours ad
- * hoc in a component.
+ * The single ConfigProvider theme of the application
+ * (docs/design-system/DESIGN_TOKENS.md). Seeds come from tokens/brand.ts;
+ * text aliases are deliberately stronger than antd's defaults so body and
+ * secondary copy clear WCAG 2.2 **AAA** (7:1) in both modes.
  *
- * Text tokens are deliberately stronger than antd's defaults so body and
- * secondary copy clear WCAG 2.2 **AAA** (7:1) rather than just AA, in
- * both modes.
- */
-export const BRAND = {
-  primary: "#1E40AF", // blue-800 — white text on it measures 8.6:1
-  success: "#059669",
-  warning: "#D97706",
-  error: "#DC2626",
-  info: "#0284C7",
-} as const;
-
-/** Sidebar surfaces, kept distinct from the page canvas in both modes. */
-export const SIDEBAR_BG: Record<ThemeMode, string> = {
-  light: "#FFFFFF",
-  dark: "#0F172A",
-};
-
-/**
  * Both the light and dark menu key sets are always supplied — the Menu
  * picks by its own `theme` prop. Swapping which *keys* exist per mode
  * leaves stale cssinjs rules behind when the user toggles the theme at
- * runtime, which showed up as the sidebar keeping the previous theme's
- * colours until a reload.
+ * runtime.
  */
 const MENU_TOKENS = {
   // Light menu
@@ -97,6 +78,12 @@ export function buildTheme(mode: ThemeMode): ThemeConfig {
       fontFamily:
         '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif',
       fontSize: 14,
+      // Typography roles (DESIGN_TOKENS.md §2): page 24, section 20,
+      // card 16. Levels 1–2 exist for antd's defaults but are not used
+      // by the application.
+      fontSizeHeading3: 24,
+      fontSizeHeading4: 20,
+      fontSizeHeading5: 16,
 
       borderRadius: 8,
       borderRadiusSM: 4,
@@ -112,9 +99,9 @@ export function buildTheme(mode: ThemeMode): ThemeConfig {
       Button: dark ? { colorError: "#FCA5A5", dangerColor: "#450A0A" } : {},
       Pagination: dark ? { colorPrimary: "#93C5FD", itemActiveBg: "#172554" } : {},
       Layout: {
-        // 55px: matches the sidebar's logo and account bands so the three
-        // top edges line up, and sits at φ against the 34px menu rows.
-        headerHeight: 55,
+        // Matches the sidebar's logo and account bands so the three top
+        // edges line up, and sits at φ against the 34px menu rows.
+        headerHeight: SHELL.headerHeight,
         siderBg: SIDEBAR_BG[mode],
         headerBg: dark ? "#0F172A" : "#FFFFFF",
         bodyBg: dark ? "#0B1220" : "#F8FAFC",
@@ -155,14 +142,12 @@ export function buildTheme(mode: ThemeMode): ThemeConfig {
       Card: {
         boxShadowTertiary: dark ? "none" : "0 1px 2px 0 rgba(15, 23, 42, 0.06)",
       },
+      Typography: {
+        // Titles carry their own spacing from PageHeader / SectionCard;
+        // a bottom margin on every heading forced 30 `!mb-0` overrides.
+        titleMarginBottom: 0,
+        titleMarginTop: 0,
+      },
     },
   };
 }
-
-/** Pill radius for status badges only — every other surface uses the
- * token-driven borderRadius scale above. */
-export const PILL_RADIUS = 9999;
-
-/** Golden-ratio-inspired column splits for antd's 24-col grid, applied
- * selectively (docs/UI_UX_DESIGN_SYSTEM.md §1) — not a universal rule. */
-export const GOLDEN_SPLIT = { primary: 15, secondary: 9 } as const;

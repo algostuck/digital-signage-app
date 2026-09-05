@@ -1,6 +1,6 @@
 import { Alert, Button, Col, Row } from "antd";
 import type { ReactNode } from "react";
-import { ErrorState } from "../../components/ui/states";
+import { ErrorState } from "@/design-system";
 import { useAuth } from "../../lib/auth";
 import { PRESET_LABELS, useDashboardRange, useDashboardRefresh, useOrganizationDashboard, useRelativeAge } from "./api";
 import { useDashboardLayout, WIDGETS, type WidgetKey } from "./customise";

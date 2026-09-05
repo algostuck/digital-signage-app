@@ -1,6 +1,6 @@
 import { Timeline, Typography } from "antd";
 import { minuteLabel } from "../api";
-import { ToneTag } from "../../../components/ui/ToneTag";
+import { ToneTag } from "@/design-system";
 import { ChartFrame } from "../charts/ChartFrame";
 import type { ScheduleEvent } from "../types";
 import { ViewAll } from "./shared";

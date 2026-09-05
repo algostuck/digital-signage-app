@@ -14,11 +14,11 @@ import {
   Timeline,
   Typography,
 } from "antd";
-import { ToneTag } from "../../components/ui/ToneTag";
-import { toneOf } from "../../components/ui/tone";
+import { ToneTag } from "@/design-system";
+import { toneOf } from "@/design-system";
 import { useState } from "react";
-import { LoadingState } from "../../components/ui/states";
-import { StatusBadge } from "../../components/ui/StatusBadge";
+import { LoadingState } from "@/design-system";
+import { StatusBadge } from "@/design-system";
 import { api, ApiError } from "../../lib/api";
 import { useAuth } from "../../lib/auth";
 import type { LocationNode } from "../locations/types";

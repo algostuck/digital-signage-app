@@ -13,12 +13,12 @@ import {
   Space,
   Typography,
 } from "antd";
-import { ToneTag } from "../../components/ui/ToneTag";
+import { ToneTag } from "@/design-system";
 import { useState } from "react";
 import { useSearchParams } from "react-router-dom";
-import { PageHeader } from "../../components/ui/PageHeader";
-import { EmptyState, LoadingState } from "../../components/ui/states";
-import { StatusBadge } from "../../components/ui/StatusBadge";
+import { PageHeader } from "@/design-system";
+import { EmptyState, LoadingState } from "@/design-system";
+import { StatusBadge } from "@/design-system";
 import { api, ApiError } from "../../lib/api";
 import { useAuth } from "../../lib/auth";
 import { timeAgo } from "../devices/types";

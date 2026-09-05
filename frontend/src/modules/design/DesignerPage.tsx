@@ -24,11 +24,11 @@ import {
   Space,
   Typography,
 } from "antd";
-import { ToneTag } from "../../components/ui/ToneTag";
+import { ToneTag } from "@/design-system";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Link, useParams } from "react-router-dom";
-import { LoadingState } from "../../components/ui/states";
-import { StatusBadge } from "../../components/ui/StatusBadge";
+import { LoadingState } from "@/design-system";
+import { StatusBadge } from "@/design-system";
 import { api, ApiError } from "../../lib/api";
 import { useAuth } from "../../lib/auth";
 import type { Asset } from "../content/types";

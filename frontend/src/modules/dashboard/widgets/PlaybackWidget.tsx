@@ -1,9 +1,9 @@
 import { Col, Row, Statistic, Typography } from "antd";
 import { useNavigate } from "react-router-dom";
-import { EntitlementGuard } from "../../../components/ui/EntitlementGuard";
+import { EntitlementGuard } from "@/design-system";
 import { ChartFrame } from "../charts/ChartFrame";
 import { RankBar } from "../charts/RankBar";
-import { useThemeMode } from "../../../theme/ThemeProvider";
+import { useThemeMode } from "@/design-system";
 import { STATUS_COLORS, STATUS_TEXT } from "../charts/theme";
 import { TrendLine } from "../charts/TrendLine";
 import type { PlaybackBlock, PlaybackTotals } from "../types";

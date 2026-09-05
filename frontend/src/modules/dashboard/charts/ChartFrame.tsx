@@ -1,6 +1,6 @@
 import { Card, Skeleton, Typography } from "antd";
 import type { ReactNode } from "react";
-import { EmptyState, ErrorState } from "../../../components/ui/states";
+import { EmptyState, ErrorState } from "@/design-system";
 
 interface ChartFrameProps {
   title: ReactNode;

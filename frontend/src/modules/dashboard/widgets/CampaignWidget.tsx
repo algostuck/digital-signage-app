@@ -1,8 +1,8 @@
 import { Progress, Typography, type TableProps } from "antd";
 import { Link } from "react-router-dom";
-import { DataTable } from "../../../components/ui/DataTable";
-import { StatusBadge } from "../../../components/ui/StatusBadge";
-import { ToneTag } from "../../../components/ui/ToneTag";
+import { DataTable } from "@/design-system";
+import { StatusBadge } from "@/design-system";
+import { ToneTag } from "@/design-system";
 import { ChartFrame } from "../charts/ChartFrame";
 import { STATUS_COLORS } from "../charts/theme";
 import type { CampaignsBlock, TopCampaign } from "../types";

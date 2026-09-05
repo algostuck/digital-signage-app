@@ -1,6 +1,6 @@
 import type { CSSProperties } from "react";
-import type { Tone } from "../../../components/ui/tone";
-import type { ThemeMode } from "../../../theme/tokens";
+import type { Tone } from "@/design-system";
+import type { ThemeMode } from "@/design-system";
 import type { ConflictReason, ConflictSeverity } from "../types";
 
 /**

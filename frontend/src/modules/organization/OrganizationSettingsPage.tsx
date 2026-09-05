@@ -1,8 +1,8 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Alert, Button, Card, Col, Form, Input, Row, Space, Tabs } from "antd";
 import { useEffect, useState } from "react";
-import { PageHeader } from "../../components/ui/PageHeader";
-import { ErrorState, LoadingState } from "../../components/ui/states";
+import { PageHeader } from "@/design-system";
+import { ErrorState, LoadingState } from "@/design-system";
 import { api, ApiError } from "../../lib/api";
 import { useAuth } from "../../lib/auth";
 import { ApprovalPolicySection } from "./ApprovalPolicySection";

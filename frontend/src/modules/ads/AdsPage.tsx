@@ -19,9 +19,9 @@ import {
 } from "antd";
 import dayjs, { type Dayjs } from "dayjs";
 import { useState } from "react";
-import { PageHeader } from "../../components/ui/PageHeader";
-import { EmptyState } from "../../components/ui/states";
-import { StatusBadge } from "../../components/ui/StatusBadge";
+import { PageHeader } from "@/design-system";
+import { EmptyState } from "@/design-system";
+import { StatusBadge } from "@/design-system";
 import { api, ApiError } from "../../lib/api";
 import { useAuth } from "../../lib/auth";
 

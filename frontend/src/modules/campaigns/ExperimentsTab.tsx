@@ -18,8 +18,8 @@ import {
   type TableProps,
 } from "antd";
 import { useState } from "react";
-import { EmptyState } from "../../components/ui/states";
-import { StatusBadge } from "../../components/ui/StatusBadge";
+import { EmptyState } from "@/design-system";
+import { StatusBadge } from "@/design-system";
 import { api, ApiError } from "../../lib/api";
 import { useAuth } from "../../lib/auth";
 import type { CampaignSummary } from "./types";

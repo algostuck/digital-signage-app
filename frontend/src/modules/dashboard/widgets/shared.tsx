@@ -1,7 +1,7 @@
 import { RightOutlined } from "@ant-design/icons";
 import { Tag, Tooltip, Typography } from "antd";
-import { toneStyle, type Tone } from "../../../components/ui/tone";
-import { useThemeMode } from "../../../theme/ThemeProvider";
+import { toneStyle, type Tone } from "@/design-system";
+import { useThemeMode } from "@/design-system";
 import { Link } from "react-router-dom";
 import { timeAgo } from "../../devices/types";
 import type { Severity } from "../types";

@@ -2,8 +2,8 @@ import { MenuFoldOutlined, MenuOutlined, MenuUnfoldOutlined } from "@ant-design/
 import { Button, Drawer, Grid, Layout, theme } from "antd";
 import { useEffect, useState } from "react";
 import { Outlet, ScrollRestoration } from "react-router-dom";
-import { SIDEBAR_BG } from "../../theme/tokens";
-import { useThemeMode } from "../../theme/ThemeProvider";
+import { SIDEBAR_BG } from "@/design-system";
+import { useThemeMode } from "@/design-system";
 import { GlobalSearch } from "./GlobalSearch";
 import { HeaderActions } from "./HeaderActions";
 import { Sidebar } from "./Sidebar";

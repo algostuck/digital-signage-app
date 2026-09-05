@@ -1,8 +1,8 @@
 import { FallOutlined, RiseOutlined } from "@ant-design/icons";
 import { Card, Statistic, Typography } from "antd";
 import type { ReactNode } from "react";
-import { useThemeMode } from "../../theme/ThemeProvider";
-import { STATUS_TEXT } from "./tone";
+import { useThemeMode } from "../theme/ThemeProvider";
+import { STATUS_TEXT } from "../tokens/tone";
 
 interface StatCardProps {
   label: string;

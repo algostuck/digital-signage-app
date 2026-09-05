@@ -18,8 +18,8 @@ import {
   Typography,
 } from "antd";
 import { useState } from "react";
-import { EmptyState, LoadingState } from "../../components/ui/states";
-import { StatusBadge } from "../../components/ui/StatusBadge";
+import { EmptyState, LoadingState } from "@/design-system";
+import { StatusBadge } from "@/design-system";
 import { api, ApiError } from "../../lib/api";
 import { useAuth } from "../../lib/auth";
 import type { Widget, WidgetSchemaField } from "./types";

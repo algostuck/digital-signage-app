@@ -4,6 +4,11 @@ import { defineConfig } from "vite";
 
 export default defineConfig({
   plugins: [react(), tailwindcss()],
+  resolve: {
+    // `@/design-system` is the one import path for the design system
+    // (docs/design-system/DESIGN_SYSTEM_USAGE.md); mirrors tsconfig `paths`.
+    alias: { "@": "/src" },
+  },
   build: {
     // The antd vendor chunk is ~450kB gzipped by design: one immutable,
     // long-cached file instead of antd fragments duplicated across page

@@ -9,7 +9,7 @@ import {
 import { Card, Skeleton, Typography, theme } from "antd";
 import type { ReactNode } from "react";
 import { Link } from "react-router-dom";
-import { useThemeMode } from "../../../theme/ThemeProvider";
+import { useThemeMode } from "@/design-system";
 import { STATUS_TEXT } from "../charts/theme";
 import { formatCompact, pct } from "../api";
 import type { Kpis } from "../types";

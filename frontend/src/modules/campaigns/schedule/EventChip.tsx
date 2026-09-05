@@ -11,8 +11,8 @@ import {
 } from "@ant-design/icons";
 import { Button, Popconfirm, Popover, Space, Typography } from "antd";
 import { forwardRef, type ButtonHTMLAttributes, type CSSProperties, type ReactNode } from "react";
-import { ToneTag } from "../../../components/ui/ToneTag";
-import { useThemeMode } from "../../../theme/ThemeProvider";
+import { ToneTag } from "@/design-system";
+import { useThemeMode } from "@/design-system";
 import type { CalendarEvent, ScheduleConflict } from "../types";
 import { durationLabel, windowLabel } from "./dates";
 import {

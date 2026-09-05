@@ -20,12 +20,12 @@ import {
   Typography,
   type TreeDataNode,
 } from "antd";
-import { ToneTag } from "../../components/ui/ToneTag";
+import { ToneTag } from "@/design-system";
 import { useMemo, useState } from "react";
 import { useSearchParams } from "react-router-dom";
-import { PageHeader } from "../../components/ui/PageHeader";
-import { EmptyState, ErrorState, LoadingState } from "../../components/ui/states";
-import { StatusBadge } from "../../components/ui/StatusBadge";
+import { PageHeader } from "@/design-system";
+import { EmptyState, ErrorState, LoadingState } from "@/design-system";
+import { StatusBadge } from "@/design-system";
 import { api, ApiError } from "../../lib/api";
 import { useAuth } from "../../lib/auth";
 import { LocationFormModal } from "./LocationFormModal";

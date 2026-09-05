@@ -4,7 +4,7 @@ import { Badge, Button, Tooltip } from "antd";
 import { useNavigate } from "react-router-dom";
 import { api } from "../../lib/api";
 import { useAuth } from "../../lib/auth";
-import { useThemeMode } from "../../theme/ThemeProvider";
+import { useThemeMode } from "@/design-system";
 
 interface Summary {
   notifications_unread: number;

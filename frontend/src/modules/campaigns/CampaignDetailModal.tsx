@@ -17,8 +17,8 @@ import {
   Typography,
 } from "antd";
 import { useState } from "react";
-import { LoadingState } from "../../components/ui/states";
-import { StatusBadge } from "../../components/ui/StatusBadge";
+import { LoadingState } from "@/design-system";
+import { StatusBadge } from "@/design-system";
 import { api, ApiError } from "../../lib/api";
 import { useAuth } from "../../lib/auth";
 import type { Device, DeviceGroup } from "../devices/types";
