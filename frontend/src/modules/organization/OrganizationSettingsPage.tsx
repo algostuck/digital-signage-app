@@ -1,7 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Alert, Button, Col, Form, Input, Row, Select, Space, Tabs } from "antd";
 import { useEffect, useState } from "react";
-import { PageHeader } from "@/design-system";
+import { PageContainer } from "@/design-system";
 import { ErrorState, LoadingState, LOCALE_OPTIONS, SectionCard, timeZoneOptions } from "@/design-system";
 import { api, ApiError } from "../../lib/api";
 import { useAuth } from "../../lib/auth";
@@ -165,11 +165,10 @@ export function OrganizationSettingsPage() {
   );
 
   return (
-    <div>
-      <PageHeader
+    <PageContainer
         title="Organization Settings"
         description={`Tenant ${org.code} · status ${org.status}`}
-      />
+      >
       <Tabs
         activeKey={tab}
         onChange={setTab}
@@ -182,6 +181,6 @@ export function OrganizationSettingsPage() {
             : []),
         ]}
       />
-    </div>
+    </PageContainer>
   );
 }

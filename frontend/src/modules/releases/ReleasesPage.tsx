@@ -18,7 +18,7 @@ import {
   Upload,
 } from "antd";
 import { useState } from "react";
-import { PageHeader } from "@/design-system";
+import { PageContainer } from "@/design-system";
 import { EntityList } from "@/design-system";
 import { EmptyState, LoadingState } from "@/design-system";
 import { StatusBadge } from "@/design-system";
@@ -105,8 +105,7 @@ export function ReleasesPage() {
   }
 
   return (
-    <div>
-      <PageHeader
+    <PageContainer
         title="Player Update Center"
         description="Upload player packages and roll them out in staged rings with stop-on-failure protection."
         actions={
@@ -114,7 +113,7 @@ export function ReleasesPage() {
             New release
           </Button>
         }
-      />
+      >
 
       {releasesQuery.isLoading ? (
         <LoadingState rows={5} />
@@ -153,7 +152,7 @@ export function ReleasesPage() {
           onStarted={refresh}
         />
       )}
-    </div>
+    </PageContainer>
   );
 }
 

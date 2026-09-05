@@ -1,17 +1,12 @@
-import {
-  CheckOutlined,
-  CloseOutlined,
-  KeyOutlined,
-  SaveOutlined,
-  SearchOutlined,
-} from "@ant-design/icons";
+import { CheckOutlined, CloseOutlined, KeyOutlined, SaveOutlined } from "@ant-design/icons";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { App, Button, Input, Popconfirm, Select, Space, Tabs, Typography, type TableProps } from "antd";
 import { useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { FilterBar } from "@/design-system";
+import { SearchBar } from "@/design-system";
 import { DataTable } from "@/design-system";
-import { PageHeader } from "@/design-system";
+import { PageContainer } from "@/design-system";
 
 import { StatusBadge } from "@/design-system";
 import { api, ApiError } from "../../lib/api";
@@ -236,17 +231,15 @@ export function DevicesPage() {
             : undefined
         }
       >
-        <Input
-          allowClear
-          className="w-72"
+        <SearchBar
           value={search}
-          onChange={(e) => {
-            setSearch(e.target.value);
+          onChange={(value) => {
+            setSearch(value);
             setPage(1);
           }}
           placeholder="Search name, serial, model…"
-          aria-label="Search devices"
-          prefix={<SearchOutlined className="text-slate-600 dark:text-slate-400" />}
+          label="Search devices"
+          width={288}
         />
         <Select
           className="w-44"
@@ -420,8 +413,7 @@ export function DevicesPage() {
   );
 
   return (
-    <div>
-      <PageHeader
+    <PageContainer
         title="Devices"
         description="Enroll, organize and operate your display fleet."
         actions={
@@ -432,7 +424,7 @@ export function DevicesPage() {
             </Button>
           )
         }
-      />
+      >
 
       {keyVisible && keyQuery.data?.data && (
         <Typography.Paragraph className="-mt-3 mb-4">
@@ -461,6 +453,6 @@ export function DevicesPage() {
           onChanged={invalidate}
         />
       )}
-    </div>
+    </PageContainer>
   );
 }

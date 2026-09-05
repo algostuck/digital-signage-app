@@ -1,6 +1,6 @@
 import { Tabs } from "antd";
 import { useState } from "react";
-import { PageHeader } from "@/design-system";
+import { PageContainer } from "@/design-system";
 import { MembersTab } from "./MembersTab";
 import { RolesTab } from "./RolesTab";
 import { UsersTab } from "./UsersTab";
@@ -10,11 +10,10 @@ export function UsersRolesPage() {
   const [tab, setTab] = useState<"users" | "roles" | "members">("users");
 
   return (
-    <div>
-      <PageHeader
+    <PageContainer
         title="Users & Roles"
         description="Manage who can sign in, what they can do, and organization membership."
-      />
+      >
       <Tabs
         activeKey={tab}
         onChange={(key) => setTab(key as typeof tab)}
@@ -24,6 +23,6 @@ export function UsersRolesPage() {
           { key: "members", label: "Members", children: <MembersTab /> },
         ]}
       />
-    </div>
+    </PageContainer>
   );
 }

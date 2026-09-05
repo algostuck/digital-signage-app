@@ -3,7 +3,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Alert, Button, Card, Col, Flex, Form, Input, Modal, Row, Typography } from "antd";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { PageHeader } from "@/design-system";
+import { PageContainer } from "@/design-system";
 import { EmptyState, LoadingState } from "@/design-system";
 import { StatusBadge } from "@/design-system";
 import { api, ApiError } from "../../lib/api";
@@ -25,8 +25,7 @@ export function PlaylistsPage() {
   const playlists = playlistsQuery.data?.data ?? [];
 
   return (
-    <div>
-      <PageHeader
+    <PageContainer
         title="Playlists"
         description="Ordered sequences of content and layouts, versioned for publishing."
         actions={
@@ -36,7 +35,7 @@ export function PlaylistsPage() {
             </Button>
           )
         }
-      />
+      >
 
       {playlistsQuery.isLoading ? (
         <LoadingState rows={5} />
@@ -98,7 +97,7 @@ export function PlaylistsPage() {
           onCreated={(id) => navigate(`/playlists/${id}`)}
         />
       )}
-    </div>
+    </PageContainer>
   );
 }
 

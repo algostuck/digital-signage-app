@@ -16,7 +16,7 @@ import {
 } from "antd";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { PageHeader } from "@/design-system";
+import { PageContainer } from "@/design-system";
 import { EmptyState, LoadingState } from "@/design-system";
 import { StatusBadge } from "@/design-system";
 import { api, ApiError } from "../../lib/api";
@@ -31,11 +31,10 @@ export function LayoutsPage() {
   const [tab, setTab] = useState<string>("layouts");
 
   return (
-    <div>
-      <PageHeader
+    <PageContainer
         title="Design"
         description="Screen compositions, reusable templates, live widgets and AI-assisted content."
-      />
+      >
       <Tabs
         activeKey={tab}
         onChange={setTab}
@@ -46,7 +45,7 @@ export function LayoutsPage() {
           { key: "ai", label: "AI Studio", children: <AiStudioTab /> },
         ]}
       />
-    </div>
+    </PageContainer>
   );
 }
 

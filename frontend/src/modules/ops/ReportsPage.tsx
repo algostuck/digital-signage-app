@@ -1,7 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { Card, Space, Tabs, Typography, type TableProps } from "antd";
 import { useState } from "react";
-import { PageHeader } from "@/design-system";
+import { PageContainer } from "@/design-system";
 import { DataTable } from "@/design-system";
 import { LoadingState } from "@/design-system";
 import { StatusBadge } from "@/design-system";
@@ -43,11 +43,10 @@ export function ReportsPage() {
   const [tab, setTab] = useState<string>("overview");
 
   return (
-    <div>
-      <PageHeader
+    <PageContainer
         title="Reports"
         description="Deployment, proof-of-play, uptime and ad performance reporting."
-      />
+      >
       <Tabs
         activeKey={tab}
         onChange={setTab}
@@ -84,7 +83,7 @@ export function ReportsPage() {
           },
         ]}
       />
-    </div>
+    </PageContainer>
   );
 }
 

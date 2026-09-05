@@ -15,7 +15,7 @@ import {
 } from "antd";
 import { useState } from "react";
 import { useSearchParams } from "react-router-dom";
-import { PageHeader } from "@/design-system";
+import { PageContainer } from "@/design-system";
 import { EntityList } from "@/design-system";
 import { EmptyState, ErrorState, LoadingState } from "@/design-system";
 import { StatusBadge } from "@/design-system";
@@ -158,11 +158,10 @@ export function ApprovalsPage() {
   );
 
   return (
-    <div>
-      <PageHeader
+    <PageContainer
         title="Approvals"
         description="Maker-checker governance for campaigns and templates. Configure policies under Settings."
-      />
+      >
 
       <Tabs
         activeKey={tab}
@@ -198,6 +197,6 @@ export function ApprovalsPage() {
           />
         </Modal>
       )}
-    </div>
+    </PageContainer>
   );
 }

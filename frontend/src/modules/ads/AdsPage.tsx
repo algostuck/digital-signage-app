@@ -3,7 +3,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Alert, Button, Card, DatePicker, Form, Input, InputNumber, Popconfirm, Select, Space, Tabs, TimePicker, Typography, type TableProps } from "antd";
 import dayjs, { type Dayjs } from "dayjs";
 import { useState } from "react";
-import { PageHeader } from "@/design-system";
+import { PageContainer } from "@/design-system";
 import { DataTable } from "@/design-system";
 
 import { StatusBadge } from "@/design-system";
@@ -364,11 +364,10 @@ export function AdsPage() {
   );
 
   return (
-    <div>
-      <PageHeader
+    <PageContainer
         title="Advertising"
         description="Sell screen time: inventory slots, bookings against existing campaigns, and billing-ready proof-of-play reconciliation (see Reports → Ads)."
-      />
+      >
       <Tabs
         activeKey={tab}
         onChange={(key) => setTab(key as "inventory" | "bookings")}
@@ -380,6 +379,6 @@ export function AdsPage() {
       {error && (
         <Alert type="error" showIcon role="alert" message={error} className="mt-4" />
       )}
-    </div>
+    </PageContainer>
   );
 }

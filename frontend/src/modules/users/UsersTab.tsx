@@ -1,8 +1,9 @@
-import { PlusOutlined, SearchOutlined } from "@ant-design/icons";
+import { PlusOutlined } from "@ant-design/icons";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Alert, Button, Flex, Form, Input, Modal, Popconfirm, Select, Space, Typography, type TableProps } from "antd";
 import { useState } from "react";
 import { ErrorState } from "@/design-system";
+import { SearchBar } from "@/design-system";
 import { DataTable } from "@/design-system";
 import { StatusBadge } from "@/design-system";
 import { api, ApiError } from "../../lib/api";
@@ -105,17 +106,15 @@ export function UsersTab() {
   return (
     <div>
       <Flex wrap gap="small" align="center" justify="space-between" className="mb-4">
-        <Input
-          allowClear
-          className="w-72"
+        <SearchBar
           value={search}
-          onChange={(e) => {
-            setSearch(e.target.value);
+          onChange={(value) => {
+            setSearch(value);
             setPage(1);
           }}
           placeholder="Search by name or email…"
-          aria-label="Search users"
-          prefix={<SearchOutlined className="text-slate-600 dark:text-slate-400" />}
+          label="Search users"
+          width={288}
         />
         {canManage && (
           <Button type="primary" icon={<PlusOutlined />} onClick={() => setCreateOpen(true)}>

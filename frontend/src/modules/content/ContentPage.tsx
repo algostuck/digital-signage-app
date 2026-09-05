@@ -1,10 +1,4 @@
-import {
-  DeleteOutlined,
-  FolderAddOutlined,
-  FolderOutlined,
-  SearchOutlined,
-  UploadOutlined,
-} from "@ant-design/icons";
+import { DeleteOutlined, FolderAddOutlined, FolderOutlined, UploadOutlined } from "@ant-design/icons";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   App,
@@ -23,7 +17,8 @@ import {
 import { useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { FilterBar } from "@/design-system";
-import { PageHeader } from "@/design-system";
+import { SearchBar } from "@/design-system";
+import { PageContainer } from "@/design-system";
 import { EmptyState, LoadingState } from "@/design-system";
 import { StatusBadge } from "@/design-system";
 import { api, ApiError } from "../../lib/api";
@@ -104,8 +99,7 @@ export function ContentPage() {
   const total = assetsQuery.data?.meta.total ?? 0;
 
   return (
-    <div>
-      <PageHeader
+    <PageContainer
         title="Content Library"
         description="Manage, organize and publish digital signage content."
         actions={
@@ -115,7 +109,7 @@ export function ContentPage() {
             </Button>
           )
         }
-      />
+      >
 
       <Row gutter={[16, 16]}>
         <Col xs={24} lg={5}>
@@ -191,17 +185,15 @@ export function ContentPage() {
                 : undefined
             }
           >
-            <Input
-              allowClear
-              className="w-64"
+            <SearchBar
               value={search}
-              onChange={(e) => {
-                setSearch(e.target.value);
+              onChange={(value) => {
+                setSearch(value);
                 setPage(1);
               }}
               placeholder="Search content…"
-              aria-label="Search content"
-              prefix={<SearchOutlined className="text-slate-600 dark:text-slate-400" />}
+              label="Search content"
+              width={256}
             />
             <Select
               className="w-40"
@@ -348,6 +340,6 @@ export function ContentPage() {
           onChanged={invalidate}
         />
       )}
-    </div>
+    </PageContainer>
   );
 }

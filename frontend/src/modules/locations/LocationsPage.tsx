@@ -23,7 +23,7 @@ import {
 import { ToneTag } from "@/design-system";
 import { useMemo, useState } from "react";
 import { useSearchParams } from "react-router-dom";
-import { PageHeader } from "@/design-system";
+import { PageContainer } from "@/design-system";
 import { EmptyState, ErrorState, LoadingState } from "@/design-system";
 import { StatusBadge } from "@/design-system";
 import { api, ApiError } from "../../lib/api";
@@ -98,8 +98,7 @@ export function LocationsPage() {
   const detail = detailQuery.data?.data ?? null;
 
   return (
-    <div>
-      <PageHeader
+    <PageContainer
         title="Locations"
         description="Organize your estate in a hierarchy — regions, cities, sites, zones."
         actions={
@@ -113,7 +112,7 @@ export function LocationsPage() {
             </Button>
           )
         }
-      />
+      >
 
       <Row gutter={[16, 16]}>
         <Col xs={24} lg={9}>
@@ -290,6 +289,6 @@ export function LocationsPage() {
           }}
         />
       )}
-    </div>
+    </PageContainer>
   );
 }

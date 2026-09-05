@@ -16,7 +16,7 @@ import { EntityList } from "@/design-system";
 import { toneOf } from "@/design-system";
 import { useState } from "react";
 import { useSearchParams } from "react-router-dom";
-import { PageHeader } from "@/design-system";
+import { PageContainer } from "@/design-system";
 import { EmptyState, LoadingState } from "@/design-system";
 import { api } from "../../lib/api";
 import { timeAgo } from "../devices/types";
@@ -43,11 +43,10 @@ export function NotificationsPage() {
   const [tab, setTab] = useState<"inbox" | "rules">("inbox");
 
   return (
-    <div>
-      <PageHeader
+    <PageContainer
         title="Notifications"
         description="In-app alerts and the rules that route them to email, webhooks and escalations."
-      />
+      >
       <Tabs
         activeKey={tab}
         onChange={(key) => setTab(key as typeof tab)}
@@ -56,7 +55,7 @@ export function NotificationsPage() {
           { key: "rules", label: "Rules", children: <NotificationRulesTab /> },
         ]}
       />
-    </div>
+    </PageContainer>
   );
 }
 

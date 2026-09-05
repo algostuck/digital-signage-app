@@ -1,6 +1,7 @@
-import { DownloadOutlined, SearchOutlined } from "@ant-design/icons";
-import { Button, Col, Input, Row, Select, Space, Typography, type TableProps } from "antd";
+import { DownloadOutlined } from "@ant-design/icons";
+import { Button, Col, Row, Select, Space, Typography, type TableProps } from "antd";
 import { ToneTag } from "@/design-system";
+import { SearchBar } from "@/design-system";
 import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { DataTable } from "@/design-system";
@@ -169,14 +170,12 @@ export function InvoicesPage() {
           setSearch("");
         }}
       >
-        <Input
-          allowClear
-          prefix={<SearchOutlined />}
-          placeholder="Invoice number"
+        <SearchBar
           value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          className="w-52"
-          aria-label="Search invoice number"
+          onChange={(value) => setSearch(value)}
+          placeholder="Invoice number"
+          label="Search invoice number"
+          width={208}
         />
         <Select
           allowClear

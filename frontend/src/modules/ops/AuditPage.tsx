@@ -4,7 +4,7 @@ import { useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { FilterBar } from "@/design-system";
 import { DataTable } from "@/design-system";
-import { PageHeader } from "@/design-system";
+import { PageContainer } from "@/design-system";
 
 import { api } from "../../lib/api";
 import { timeAgo } from "../devices/types";
@@ -123,11 +123,10 @@ export function AuditPage() {
   ];
 
   return (
-    <div>
-      <PageHeader
+    <PageContainer
         title="Audit Logs"
         description="Every consequential action, who did it, and what changed."
-      />
+      >
       <FilterBar
         onReset={
           entityType || action
@@ -184,6 +183,6 @@ export function AuditPage() {
           onChange: setPage,
         }}
       />
-    </div>
+    </PageContainer>
   );
 }

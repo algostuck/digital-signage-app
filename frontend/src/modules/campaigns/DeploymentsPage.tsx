@@ -16,7 +16,7 @@ import {
 import { ToneTag } from "@/design-system";
 import { useState } from "react";
 import { useSearchParams } from "react-router-dom";
-import { PageHeader } from "@/design-system";
+import { PageContainer } from "@/design-system";
 import { EmptyState, LoadingState } from "@/design-system";
 import { StatusBadge } from "@/design-system";
 import { api, ApiError } from "../../lib/api";
@@ -63,8 +63,7 @@ export function DeploymentsPage() {
   const deployments = deploymentsQuery.data?.data ?? [];
 
   return (
-    <div>
-      <PageHeader
+    <PageContainer
         title="Publishing"
         description="Deployment jobs with per-device delivery status. Players acknowledge after syncing."
         actions={
@@ -82,7 +81,7 @@ export function DeploymentsPage() {
             ]}
           />
         }
-      />
+      >
 
       {deploymentsQuery.isLoading ? (
         <LoadingState rows={5} />
@@ -195,6 +194,6 @@ export function DeploymentsPage() {
           })}
         </Space>
       )}
-    </div>
+    </PageContainer>
   );
 }

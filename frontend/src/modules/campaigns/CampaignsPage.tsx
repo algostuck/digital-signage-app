@@ -19,7 +19,7 @@ import {
 } from "antd";
 import { useState } from "react";
 import { useSearchParams } from "react-router-dom";
-import { PageHeader } from "@/design-system";
+import { PageContainer } from "@/design-system";
 import { EmptyState, LoadingState } from "@/design-system";
 import { StatusBadge } from "@/design-system";
 import { api, ApiError } from "../../lib/api";
@@ -152,8 +152,7 @@ export function CampaignsPage() {
   );
 
   return (
-    <div>
-      <PageHeader
+    <PageContainer
         title="Campaigns"
         description="Plan, target, approve and publish content campaigns."
         actions={
@@ -180,7 +179,7 @@ export function CampaignsPage() {
             </>
           )
         }
-      />
+      >
 
       <Tabs
         activeKey={tab}
@@ -208,7 +207,7 @@ export function CampaignsPage() {
           onChanged={() => queryClient.invalidateQueries({ queryKey: ["campaigns"] })}
         />
       )}
-    </div>
+    </PageContainer>
   );
 }
 

@@ -1,8 +1,9 @@
-import { PlusOutlined, SearchOutlined } from "@ant-design/icons";
-import { Button, Input, Select, Typography, type TableProps } from "antd";
+import { PlusOutlined } from "@ant-design/icons";
+import { Button, Select, Typography, type TableProps } from "antd";
 import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { DataTable } from "@/design-system";
+import { SearchBar } from "@/design-system";
 import { FilterBar } from "@/design-system";
 import { PageHeader } from "@/design-system";
 import { StatusBadge } from "@/design-system";
@@ -131,14 +132,12 @@ export function TenantsPage() {
           setPlan(null);
         }}
       >
-        <Input
-          allowClear
-          prefix={<SearchOutlined />}
-          placeholder="Search name or code"
+        <SearchBar
           value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          className="w-64"
-          aria-label="Search tenants"
+          onChange={(value) => setSearch(value)}
+          placeholder="Search name or code"
+          label="Search tenants"
+          width={256}
         />
         <Select
           allowClear

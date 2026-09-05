@@ -25,7 +25,7 @@ import {
 } from "antd";
 import { useState } from "react";
 import { useParams } from "react-router-dom";
-import { PageHeader } from "@/design-system";
+import { PageContainer } from "@/design-system";
 import { EntityList } from "@/design-system";
 import { EmptyState, LoadingState } from "@/design-system";
 import { StatusBadge } from "@/design-system";
@@ -98,8 +98,7 @@ export function PlaylistEditorPage() {
   );
 
   return (
-    <div>
-      <PageHeader
+    <PageContainer
         title={playlist.name}
         breadcrumbs={[{ label: "Playlists", to: "/playlists" }, { label: playlist.name }]}
         description={`${playlist.items.length} items · ${formatDuration(
@@ -132,7 +131,7 @@ export function PlaylistEditorPage() {
             )}
           </>
         }
-      />
+      >
 
       <Space size="small" wrap>
         <StatusBadge status={playlist.status} />
@@ -232,7 +231,7 @@ export function PlaylistEditorPage() {
         title={`Preview — ${playlist.name}`}
         playlist={playlistToManifestShape(playlist)}
       />
-    </div>
+    </PageContainer>
   );
 }
 

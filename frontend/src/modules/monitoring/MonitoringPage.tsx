@@ -5,7 +5,7 @@ import { ToneTag } from "@/design-system";
 import { DataTable } from "@/design-system";
 import { toneOf } from "@/design-system";
 import { useState } from "react";
-import { PageHeader } from "@/design-system";
+import { PageContainer } from "@/design-system";
 import { StatCard } from "@/design-system";
 import { EmptyState, LoadingState } from "@/design-system";
 import { StatusBadge } from "@/design-system";
@@ -50,11 +50,10 @@ export function MonitoringPage() {
   const [tab, setTab] = useState<string>("health");
 
   return (
-    <div>
-      <PageHeader
+    <PageContainer
         title="Monitoring"
         description="Fleet health rollups, incident lifecycle, and deterministic anomaly intelligence."
-      />
+      >
       <Tabs
         activeKey={tab}
         onChange={setTab}
@@ -64,7 +63,7 @@ export function MonitoringPage() {
           { key: "intelligence", label: "Intelligence", children: <IntelligenceTab /> },
         ]}
       />
-    </div>
+    </PageContainer>
   );
 }
 
