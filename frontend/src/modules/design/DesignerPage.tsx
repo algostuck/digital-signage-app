@@ -43,7 +43,15 @@ import {
   type ZoneDef,
 } from "./types";
 
-const CANVAS_DISPLAY_WIDTH = 820;
+/** Stage sizing. The canvas is scaled to fit the space it actually has —
+ * a 1920×1080 layout in a fixed-width stage overflowed its card and put
+ * scrollbars between the designer and the artboard. Width comes from the
+ * column, height from what is left below the fold, and the smaller of the
+ * two ratios wins so the whole artboard is always visible at once. */
+const STAGE_FALLBACK_WIDTH = 820;
+const STAGE_MIN_HEIGHT = 320;
+/** Room under the stage for its caption and the page's bottom gutter. */
+const STAGE_BOTTOM_GUTTER = 104;
 
 type DragState =
   | { kind: "move"; key: string; startX: number; startY: number; origX: number; origY: number }
@@ -91,7 +99,38 @@ export function DesignerPage() {
     }
   }, [layout, canvas]);
 
-  const scale = canvas ? CANVAS_DISPLAY_WIDTH / canvas.canvas.width : 1;
+  const stageBoxRef = useRef<HTMLDivElement>(null);
+  const [stageBox, setStageBox] = useState({ width: STAGE_FALLBACK_WIDTH, height: 480 });
+
+  useEffect(() => {
+    const el = stageBoxRef.current;
+    if (!el) return;
+    const measure = () => {
+      const rect = el.getBoundingClientRect();
+      // Document-relative top, so the measurement does not drift as the
+      // page is scrolled.
+      const top = rect.top + window.scrollY;
+      const next = {
+        width: Math.max(1, el.clientWidth),
+        height: Math.max(STAGE_MIN_HEIGHT, window.innerHeight - top - STAGE_BOTTOM_GUTTER),
+      };
+      setStageBox((prev) => (prev.width === next.width && prev.height === next.height ? prev : next));
+    };
+    measure();
+    const observer = new ResizeObserver(measure);
+    observer.observe(el);
+    window.addEventListener("resize", measure);
+    return () => {
+      observer.disconnect();
+      window.removeEventListener("resize", measure);
+    };
+  }, [canvas]);
+
+  // Fit, never upscale: a small artboard stays at 100 % rather than being
+  // blown up past its own resolution.
+  const scale = canvas
+    ? Math.min(stageBox.width / canvas.canvas.width, stageBox.height / canvas.canvas.height, 1)
+    : 1;
 
   const updateZone = useCallback((key: string, patch: Partial<ZoneDef>) => {
     setCanvas((prev) => {
@@ -289,7 +328,8 @@ export function DesignerPage() {
 
       <Row gutter={[16, 16]}>
         <Col xs={24} xl={17}>
-          <Card size="small" styles={{ body: { background: "#f1f5f9", overflow: "auto" } }}>
+          <Card size="small" styles={{ body: { background: "#f1f5f9", overflow: "hidden" } }}>
+            <div ref={stageBoxRef} className="w-full">
             <div
               className="relative mx-auto overflow-hidden shadow"
               style={{
@@ -376,6 +416,7 @@ export function DesignerPage() {
                     </div>
                   );
                 })}
+            </div>
             </div>
             <Typography.Paragraph type="secondary" className="!mb-0 mt-2 text-center text-xs">
               {canvas.canvas.width}×{canvas.canvas.height} · scale {(scale * 100).toFixed(0)}%
