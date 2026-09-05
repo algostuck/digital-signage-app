@@ -1,5 +1,5 @@
 import { EnvironmentOutlined } from "@ant-design/icons";
-import { Button, Select, Space, Tag, Typography } from "antd";
+import { Button, Select, Space, Tag, Typography, theme } from "antd";
 import type { LatLngBoundsExpression } from "leaflet";
 import { useEffect, useMemo, useState } from "react";
 import { CircleMarker, MapContainer, Popup, TileLayer, useMap } from "react-leaflet";
@@ -105,6 +105,7 @@ export function LocationMapWidget({
   onRetry: () => void;
 }) {
   const { mode } = useThemeMode();
+  const { token } = theme.useToken();
   const [stateFilter, setStateFilter] = useState<string | null>(null);
   const [healthFilter, setHealthFilter] = useState<HealthFilter>("all");
   const [focus, setFocus] = useState<CityGroup | null>(null);
@@ -271,14 +272,15 @@ export function LocationMapWidget({
               Map tiles could not be loaded (no internet access?). The footprint is listed below.
             </Typography.Paragraph>
           )}
-          <ul className="m-0 max-h-[340px] list-none overflow-auto p-0 divide-y divide-slate-200 dark:divide-slate-700" aria-label="Locations by city">
+          <ul style={{ margin: 0, maxHeight: 340, listStyle: "none", overflow: "auto", padding: 0 }} aria-label="Locations by city">
             {markers.map((m) => {
               const h = healthOf(m);
               return (
-                <li key={m.key} className="py-2">
-                  <button
-                    type="button"
-                    className="flex w-full items-center gap-2 rounded px-1 text-left hover:bg-[rgba(29,78,216,0.08)]"
+                <li key={m.key} style={{ borderBottom: `1px solid ${token.colorBorderSecondary}` }}>
+                  <Button
+                    type="text"
+                    block
+                    style={{ height: "auto", paddingBlock: 8, paddingInline: 4, justifyContent: "flex-start", textAlign: "left" }}
                     onClick={() => {
                       if (!focus) {
                         const city = visible.find((c) => c.key === m.key);
@@ -288,7 +290,7 @@ export function LocationMapWidget({
                     aria-label={`${m.name}: ${m.devices} devices, ${m.online} online, ${m.offline} offline. ${h.label}`}
                   >
                     <EnvironmentOutlined style={{ color: h.color }} aria-hidden />
-                    <span className="min-w-0 flex-1">
+                    <span style={{ minWidth: 0, flex: 1, display: "block" }}>
                       <Typography.Text strong className="block truncate">
                         {m.name}
                       </Typography.Text>
@@ -304,7 +306,7 @@ export function LocationMapWidget({
                     >
                       {h.label}
                     </Tag>
-                  </button>
+                  </Button>
                 </li>
               );
             })}

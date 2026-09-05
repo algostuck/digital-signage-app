@@ -1,10 +1,9 @@
 import { DownloadOutlined } from "@ant-design/icons";
 import { useQuery } from "@tanstack/react-query";
-import { Button, DatePicker, Flex, Progress, Select, Space, Typography, type TableProps } from "antd";
+import { Button, Col, DatePicker, Flex, Progress, Row, Select, Space, Typography, type TableProps } from "antd";
 import dayjs from "dayjs";
 import { useState } from "react";
-import { FilterBar } from "@/design-system";
-import { DataTable } from "@/design-system";
+import { DataTable, FilterBar, formatDateTime, formatNumber, formatPercent, GRID, KpiCard } from "@/design-system";
 
 import { api, ApiError } from "../../lib/api";
 import { useAuth } from "../../lib/auth";
@@ -113,6 +112,14 @@ export function ProofOfPlayTab() {
   });
   const rows = query.data?.data ?? [];
   const filters = { group_by: groupBy, date_from: dateFrom, date_to: dateTo };
+  const totals = rows.reduce(
+    (acc, r) => ({
+      plays: acc.plays + r.plays,
+      completed: acc.completed + r.completed,
+      devices: Math.max(acc.devices, r.devices_reached),
+    }),
+    { plays: 0, completed: 0, devices: 0 },
+  );
 
   const columns: TableProps<PopRow>["columns"] = [
     {
@@ -140,7 +147,7 @@ export function ProofOfPlayTab() {
       responsive: ["lg"],
       render: (value: string | null) => (
         <Typography.Text type="secondary">
-          {value ? new Date(value).toLocaleString() : "—"}
+          {formatDateTime(value)}
         </Typography.Text>
       ),
     },
@@ -173,6 +180,26 @@ export function ProofOfPlayTab() {
         />
         <ExportButtons report="proof-of-play" filters={filters} />
       </FilterBar>
+
+      {rows.length > 0 && (
+        <Row gutter={GRID.gutter} style={{ marginBlock: 16 }}>
+          <Col xs={12} md={6}>
+            <KpiCard label="Plays" value={formatNumber(totals.plays)} context={`${dateFrom} → ${dateTo}`} />
+          </Col>
+          <Col xs={12} md={6}>
+            <KpiCard label="Completed" value={formatNumber(totals.completed)} tone="success" />
+          </Col>
+          <Col xs={12} md={6}>
+            <KpiCard
+              label="Completion rate"
+              value={formatPercent(totals.plays ? (totals.completed / totals.plays) * 100 : 0, 0)}
+            />
+          </Col>
+          <Col xs={12} md={6}>
+            <KpiCard label={`${groupBy.charAt(0).toUpperCase() + groupBy.slice(1)}s`} value={formatNumber(rows.length)} context="in this report" />
+          </Col>
+        </Row>
+      )}
 
       <DataTable<PopRow>
         rowKey={(row) => row.key_id ?? "none"}

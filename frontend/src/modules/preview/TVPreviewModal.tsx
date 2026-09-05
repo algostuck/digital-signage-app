@@ -215,14 +215,18 @@ export function TVPreviewModal({
       {items.map((item, index) => {
         const active = index === playback.index;
         return (
-          <button
+          <Button
             key={`${item.position}-${item.name ?? index}`}
-            type="button"
+            type="text"
+            block
             onClick={() => playback.goTo(index)}
             aria-current={active ? "true" : undefined}
-            className={`flex w-full items-center justify-between gap-2 rounded px-2 py-2 text-left ${
-              active ? "bg-[rgba(29,78,216,0.12)]" : ""
-            }`}
+            style={{
+              height: "auto",
+              justifyContent: "space-between",
+              paddingBlock: 8,
+              background: active ? "rgba(29,78,216,0.12)" : undefined,
+            }}
           >
             <Space size={8} align="center">
               <Typography.Text type="secondary" className="tabular-nums text-xs">
@@ -235,7 +239,7 @@ export function TVPreviewModal({
             <Typography.Text type="secondary" className="text-xs">
               {item.duration_ms != null ? formatDuration(item.duration_ms) : "natural"}
             </Typography.Text>
-          </button>
+          </Button>
         );
       })}
     </div>

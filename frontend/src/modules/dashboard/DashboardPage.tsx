@@ -1,4 +1,4 @@
-import { Alert, Button, Col, Row } from "antd";
+import { Alert, Button, Col, Flex, Row } from "antd";
 import type { ReactNode } from "react";
 import { ErrorState } from "@/design-system";
 import { useAuth } from "../../lib/auth";
@@ -93,7 +93,7 @@ export function DashboardPage() {
   };
 
   return (
-    <div>
+    <Flex vertical gap={24}>
       <DashboardHeader
         range={range}
         setPreset={setPreset}
@@ -108,8 +108,7 @@ export function DashboardPage() {
           type="warning"
           showIcon
           role="status"
-          className="mb-4"
-          message="The dashboard could not be refreshed"
+          title="The dashboard could not be refreshed"
           description={`Showing the last successful data${age ? ` from ${age}` : ""}. The next automatic refresh is in 30 seconds, or retry now.`}
           action={
             <Button size="small" onClick={retry}>
@@ -129,6 +128,6 @@ export function DashboardPage() {
             </Col>
           ))}
       </Row>
-    </div>
+    </Flex>
   );
 }

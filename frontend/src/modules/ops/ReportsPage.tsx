@@ -1,7 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
-import { Card, Space, Tabs, Typography, type TableProps } from "antd";
+import { Flex, Tabs, Typography, type TableProps } from "antd";
 import { useState } from "react";
-import { PageContainer } from "@/design-system";
+import { PageContainer, SectionCard } from "@/design-system";
 import { DataTable } from "@/design-system";
 import { LoadingState } from "@/design-system";
 import { StatusBadge } from "@/design-system";
@@ -185,8 +185,8 @@ function OverviewTab() {
   const locations = locationsQuery.data?.data ?? [];
 
   return (
-    <Space orientation="vertical" size="large" className="w-full">
-      <Card size="small" title="Campaign deployments">
+    <Flex vertical gap={24}>
+      <SectionCard title="Campaign deployments" level="card">
         <DataTable<DeploymentRow>
           rowKey="campaign_id"
           columns={deploymentColumns}
@@ -194,9 +194,9 @@ function OverviewTab() {
           pagination={false}
           emptyTitle="No data yet"
         />
-      </Card>
+      </SectionCard>
 
-      <Card size="small" title="Playback (proof-of-play foundation)">
+      <SectionCard title="Playback (proof-of-play foundation)" level="card">
         <DataTable<PlaybackRow>
           rowKey="asset_id"
           columns={playbackColumns}
@@ -204,9 +204,9 @@ function OverviewTab() {
           pagination={false}
           emptyTitle="No data yet"
         />
-      </Card>
+      </SectionCard>
 
-      <Card size="small" title="Device health by location">
+      <SectionCard title="Device health by location" level="card">
         <DataTable<LocationRow>
           rowKey="location_id"
           columns={locationColumns}
@@ -214,7 +214,7 @@ function OverviewTab() {
           pagination={false}
           emptyTitle="No data yet"
         />
-      </Card>
-    </Space>
+      </SectionCard>
+    </Flex>
   );
 }
