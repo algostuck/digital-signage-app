@@ -164,19 +164,13 @@ export function InvoicesPage() {
       </Row>
 
       <FilterBar
+        search={<SearchBar value={search} onChange={(value) => setSearch(value)} placeholder="Invoice number" label="Search invoice number" width={208} />}
         onReset={() => {
           setStatus("issued");
           setTenantId(null);
           setSearch("");
         }}
       >
-        <SearchBar
-          value={search}
-          onChange={(value) => setSearch(value)}
-          placeholder="Invoice number"
-          label="Search invoice number"
-          width={208}
-        />
         <Select
           allowClear
           placeholder="All statuses"

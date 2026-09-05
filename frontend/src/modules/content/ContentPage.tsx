@@ -174,6 +174,7 @@ export function ContentPage() {
 
         <Col xs={24} lg={19}>
           <FilterBar
+        search={<SearchBar value={search} onChange={(value) => { setSearch(value); setPage(1); }} placeholder="Search content…" label="Search content" width={256} />}
             onReset={
               search || typeFilter || statusFilter
                 ? () => {
@@ -185,16 +186,6 @@ export function ContentPage() {
                 : undefined
             }
           >
-            <SearchBar
-              value={search}
-              onChange={(value) => {
-                setSearch(value);
-                setPage(1);
-              }}
-              placeholder="Search content…"
-              label="Search content"
-              width={256}
-            />
             <Select
               className="w-40"
               value={typeFilter}

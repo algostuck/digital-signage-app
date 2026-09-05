@@ -125,6 +125,7 @@ export function TenantsPage() {
       />
 
       <FilterBar
+        search={<SearchBar value={search} onChange={(value) => setSearch(value)} placeholder="Search name or code" label="Search tenants" width={256} />}
         onReset={() => {
           setSearch("");
           setStatus(null);
@@ -132,13 +133,6 @@ export function TenantsPage() {
           setPlan(null);
         }}
       >
-        <SearchBar
-          value={search}
-          onChange={(value) => setSearch(value)}
-          placeholder="Search name or code"
-          label="Search tenants"
-          width={256}
-        />
         <Select
           allowClear
           placeholder="Status"

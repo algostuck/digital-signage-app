@@ -55,7 +55,7 @@ export function UsersTab() {
       dataIndex: "full_name",
       render: (name: string) => <Typography.Text strong>{name}</Typography.Text>,
     },
-    { title: "Email", dataIndex: "email" },
+    { title: "Email", dataIndex: "email", responsive: ["md"] },
     {
       title: "Roles",
       responsive: ["lg"],

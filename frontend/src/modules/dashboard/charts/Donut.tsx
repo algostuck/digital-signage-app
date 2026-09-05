@@ -110,7 +110,7 @@ export function Donut({
                   style={{ height: "auto", paddingInline: 4, paddingBlock: 2, justifyContent: "flex-start" }}
                   aria-label={`${s.label}: ${s.value}, ${pctValue} percent. Show these`}
                 >
-                  {row}
+                  <span className="flex w-full items-center gap-2">{row}</span>
                 </Button>
               ) : (
                 <div className="flex items-center gap-2 px-1">{row}</div>

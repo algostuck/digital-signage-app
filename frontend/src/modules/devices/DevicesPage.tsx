@@ -220,6 +220,7 @@ export function DevicesPage() {
   const devicesTab = (
     <div>
       <FilterBar
+        search={<SearchBar value={search} onChange={(value) => { setSearch(value); setPage(1); }} placeholder="Search name, serial, model…" label="Search devices" width={288} />}
         onReset={
           search || statusFilter || connectionFilter
             ? () => {
@@ -231,16 +232,6 @@ export function DevicesPage() {
             : undefined
         }
       >
-        <SearchBar
-          value={search}
-          onChange={(value) => {
-            setSearch(value);
-            setPage(1);
-          }}
-          placeholder="Search name, serial, model…"
-          label="Search devices"
-          width={288}
-        />
         <Select
           className="w-44"
           value={statusFilter}

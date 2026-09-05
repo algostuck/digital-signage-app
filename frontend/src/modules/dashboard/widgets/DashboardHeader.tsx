@@ -67,7 +67,7 @@ export function DashboardHeader({
           <Space wrap align="center" size="small" style={{ maxWidth: "100%" }} styles={{ item: { minWidth: 0, maxWidth: "100%" } }}>
             {/* Six presets are wider than a phone; scroll the control rather
                 than let it push the page sideways. */}
-            <div style={{ maxWidth: "100%", overflowX: "auto" }}>
+            <div style={{ maxWidth: "100%", minWidth: 0, overflowX: "auto" }}>
               <Segmented<RangePreset>
                 value={range.preset}
                 onChange={(value) => (value === "custom" ? setCustom(range.from, range.to) : setPreset(value))}

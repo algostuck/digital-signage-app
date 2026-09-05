@@ -48,7 +48,11 @@ export function PageHeader({ title, description, breadcrumbs, extra, actions }: 
           </Flex>
           {description && <Typography.Text type="secondary">{description}</Typography.Text>}
         </Flex>
-        {actions && <Space wrap>{actions}</Space>}
+        {actions && (
+          <Space wrap style={{ maxWidth: "100%" }} styles={{ item: { minWidth: 0, maxWidth: "100%" } }}>
+            {actions}
+          </Space>
+        )}
       </Flex>
     </Flex>
   );
