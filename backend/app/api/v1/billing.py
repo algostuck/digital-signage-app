@@ -64,7 +64,7 @@ async def get_entitlements(
 async def get_subscription(
     tenant_id: CurrentTenantId, db: AsyncSession = Depends(get_db)
 ) -> dict:
-    subscription = await entitlements_service.current_subscription(db, tenant_id)
+    subscription = await entitlements_service.latest_subscription(db, tenant_id)
     effective = await entitlements_service.get_effective(db, tenant_id)
     pending = await subscriptions_service.pending_plan_request(db, tenant_id)
     return success(

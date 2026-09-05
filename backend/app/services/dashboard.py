@@ -1213,7 +1213,7 @@ async def _usage(db, organization_id) -> dict:
 
     usage = await tenant_admin.get_usage(db, organization_id)
     effective = await entitlements_service.get_effective(db, organization_id)
-    subscription = await entitlements_service.current_subscription(db, organization_id)
+    subscription = await entitlements_service.latest_subscription(db, organization_id)
     locations = (
         await db.execute(
             select(func.count()).where(

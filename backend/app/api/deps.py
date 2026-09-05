@@ -64,8 +64,7 @@ async def get_current_user(
             used = await usage_service.metered_used(db, key.organization_id, "api_calls")
             if used >= call_limit:
                 raise ForbiddenError(
-                    f"API call limit reached ({used}/{call_limit}). "
-                    "Upgrade your subscription."
+                    f"API call limit reached ({used}/{call_limit}). Upgrade your subscription."
                 )
         await usage_service.record_metered(db, key.organization_id, "api_calls")
 
@@ -149,6 +148,21 @@ def require_permissions(*codes: str):
         if missing:
             raise ForbiddenError(f"Missing permission: {', '.join(missing)}")
         return user
+
+    return Depends(dependency)
+
+
+def require_entitlement(key: str):
+    """Route guard: the tenant's plan must include the feature. Pairs with
+    `require_permissions` — a user may hold `reports.view` while the plan
+    does not include `proof_of_play`; both must pass."""
+
+    async def dependency(
+        tenant_id: CurrentTenantId, db: Annotated[AsyncSession, Depends(get_db)]
+    ) -> None:
+        from app.services import entitlements as entitlements_service
+
+        await entitlements_service.require_feature(db, tenant_id, key)
 
     return Depends(dependency)
 

@@ -151,9 +151,9 @@ async def test_subscribe_conflicts_then_plan_change_needs_approval(client, admin
 
     # Super Admin sees the request and approves after the manual payment.
     tokens = await platform_tokens(client)
-    requests = (
-        await client.get("/api/v1/platform/plan-requests", headers=bearer(tokens))
-    ).json()["data"]
+    requests = (await client.get("/api/v1/platform/plan-requests", headers=bearer(tokens))).json()[
+        "data"
+    ]
     assert any(r["id"] == request_id and r["to_plan"] == "professional" for r in requests)
     resp = await client.post(
         f"/api/v1/platform/plan-requests/{request_id}/approve",
@@ -278,9 +278,9 @@ async def _tighten_devices_to_current(client, admin_tokens):
     and move the org onto it (direct platform change)."""
     tokens = await platform_tokens(client)
     tenant_id = await _demo_tenant_id(client, tokens)
-    usage = (
-        await client.get("/api/v1/organization/usage", headers=bearer(admin_tokens))
-    ).json()["data"]
+    usage = (await client.get("/api/v1/organization/usage", headers=bearer(admin_tokens))).json()[
+        "data"
+    ]
     used = usage["devices"]["used"]
     resp = await client.post(
         "/api/v1/platform/plans",
@@ -315,9 +315,7 @@ async def test_device_limit_blocks_next_registration(client, admin_tokens):
 
 
 async def _demo_tenant_id(client, tokens) -> str:
-    tenants = (
-        await client.get("/api/v1/platform/tenants", headers=bearer(tokens))
-    ).json()["data"]
+    tenants = (await client.get("/api/v1/platform/tenants", headers=bearer(tokens))).json()["data"]
     return next(t["id"] for t in tenants if t["code"] == "demo")
 
 
@@ -332,9 +330,9 @@ async def test_quota_override_can_only_tighten_below_plan(client, admin_tokens):
         json={"max_devices": 1},
     )
     assert resp.status_code == 200, resp.text
-    usage = (
-        await client.get("/api/v1/organization/usage", headers=bearer(admin_tokens))
-    ).json()["data"]
+    usage = (await client.get("/api/v1/organization/usage", headers=bearer(admin_tokens))).json()[
+        "data"
+    ]
     assert usage["devices"]["limit"] == 1
 
     # A tenant admin cannot reach the platform quota endpoint.
@@ -354,9 +352,9 @@ async def test_invoice_download_and_provider_management(client, admin_tokens, or
         json={"plan_code": "starter", "billing_cycle": "monthly"},
     )
     assert resp.status_code == 200, resp.text
-    invoice = (
-        await client.get("/api/v1/billing/invoices", headers=bearer(b_tokens))
-    ).json()["data"][0]
+    invoice = (await client.get("/api/v1/billing/invoices", headers=bearer(b_tokens))).json()[
+        "data"
+    ][0]
 
     # Tenant download: printable HTML attachment.
     resp = await client.get(
@@ -399,16 +397,14 @@ async def test_invoice_download_and_provider_management(client, admin_tokens, or
 
 
 async def test_suspension_blocks_growth_but_not_playback(client, admin_tokens):
-    device_id, device_token = await enroll_active_device(
-        client, admin_tokens, "SN-SUSPEND-1"
-    )
+    device_id, device_token = await enroll_active_device(client, admin_tokens, "SN-SUSPEND-1")
 
     tokens = await platform_tokens(client)
     demo = next(
         t
-        for t in (
-            await client.get("/api/v1/platform/tenants", headers=bearer(tokens))
-        ).json()["data"]
+        for t in (await client.get("/api/v1/platform/tenants", headers=bearer(tokens))).json()[
+            "data"
+        ]
         if t["code"] == "demo"
     )
     resp = await client.post(
@@ -487,9 +483,9 @@ async def test_invoice_payment_clears_dunning(client, admin_tokens, org_b, db_en
     )
     assert resp.status_code == 200, resp.text
 
-    invoices = (
-        await client.get("/api/v1/billing/invoices", headers=bearer(b_tokens))
-    ).json()["data"]
+    invoices = (await client.get("/api/v1/billing/invoices", headers=bearer(b_tokens))).json()[
+        "data"
+    ]
     assert len(invoices) == 1
     assert invoices[0]["status"] == "issued"
     assert invoices[0]["number"].startswith("INV-")
@@ -532,16 +528,18 @@ async def test_dunning_ladder_escalates_by_overdue_days(client, admin_tokens, or
     async def backdate_and_run(days: int) -> str:
         async with factory() as session:
             invoice = (
-                await session.execute(
-                    select(Invoice).where(Invoice.organization_id == org_b["org_id"])
+                (
+                    await session.execute(
+                        select(Invoice).where(Invoice.organization_id == org_b["org_id"])
+                    )
                 )
-            ).scalars().first()
+                .scalars()
+                .first()
+            )
             invoice.due_at = datetime.now(UTC) - timedelta(days=days)
             await session.flush()
             await run_lifecycle(session)
-            subscription = await entitlements_service.current_subscription(
-                session, org_b["org_id"]
-            )
+            subscription = await entitlements_service.current_subscription(session, org_b["org_id"])
             status = subscription.status
             await session.commit()
             return status
@@ -770,9 +768,7 @@ async def test_platform_reads_one_tenant_and_all_invoices(client, admin_tokens, 
     tokens = await platform_tokens(client)
 
     # Single tenant carries the profile fields the console edits.
-    resp = await client.get(
-        f"/api/v1/platform/tenants/{org_b['org_id']}", headers=bearer(tokens)
-    )
+    resp = await client.get(f"/api/v1/platform/tenants/{org_b['org_id']}", headers=bearer(tokens))
     assert resp.status_code == 200, resp.text
     tenant = resp.json()["data"]
     assert tenant["id"] == str(org_b["org_id"])
@@ -810,3 +806,90 @@ async def test_platform_reads_one_tenant_and_all_invoices(client, admin_tokens, 
 
     resp = await client.get("/api/v1/platform/invoices", headers=bearer(admin_tokens))
     assert resp.status_code == 403
+
+
+async def _tenant_on_plan(client, plan_code: str, code: str) -> tuple[str, dict, dict]:
+    """A fresh tenant on `plan_code`; returns (tenant_id, platform tokens, owner tokens)."""
+    tokens = await platform_tokens(client)
+    resp = await client.post(
+        "/api/v1/platform/tenants",
+        headers=bearer(tokens),
+        json={
+            "name": f"Plan {code}",
+            "code": code,
+            "owner_email": f"owner@{code}.example",
+            "owner_full_name": "Owner",
+            "owner_password": "Owner@12345",
+        },
+    )
+    assert resp.status_code == 201, resp.text
+    tenant_id = resp.json()["data"]["id"]
+    resp = await client.post(
+        f"/api/v1/platform/tenants/{tenant_id}/subscription",
+        headers=bearer(tokens),
+        json={"plan_code": plan_code, "billing_cycle": "monthly"},
+    )
+    assert resp.status_code == 200, resp.text
+    owner = await login(client, f"owner@{code}.example", "Owner@12345")
+    return tenant_id, tokens, owner
+
+
+async def test_expired_subscription_blocks_growth_and_keeps_plan(client, seeded):
+    """An expired subscription is not a legacy tenant: growth actions stay
+    blocked and the plan's limits stay in force until it is renewed."""
+    tenant_id, tokens, owner = await _tenant_on_plan(client, "starter", "expiring")
+
+    resp = await client.post(
+        f"/api/v1/platform/tenants/{tenant_id}/subscription/transition",
+        headers=bearer(tokens),
+        json={"to_status": "expired", "event": "test_expire"},
+    )
+    assert resp.status_code == 200, resp.text
+
+    resp = await client.post(
+        "/api/v1/campaigns", headers=bearer(owner), json={"name": "After expiry"}
+    )
+    assert resp.status_code == 422, resp.text
+    assert "expired" in resp.json()["errors"][0]["message"].lower()
+
+    resp = await client.get("/api/v1/entitlements", headers=bearer(owner))
+    data = resp.json()["data"]
+    assert data["plan_code"] == "starter"
+    assert data["values"]["max_devices"] == 10
+
+    resp = await client.get("/api/v1/billing/subscription", headers=bearer(owner))
+    assert resp.json()["data"]["status"] == "expired"
+
+    # Renewal is a new subscription; growth resumes.
+    resp = await client.post(
+        f"/api/v1/platform/tenants/{tenant_id}/subscription",
+        headers=bearer(tokens),
+        json={"plan_code": "starter", "billing_cycle": "monthly"},
+    )
+    assert resp.status_code == 200, resp.text
+    resp = await client.post(
+        "/api/v1/campaigns", headers=bearer(owner), json={"name": "After renewal"}
+    )
+    assert resp.status_code == 201, resp.text
+
+
+async def test_reports_follow_plan_entitlements(client, seeded):
+    """proof_of_play / advanced_analytics are enforced by the API, not only
+    hidden by the UI: Starter is refused with the plan named, Business passes."""
+    _, tokens, owner = await _tenant_on_plan(client, "starter", "reports-starter")
+    for path in ("/api/v1/reports/proof-of-play", "/api/v1/reports/playback"):
+        resp = await client.get(path, headers=bearer(owner))
+        assert resp.status_code == 422, (path, resp.text)
+        assert "proof_of_play" in resp.json()["errors"][0]["message"]
+        assert "Starter" in resp.json()["errors"][0]["message"]
+    resp = await client.get(
+        "/api/v1/analytics/aggregates",
+        headers=bearer(owner),
+        params={"date_from": "2026-01-01", "date_to": "2026-01-02"},
+    )
+    assert resp.status_code == 422
+    assert "advanced_analytics" in resp.json()["errors"][0]["message"]
+
+    _, _, owner_b = await _tenant_on_plan(client, "business", "reports-business")
+    resp = await client.get("/api/v1/reports/proof-of-play", headers=bearer(owner_b))
+    assert resp.status_code == 200, resp.text

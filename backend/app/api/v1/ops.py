@@ -7,7 +7,13 @@ from fastapi import APIRouter, Depends, Query
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.api.deps import CurrentTenantId, CurrentUser, PageParams, require_permissions
+from app.api.deps import (
+    CurrentTenantId,
+    CurrentUser,
+    PageParams,
+    require_entitlement,
+    require_permissions,
+)
 from app.db.session import get_db
 from app.models import AuditLog, Deployment, Notification, User
 from app.schemas.envelope import success
@@ -24,9 +30,7 @@ async def monitoring_summary(
     tenant_id: CurrentTenantId, user: CurrentUser, db: AsyncSession = Depends(get_db)
 ) -> dict:
     data = await monitoring_service.summary(db, tenant_id)
-    data["notifications_unread"] = await notifications_service.unread_count(
-        db, tenant_id, user.id
-    )
+    data["notifications_unread"] = await notifications_service.unread_count(db, tenant_id, user.id)
 
     recent = await db.execute(
         select(Deployment)
@@ -50,9 +54,7 @@ async def monitoring_summary(
     user_ids = {row.user_id for row in rows if row.user_id}
     user_names: dict = {}
     if user_ids:
-        users = await db.execute(
-            select(User.id, User.full_name).where(User.id.in_(user_ids))
-        )
+        users = await db.execute(select(User.id, User.full_name).where(User.id.in_(user_ids)))
         user_names = dict(users.all())
     data["recent_activity"] = [_audit_out(row, user_names) for row in rows]
     return success(data)
@@ -88,9 +90,7 @@ async def put_thresholds(
     """P2-MON-002: per-tenant offline/storage/version thresholds."""
     from app.services.organization import update_monitoring_thresholds
 
-    return success(
-        await update_monitoring_thresholds(db, tenant_id, body, user_id=user.id)
-    )
+    return success(await update_monitoring_thresholds(db, tenant_id, body, user_id=user.id))
 
 
 # --- audit ---
@@ -137,9 +137,7 @@ async def audit_logs(
     user_ids = {row.user_id for row in rows if row.user_id}
     user_names: dict = {}
     if user_ids:
-        users = await db.execute(
-            select(User.id, User.full_name).where(User.id.in_(user_ids))
-        )
+        users = await db.execute(select(User.id, User.full_name).where(User.id.in_(user_ids)))
         user_names = dict(users.all())
     return success(
         [_audit_out(row, user_names) for row in rows],
@@ -203,9 +201,7 @@ async def mark_notification_read(
     return success(_notification_out(row))
 
 
-@router.post(
-    "/notifications/read-all", dependencies=[require_permissions("notifications.view")]
-)
+@router.post("/notifications/read-all", dependencies=[require_permissions("notifications.view")])
 async def mark_all_notifications_read(
     tenant_id: CurrentTenantId, user: CurrentUser, db: AsyncSession = Depends(get_db)
 ) -> dict:
@@ -223,7 +219,10 @@ async def report_deployments(
     return success(await reports_service.deployments_report(db, tenant_id))
 
 
-@router.get("/reports/playback", dependencies=[require_permissions("reports.view")])
+@router.get(
+    "/reports/playback",
+    dependencies=[require_permissions("reports.view"), require_entitlement("proof_of_play")],
+)
 async def report_playback(
     tenant_id: CurrentTenantId,
     date_from: dt.date | None = Query(None, alias="from"),
@@ -231,13 +230,14 @@ async def report_playback(
     db: AsyncSession = Depends(get_db),
 ) -> dict:
     return success(
-        await reports_service.playback_report(
-            db, tenant_id, date_from=date_from, date_to=date_to
-        )
+        await reports_service.playback_report(db, tenant_id, date_from=date_from, date_to=date_to)
     )
 
 
-@router.get("/reports/proof-of-play", dependencies=[require_permissions("reports.view")])
+@router.get(
+    "/reports/proof-of-play",
+    dependencies=[require_permissions("reports.view"), require_entitlement("proof_of_play")],
+)
 async def report_proof_of_play(
     tenant_id: CurrentTenantId,
     date_from: dt.date | None = Query(None),
@@ -262,7 +262,8 @@ async def report_proof_of_play(
 
 
 @router.get(
-    "/reports/campaign-performance", dependencies=[require_permissions("reports.view")]
+    "/reports/campaign-performance",
+    dependencies=[require_permissions("reports.view"), require_entitlement("advanced_analytics")],
 )
 async def report_campaign_performance(
     tenant_id: CurrentTenantId,
@@ -344,7 +345,5 @@ async def export_report(
 
 
 @router.get("/reports/locations", dependencies=[require_permissions("reports.view")])
-async def report_locations(
-    tenant_id: CurrentTenantId, db: AsyncSession = Depends(get_db)
-) -> dict:
+async def report_locations(tenant_id: CurrentTenantId, db: AsyncSession = Depends(get_db)) -> dict:
     return success(await reports_service.locations_report(db, tenant_id))

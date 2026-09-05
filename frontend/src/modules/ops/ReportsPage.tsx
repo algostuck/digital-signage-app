@@ -5,6 +5,7 @@ import { PageHeader } from "../../components/ui/PageHeader";
 import { EmptyState, LoadingState } from "../../components/ui/states";
 import { StatusBadge } from "../../components/ui/StatusBadge";
 import { api } from "../../lib/api";
+import { EntitlementGuard } from "../../components/ui/EntitlementGuard";
 import { CampaignAnalyticsTab, ProofOfPlayTab, UptimeTab } from "./AnalyticsTabs";
 import { AdsReportTab, ExportsTab } from "./ExportsAdsTabs";
 
@@ -51,11 +52,35 @@ export function ReportsPage() {
         onChange={setTab}
         items={[
           { key: "overview", label: "Overview", children: <OverviewTab /> },
-          { key: "pop", label: "Proof of play", children: <ProofOfPlayTab /> },
-          { key: "analytics", label: "Campaign analytics", children: <CampaignAnalyticsTab /> },
+          {
+            key: "pop",
+            label: "Proof of play",
+            children: (
+              <EntitlementGuard feature="proof_of_play" featureName="Proof of play">
+                <ProofOfPlayTab />
+              </EntitlementGuard>
+            ),
+          },
+          {
+            key: "analytics",
+            label: "Campaign analytics",
+            children: (
+              <EntitlementGuard feature="advanced_analytics" featureName="Campaign analytics">
+                <CampaignAnalyticsTab />
+              </EntitlementGuard>
+            ),
+          },
           { key: "uptime", label: "Uptime", children: <UptimeTab /> },
           { key: "ads", label: "Ads", children: <AdsReportTab /> },
-          { key: "exports", label: "Exports", children: <ExportsTab /> },
+          {
+            key: "exports",
+            label: "Exports",
+            children: (
+              <EntitlementGuard feature="advanced_analytics" featureName="Data exports">
+                <ExportsTab />
+              </EntitlementGuard>
+            ),
+          },
         ]}
       />
     </div>

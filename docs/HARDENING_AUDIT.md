@@ -70,8 +70,38 @@ an actual request, not a UI observation.
 
 `/auth/me` exposes each user's permission set, which is what the UI's
 `hasPermission` gating reads — so the API and the UI decide from the same
-list. The UI-side pass (buttons that render for roles that cannot execute
-them) is tracked separately in the UX polish gate.
+list.
+
+### UI pass: what each role is shown
+
+Every top-level page was loaded in the browser as Amit (Viewer), Priya
+(Content Manager) and Rahul (Device Manager) in the seeded Reliance tenant,
+and every action control in the page body (buttons, icon buttons,
+dropdown triggers) was listed and compared with the role's permission
+codes from `/roles`.
+
+| Page | Viewer | Content Manager | Device Manager |
+|---|---|---|---|
+| Content | read only | Upload, New folder, Archive folder | read only |
+| Design / Playlists | read only | New layout, New playlist | read only |
+| Campaigns / Schedule | read only | New campaign, Archive, New schedule, Delete | read only |
+| Approvals | read only (API refuses the inbox: 403) | read only | read only |
+| Publishing | read only | read only | Cancel, Retry failed |
+| Devices | Save view (saved views are per-user, no permission) | Save view | Show enrollment key, Save view |
+| Player Updates | "requires releases.manage" state | same | New release |
+| Developer | "requires api_keys.manage" state | same | same |
+| Users, Settings, Security, Audit, Notifications, Reports, Monitoring, Ads, Locations | read only | read only | read only |
+
+No control rendered for a role whose API would refuse it. The pages that a
+role may open without holding the page's permission (Player Updates,
+Developer) show a clear "you need X" state instead of an empty or broken
+page. The tab-overflow "…" antd renders on tabbed pages is not an action.
+
+Not covered by this pass: secondary tabs (device groups, video walls,
+templates, widgets, roles, members, notification rules), row-level
+drawers, the playlist editor and the screen designer — the designer hides
+its editing controls behind `layouts.manage` in code, the others are
+covered by the module tests.
 
 Existing pytest coverage: `tests/test_rbac.py` (viewer read-only, no-role
 denial, content manager cannot manage users) and per-module
@@ -136,10 +166,80 @@ cd backend && .venv/Scripts/python scripts/audit_e2e_journey.py --report journey
 Add `--keep` to the journey to leave the audit tenant and its records in
 place for inspection. Both scripts back off on the login rate limiter.
 
+## 4. Subscription & entitlements
+
+`audit_entitlements.py` runs on the revived `e2e-audit` tenant — nothing in
+the demo tenants is touched — and checks the whole chain
+plan → entitlement → usage → limit → feature access. 85 checks, 0 failures
+after the fixes below.
+
+| Scenario | Behaviour verified |
+|---|---|
+| Feature not in plan (Business): AI, SSO, video walls, experiments, edge bundles, fleet rules, developer portal, advertising, white label | Refused with `'<feature>' is not included in the Business. Upgrade your subscription.`; the integration catalogue marks SSO unavailable |
+| Device limit reached | Platform quota tightened to what is in use → next registration refused with `Device limit reached (n/m)`; a decommissioned screen frees its seat (answers J3) |
+| User limit reached | `User limit reached (n/m)` |
+| Storage limit reached | A 5 MB upload is refused with the storage message; a 64 KB upload within the remaining headroom is accepted |
+| Quota overrides cleared | Limits fall back to the plan (Business: 100 devices) |
+| Suspended / cancelled | Cannot create campaigns, register devices, open uploads, add users or publish — each refusal names the status (`Subscription is suspended: cannot publish campaigns. Renew or reactivate…`). Players still fetch manifests and heartbeat: screens are never blanked over billing |
+| Grace period / past due | Growth allowed; players unaffected |
+| Expired → renewed | Growth blocked while expired; renewal assigns a new subscription and growth resumes |
+| Upgrade to Professional | Video walls open, AI on, device limit 500 |
+| Downgrade to Starter | Features close again with the plan named; device limit 10; over-limit registration refused with the numbers; proof of play and analytics refused |
+| API keys | A key can be created on any plan (management is a permission); using it on Starter is refused with `'api_access' is not included`; the same key works on Business |
+
+The refusals are the messages the UI shows verbatim (`message.error(err.message)`
+on every mutation), and Settings › Plan & usage reads the same live usage
+(`/billing/subscription`) the limits are computed from.
+
+### Findings
+
+| # | Finding | Status |
+|---|---|---|
+| E1 | **An expired subscription turned the tenant into unrestricted "legacy mode".** `current_subscription` skipped expired rows, so `get_effective` saw no subscription and lifted every limit and feature gate, and growth actions were allowed. | Fixed — `latest_subscription` (any status) now drives entitlements and growth checks: an expired tenant keeps its plan's limits and is blocked from growth until it renews; billing, platform and dashboard read the expired subscription instead of "none". Test `test_expired_subscription_blocks_growth_and_keeps_plan`. |
+| E2 | **`proof_of_play` and `advanced_analytics` were UI-only gates.** A Starter tenant could call `/reports/proof-of-play`, `/reports/playback`, `/reports/campaign-performance`, `/analytics/*` and `/data-exports` directly. | Fixed — `require_entitlement(key)` route guard added to those routes (alongside `require_permissions`); the Reports page wraps the same tabs in `EntitlementGuard`. Test `test_reports_follow_plan_entitlements`. |
+| E3 | `/billing/usage` (the metered snapshot list) is empty for a tenant until the hourly usage snapshot has run. The plan page does not use it — it reads live counts from `/billing/subscription` — so this only affects API consumers. | Open (minor). |
+
+## 5. Player API contract — frozen
+
+`docs/PLAYER_API_CONTRACT.md` freezes the device-facing surface the cloud
+already serves: registration and the one-time token, capabilities,
+manifest (shape, signed-URL lifetime, `manifest_version`), deployment
+acknowledgement, heartbeat (and what its response tells the player to do
+next), commands, screenshots, player updates, event batches for proof of
+play and operational events, prefetch bundles, timings, error handling and
+the normative offline behaviour. Anything that changes a meaning in it
+needs a new prefix or manifest version.
+
+## 6. Player Simulator — a real player in the browser
+
+**Devices › Player Simulator** (`frontend/src/modules/simulator/`) is the
+executable form of the contract and the tool for cloud-to-device testing
+before any native client exists. It:
+
+- registers with the tenant's enrollment key (prefilled for users who may
+  read it), waits for approval, and keeps the device token it is issued
+  once — stored per serial, never a user session;
+- reports capabilities, fetches the manifest with `X-Device-Token` and
+  renders it through the same renderer as the operator's TV preview;
+- heartbeats on the server's interval (or every 10 s in fast mode), re-syncs
+  when the heartbeat says so, acknowledges every pending deployment, polls
+  and acknowledges commands (`refresh_content`, `reboot`, `clear_cache`,
+  display / volume; `screenshot` is acknowledged as unsupported);
+- reports one proof-of-play row per item shown, batched and replayed if
+  the report fails, plus `APP_STARTED` operational events;
+- shows the contract activity live: heartbeats, syncs, plays reported,
+  deployments and commands acknowledged, queued events, and a log.
+
+Verified 2026-09-05 in the Reliance tenant: register → pending → approved
+from the page → token → bootstrap → `refresh_content` command round trip →
+a campaign published to the simulated screen → heartbeat `sync_required`
+→ manifest v1 → deployment acknowledged (Publishing shows *published,
+1/1*) → content on screen → proof of play shows 3 plays, 100 % completion
+→ device decommissioned → the simulator's next call is refused and it
+shows the token-revoked state. Nothing was left behind.
+
 ## Next gates
 
-4. Subscription & entitlement behaviour (limits, expiry, grace, upgrade /
-   downgrade, and *why* something is unavailable in the UI).
-5. Player API contract freeze and the signage player simulator.
+7. Client demo journey (scripted story on one controlled tenant).
 6. UX polish, performance, observability, production security review,
    CI/CD, documentation freeze — in that order.

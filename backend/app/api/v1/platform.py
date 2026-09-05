@@ -214,7 +214,7 @@ async def transition_subscription(
 async def get_tenant_subscription(
     tenant_id: uuid.UUID, _admin: PlatformAdmin, db: AsyncSession = Depends(get_db)
 ) -> dict:
-    subscription = await entitlements_service.current_subscription(db, tenant_id)
+    subscription = await entitlements_service.latest_subscription(db, tenant_id)
     effective = await entitlements_service.get_effective(db, tenant_id)
     return success(
         {

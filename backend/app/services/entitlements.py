@@ -88,10 +88,28 @@ class EffectiveEntitlements:
         return bool(value) if value is not None else True
 
 
-async def current_subscription(
-    db: AsyncSession, organization_id: uuid.UUID
-) -> Subscription | None:
-    """The tenant's newest non-expired subscription (one logical active)."""
+async def latest_subscription(db: AsyncSession, organization_id: uuid.UUID) -> Subscription | None:
+    """The tenant's newest subscription in *any* status, including expired.
+
+    This is what entitlements and growth checks must look at: a tenant
+    whose subscription has expired is not a legacy tenant that never
+    subscribed — it keeps its plan's limits and loses growth actions until
+    it renews. Only a tenant with no subscription row at all runs in
+    unrestricted legacy mode.
+    """
+    return (
+        await db.execute(
+            select(Subscription)
+            .where(Subscription.organization_id == organization_id)
+            .order_by(Subscription.created_at.desc())
+            .limit(1)
+        )
+    ).scalar_one_or_none()
+
+
+async def current_subscription(db: AsyncSession, organization_id: uuid.UUID) -> Subscription | None:
+    """The tenant's newest non-expired subscription (one logical active) —
+    the one billing operations (change plan, transition, cancel) act on."""
     rows = await db.execute(
         select(Subscription)
         .where(Subscription.organization_id == organization_id)
@@ -103,10 +121,8 @@ async def current_subscription(
     return None
 
 
-async def get_effective(
-    db: AsyncSession, organization_id: uuid.UUID
-) -> EffectiveEntitlements:
-    subscription = await current_subscription(db, organization_id)
+async def get_effective(db: AsyncSession, organization_id: uuid.UUID) -> EffectiveEntitlements:
+    subscription = await latest_subscription(db, organization_id)
 
     values: dict[str, int | bool | None] = {
         key: (None if kind == "int" else True) for key, kind in ENTITLEMENTS.items()
@@ -144,9 +160,7 @@ async def get_effective(
     )
 
 
-async def require_feature(
-    db: AsyncSession, organization_id: uuid.UUID, key: str
-) -> None:
+async def require_feature(db: AsyncSession, organization_id: uuid.UUID, key: str) -> None:
     """Feature gate: permission may pass while the tenant's plan does not
     include the feature — both are required."""
     effective = await get_effective(db, organization_id)
@@ -163,7 +177,7 @@ async def ensure_subscription_allows(
     """Suspension semantics: growth actions are blocked when the
     subscription is suspended/cancelled/expired; player heartbeats,
     manifests and cached playback are NEVER routed through this check."""
-    subscription = await current_subscription(db, organization_id)
+    subscription = await latest_subscription(db, organization_id)
     if subscription is None:
         return  # legacy tenant — unrestricted
     if subscription.status not in GROWTH_ALLOWED_STATUSES:
@@ -187,6 +201,5 @@ async def ensure_limit(
     limit = effective.limit(key)
     if limit is not None and current_used + increment > limit:
         raise BusinessRuleError(
-            f"{resource_label} limit reached ({current_used}/{limit}). "
-            "Upgrade your subscription."
+            f"{resource_label} limit reached ({current_used}/{limit}). Upgrade your subscription."
         )
