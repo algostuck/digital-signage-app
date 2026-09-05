@@ -65,22 +65,31 @@ export function useDevicePreviewSource(
   });
 
   const manifest = query.data?.data ?? null;
-  const canvas = (manifest?.layout?.canvas as LayoutCanvas | undefined) ?? null;
-  const source: PreviewSource | null = manifest
-    ? {
-        authoritative: true,
-        canvas,
-        playlist: manifest.playlist,
-        urlByAssetId: indexAssets(manifest.assets),
-        data: manifest.data ?? {},
-        timezone: manifest.timezone,
-        screen: resolveScreen(device, canvas),
-        label: manifest.campaign?.name ?? "No campaign resolved",
-        manifest,
-      }
-    : null;
+  const source: PreviewSource | null = manifest ? manifestToSource(manifest, device) : null;
 
   return { source, query };
+}
+
+/** A device manifest, as the player contract delivers it, turned into what
+ * the renderer stack needs. Shared by the operator's TV preview (which
+ * fetches it with a user session) and the Player Simulator (which fetches
+ * it with a device token), so both render exactly the same thing. */
+export function manifestToSource(
+  manifest: PreviewManifest,
+  device: Pick<Device, "screen_width" | "screen_height" | "orientation"> | null,
+): PreviewSource {
+  const canvas = (manifest.layout?.canvas as LayoutCanvas | undefined) ?? null;
+  return {
+    authoritative: true,
+    canvas,
+    playlist: manifest.playlist,
+    urlByAssetId: indexAssets(manifest.assets),
+    data: manifest.data ?? {},
+    timezone: manifest.timezone,
+    screen: resolveScreen(device, canvas),
+    label: manifest.campaign?.name ?? "No campaign resolved",
+    manifest,
+  };
 }
 
 /** Every asset id the composition needs a playable URL for. */

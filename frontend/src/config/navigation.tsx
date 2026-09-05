@@ -148,6 +148,13 @@ export const NAVIGATION: NavNode[] = [
         icon: <SyncOutlined />,
         permission: ["releases.manage"],
       },
+      {
+        key: "/simulator",
+        label: "Player Simulator",
+        path: "/simulator",
+        icon: <PlaySquareOutlined />,
+        permission: ["devices.view"],
+      },
     ],
   },
   {

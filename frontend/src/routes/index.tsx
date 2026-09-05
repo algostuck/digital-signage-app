@@ -25,6 +25,7 @@ const UsersRolesPage = lazy(() => import("../modules/users/UsersRolesPage").then
 const NotificationsPage = lazy(() => import("../modules/ops/NotificationsPage").then((m) => ({ default: m.NotificationsPage })));
 const AuditPage = lazy(() => import("../modules/ops/AuditPage").then((m) => ({ default: m.AuditPage })));
 const OrganizationSettingsPage = lazy(() => import("../modules/organization/OrganizationSettingsPage").then((m) => ({ default: m.OrganizationSettingsPage })));
+const SimulatorPage = lazy(() => import("../modules/simulator/SimulatorPage").then((m) => ({ default: m.SimulatorPage })));
 const DeveloperPage = lazy(() => import("../modules/developer/DeveloperPage").then((m) => ({ default: m.DeveloperPage })));
 const AdsPage = lazy(() => import("../modules/ads/AdsPage").then((m) => ({ default: m.AdsPage })));
 const SecurityPage = lazy(() => import("../modules/security/SecurityPage").then((m) => ({ default: m.SecurityPage })));
@@ -67,6 +68,7 @@ export const router = createBrowserRouter([
           { path: "devices", element: withSuspense(<DevicesPage />) },
           { path: "locations", element: withSuspense(<LocationsPage />) },
           { path: "releases", element: withSuspense(<ReleasesPage />) },
+          { path: "simulator", element: withSuspense(<SimulatorPage />) },
           { path: "monitoring", element: withSuspense(<MonitoringPage />) },
           { path: "reports", element: withSuspense(<ReportsPage />) },
           { path: "users", element: withSuspense(<UsersRolesPage />) },
