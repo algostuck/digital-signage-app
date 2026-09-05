@@ -1,7 +1,14 @@
 # Technical Architecture — Digital Signage Cloud Platform
 
-Status: Baseline (Phase 1A). Source of truth for requirements: [Digital_Signage_Cloud_SRS_FRD.md](Digital_Signage_Cloud_SRS_FRD.md).
+Status: Phase-1 baseline, still the shape of the system. Phases 2 and 3
+added modules on top of it without changing it — see
+[PHASE_2_ARCHITECTURE.md](PHASE_2_ARCHITECTURE.md), [SAAS_CORE.md](SAAS_CORE.md)
+(multi-tenancy, plans, entitlements), [TV_PREVIEW_ARCHITECTURE.md](TV_PREVIEW_ARCHITECTURE.md),
+[ORGANIZATION_ADMIN_DASHBOARD_ARCHITECTURE.md](ORGANIZATION_ADMIN_DASHBOARD_ARCHITECTURE.md)
+and [PLAYER_API_CONTRACT.md](PLAYER_API_CONTRACT.md). Source of truth for
+requirements: [Digital_Signage_Cloud_SRS_FRD.md](Digital_Signage_Cloud_SRS_FRD.md).
 Architecture changes must be recorded as ADRs in [decisions/](decisions/).
+The full documentation set is indexed in [README.md](README.md).
 
 ## 1. System overview
 

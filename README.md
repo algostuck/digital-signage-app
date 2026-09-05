@@ -9,6 +9,7 @@ Windows players connect later via adapters).
 - Architecture: [docs/architecture.md](docs/architecture.md) · Decisions: [docs/decisions/](docs/decisions/)
 - Domain model: [docs/domain-model.md](docs/domain-model.md)
 - API conventions: [docs/api-guidelines.md](docs/api-guidelines.md)
+- Documentation: [docs/README.md](docs/README.md) (architecture, API, database, deployment, security, RBAC, subscription, device protocol, admin and demo guides)
 - Plan/status: [docs/development-plan.md](docs/development-plan.md)
 
 ## Stack

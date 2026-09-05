@@ -362,8 +362,26 @@ suite, a migration round-trip and the portal build. Added:
   migrate, web; self-hosted PostgreSQL/Redis/MinIO behind a profile) and
   the DEV / UAT / PRODUCTION environment files.
 
-## Next gates
+## 13. Documentation freeze
 
-13. documentation freeze.
+`docs/README.md` indexes the product documentation set — Architecture,
+API, Database, Deployment, Security, Observability, RBAC, Subscription,
+Device protocol, TV preview, Admin guide, Client demo guide — and
+separates it from the working history. Added for the freeze: `API.md`
+(authentication, conventions, resource groups, OpenAPI), `DATABASE.md`
+(tenancy at the data layer, migrations, retention, backups), `RBAC.md`
+(the roles × permissions matrix generated from the seeded roles, custom
+roles, enforcement layers), `ADMIN_GUIDE.md` (running a tenant module by
+module), and a rewritten `deployment.md`; `architecture.md` now points at
+the phase documents that extended it.
+
+## Where this leaves the product
+
+Gates 1–13 of the hardening plan are done and evidenced above. What
+remains is the native client work the plan deliberately placed last:
+LG webOS, then Samsung Tizen, then Android / Windows — each implementing
+`PLAYER_API_CONTRACT.md`, with the Player Simulator as the reference
+behaviour and `audit_e2e_journey.py` as the acceptance script — followed
+by end-to-end UAT on the production-shaped stack.
 6. UX polish, performance, observability, production security review,
    CI/CD, documentation freeze — in that order.
