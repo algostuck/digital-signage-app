@@ -20,6 +20,37 @@ class FetchError(Exception):
     """Guard or transport failure — message is safe to store/show."""
 
 
+BLOCKED_HOST_SUFFIXES = (".localhost", ".local", ".internal", ".lan", ".home", ".arpa")
+
+
+def check_url_shape(url: str) -> None:
+    """Save-time guard that needs no network: http(s) only, no obviously
+    internal hostnames, and any literal IP must be globally routable. The
+    resolving check (`assert_public_url`) runs again at send time, so a
+    hostname that later resolves to a private address is still refused."""
+    parsed = urlparse(url)
+    if parsed.scheme not in ("http", "https"):
+        raise FetchError("Only http(s) endpoints are allowed")
+    host = (parsed.hostname or "").lower()
+    if not host:
+        raise FetchError("Endpoint has no hostname")
+    if host == "localhost" or host.endswith(BLOCKED_HOST_SUFFIXES):
+        raise FetchError(f"Endpoint host '{host}' is not a public address")
+    try:
+        address = ipaddress.ip_address(host.strip("[]"))
+    except ValueError:
+        return
+    if not address.is_global:
+        raise FetchError(f"Endpoint address {address} is not publicly routable")
+
+
+def assert_public_url(url: str) -> None:
+    """Send-time guard: shape check plus DNS resolution; every resolved
+    address must be globally routable."""
+    check_url_shape(url)
+    _assert_public_host(url)
+
+
 def _assert_public_host(url: str) -> None:
     parsed = urlparse(url)
     if parsed.scheme not in ("http", "https"):
@@ -34,9 +65,7 @@ def _assert_public_host(url: str) -> None:
     for info in infos:
         address = ipaddress.ip_address(info[4][0])
         if not address.is_global:
-            raise FetchError(
-                f"Endpoint resolves to a non-public address ({address}) — refused"
-            )
+            raise FetchError(f"Endpoint resolves to a non-public address ({address}) — refused")
 
 
 async def guarded_fetch(url: str, *, headers: dict | None = None) -> bytes:

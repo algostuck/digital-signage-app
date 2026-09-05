@@ -312,3 +312,35 @@ async def test_integrations_rbac_and_isolation(client, admin_tokens, org_b):  # 
         assert resp.status_code == 200
         serials = {d["serial_no"] for d in resp.json()["data"]}
         assert all(not s.startswith("ORG-B") for s in serials)
+
+
+async def test_webhook_destinations_must_be_public(client, admin_tokens):
+    """SSRF guard at save time: internal or non-http(s) destinations are
+    refused with the reason in the form field."""
+    for url in (
+        "http://127.0.0.1:8000/api/v1/health",
+        "http://169.254.169.254/latest/meta-data/",
+        "http://10.0.0.5/hook",
+        "http://localhost/hook",
+        "http://metadata.internal/hook",
+        "ftp://x.example.com/hook",
+    ):
+        resp = await client.post(
+            "/api/v1/webhooks",
+            headers=bearer(admin_tokens),
+            json={"url": url, "event_types_json": ["DEVICE_STORAGE"]},
+        )
+        assert resp.status_code == 400, (url, resp.text)
+        assert resp.json()["errors"][0]["field"] == "url"
+    resp = await client.post(
+        "/api/v1/webhooks",
+        headers=bearer(admin_tokens),
+        json={"url": "https://hooks.example.com/ok", "event_types_json": ["DEVICE_STORAGE"]},
+    )
+    assert resp.status_code == 201, resp.text
+    resp = await client.patch(
+        f"/api/v1/webhooks/{resp.json()['data']['id']}",
+        headers=bearer(admin_tokens),
+        json={"url": "http://192.168.1.10/hook"},
+    )
+    assert resp.status_code == 400

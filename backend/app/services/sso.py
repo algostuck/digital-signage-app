@@ -25,7 +25,7 @@ from app.core.errors import (
     UnauthenticatedError,
     ValidationAppError,
 )
-from app.integrations.fetch import FetchError, guarded_fetch
+from app.integrations.fetch import FetchError, assert_public_url, guarded_fetch
 from app.models import Organization, Role, SsoProvider, User
 from app.models.organization import OrganizationStatus
 from app.models.user import UserStatus
@@ -40,9 +40,7 @@ STATE_TTL_SECONDS = 600
 
 async def get_provider(db: AsyncSession, organization_id: uuid.UUID) -> SsoProvider | None:
     return (
-        await db.execute(
-            select(SsoProvider).where(SsoProvider.organization_id == organization_id)
-        )
+        await db.execute(select(SsoProvider).where(SsoProvider.organization_id == organization_id))
     ).scalar_one_or_none()
 
 
@@ -94,8 +92,11 @@ async def upsert_provider(
     from app.services import audit
 
     await audit.record(
-        db, organization_id, action="SSO_PROVIDER_UPDATED",
-        entity_type="sso_provider", entity_id=provider.id,
+        db,
+        organization_id,
+        action="SSO_PROVIDER_UPDATED",
+        entity_type="sso_provider",
+        entity_id=provider.id,
         after={"issuer": issuer, "client_id": client_id, "active": provider.active},
         user_id=user_id,  # never the secret ref value
     )
@@ -108,9 +109,7 @@ async def test_provider(db: AsyncSession, organization_id: uuid.UUID) -> dict:
     if provider is None:
         raise NotFoundError("No SSO provider configured")
     try:
-        body = await guarded_fetch(
-            f"{provider.issuer}/.well-known/openid-configuration"
-        )
+        body = await guarded_fetch(f"{provider.issuer}/.well-known/openid-configuration")
         metadata = json.loads(body)
     except (FetchError, ValueError) as exc:
         return {"ok": False, "error": str(exc)[:300]}
@@ -118,8 +117,9 @@ async def test_provider(db: AsyncSession, organization_id: uuid.UUID) -> dict:
     missing = sorted(required - set(metadata))
     if missing:
         return {"ok": False, "error": f"Discovery document missing: {missing}"}
-    provider.metadata_json = {key: metadata[key] for key in required | {"issuer"}
-                              if key in metadata}
+    provider.metadata_json = {
+        key: metadata[key] for key in required | {"issuer"} if key in metadata
+    }
     await db.flush()
     return {"ok": True, "endpoints": provider.metadata_json}
 
@@ -154,9 +154,7 @@ def _verify_state(state: str, org_code: str) -> None:
         raise UnauthenticatedError("SSO state expired")
 
 
-async def _org_and_provider(
-    db: AsyncSession, org_code: str
-) -> tuple[Organization, SsoProvider]:
+async def _org_and_provider(db: AsyncSession, org_code: str) -> tuple[Organization, SsoProvider]:
     org = (
         await db.execute(
             select(Organization).where(
@@ -196,9 +194,7 @@ async def login_redirect(db: AsyncSession, org_code: str, redirect_uri: str) -> 
     return {"authorization_url": f"{authorize}?{params}"}
 
 
-async def _exchange_code(
-    provider: SsoProvider, code: str, redirect_uri: str
-) -> dict:
+async def _exchange_code(provider: SsoProvider, code: str, redirect_uri: str) -> dict:
     """Token exchange + id_token verification against the issuer's JWKS.
     Isolated for tests (monkeypatch target); returns verified claims."""
     import os
@@ -212,9 +208,16 @@ async def _exchange_code(
             f"SSO client secret env var '{provider.client_secret_ref}' is not set"
         )
     metadata = provider.metadata_json or {}
-    async with httpx.AsyncClient(timeout=10) as client:
+    token_endpoint = str(metadata.get("token_endpoint") or "")
+    if not token_endpoint.startswith("https://"):
+        raise BusinessRuleError("The identity provider's token endpoint must be https")
+    try:
+        assert_public_url(token_endpoint)
+    except FetchError as exc:
+        raise BusinessRuleError(f"Token endpoint refused: {exc}") from exc
+    async with httpx.AsyncClient(timeout=10, follow_redirects=False) as client:
         response = await client.post(
-            metadata["token_endpoint"],
+            token_endpoint,
             data={
                 "grant_type": "authorization_code",
                 "code": code,
@@ -260,13 +263,17 @@ async def _resolve_role(
             break
     wanted = wanted or mapping.get("default_role", "Viewer")
     return (
-        await db.execute(
-            select(Role).where(
-                Role.name == wanted,
-                (Role.organization_id == org.id) | (Role.organization_id.is_(None)),
+        (
+            await db.execute(
+                select(Role).where(
+                    Role.name == wanted,
+                    (Role.organization_id == org.id) | (Role.organization_id.is_(None)),
+                )
             )
         )
-    ).scalars().first()
+        .scalars()
+        .first()
+    )
 
 
 async def complete_login(
@@ -285,9 +292,7 @@ async def complete_login(
     email = str(email).lower()
     user = (
         await db.execute(
-            select(User).where(
-                User.organization_id == org.id, func.lower(User.email) == email
-            )
+            select(User).where(User.organization_id == org.id, func.lower(User.email) == email)
         )
     ).scalar_one_or_none()
 
@@ -321,8 +326,12 @@ async def complete_login(
     from app.services.auth import _issue_token_pair
 
     await audit.record(
-        db, org.id, action="USER_LOGIN_SSO", entity_type="user",
-        entity_id=user.id, user_id=user.id,
+        db,
+        org.id,
+        action="USER_LOGIN_SSO",
+        entity_type="user",
+        entity_id=user.id,
+        user_id=user.id,
         after={"issuer": provider.issuer},
     )
     return await _issue_token_pair(db, user)

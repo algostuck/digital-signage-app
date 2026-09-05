@@ -18,6 +18,7 @@ from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.errors import NotFoundError, ValidationAppError
+from app.integrations.fetch import FetchError, assert_public_url, check_url_shape
 from app.models import Notification, NotificationDelivery, NotificationRule
 from app.models.notification_rule import DeliveryChannel, DeliveryState
 
@@ -47,32 +48,28 @@ def validate_rule_fields(
     *, event_type: str, condition: dict | None, channels: list, escalation_minutes: int | None
 ) -> None:
     if event_type not in KNOWN_EVENT_TYPES:
-        raise ValidationAppError(
-            f"Unknown event_type '{event_type}'", field="event_type"
-        )
+        raise ValidationAppError(f"Unknown event_type '{event_type}'", field="event_type")
     if condition is not None:
         if not isinstance(condition, dict) or set(condition) - {"severity"}:
             raise ValidationAppError(
                 "condition_json supports only {'severity': [...]}", field="condition_json"
             )
         severities = condition.get("severity")
-        if not isinstance(severities, list) or not severities or any(
-            s not in _SEVERITIES for s in severities
+        if (
+            not isinstance(severities, list)
+            or not severities
+            or any(s not in _SEVERITIES for s in severities)
         ):
             raise ValidationAppError(
                 f"condition severity entries must be one of {_SEVERITIES}",
                 field="condition_json",
             )
     if not isinstance(channels, list) or not channels or len(channels) > 10:
-        raise ValidationAppError(
-            "channels_json needs 1..10 channel entries", field="channels_json"
-        )
+        raise ValidationAppError("channels_json needs 1..10 channel entries", field="channels_json")
     for entry in channels:
         channel = entry.get("channel") if isinstance(entry, dict) else None
         if channel not in {c.value for c in DeliveryChannel}:
-            raise ValidationAppError(
-                f"Unknown channel '{channel}'", field="channels_json"
-            )
+            raise ValidationAppError(f"Unknown channel '{channel}'", field="channels_json")
         recipient = entry.get("recipient")
         if channel == DeliveryChannel.EMAIL.value:
             if not recipient or "@" not in str(recipient):
@@ -84,10 +81,12 @@ def validate_rule_fields(
                 raise ValidationAppError(
                     "webhook channels need an http(s) recipient URL", field="channels_json"
                 )
+            try:
+                check_url_shape(str(entry.get("recipient")))
+            except FetchError as exc:
+                raise ValidationAppError(str(exc), field="channels_json") from exc
     if escalation_minutes is not None and not 1 <= escalation_minutes <= 1440:
-        raise ValidationAppError(
-            "escalation_minutes must be 1..1440", field="escalation_minutes"
-        )
+        raise ValidationAppError("escalation_minutes must be 1..1440", field="escalation_minutes")
 
 
 # --- CRUD ---
@@ -176,8 +175,14 @@ async def update_rule(
     **changes,
 ) -> NotificationRule:
     rule = await get_rule(db, organization_id, rule_id)
-    fields = {"name", "event_type", "condition_json", "channels_json",
-              "escalation_minutes", "active"}
+    fields = {
+        "name",
+        "event_type",
+        "condition_json",
+        "channels_json",
+        "escalation_minutes",
+        "active",
+    }
     for field, value in changes.items():
         if field in fields:
             setattr(rule, field, value)
@@ -191,9 +196,7 @@ async def update_rule(
     return rule
 
 
-async def delete_rule(
-    db: AsyncSession, organization_id: uuid.UUID, rule_id: uuid.UUID
-) -> None:
+async def delete_rule(db: AsyncSession, organization_id: uuid.UUID, rule_id: uuid.UUID) -> None:
     rule = await get_rule(db, organization_id, rule_id)
     await db.delete(rule)
     await db.flush()
@@ -271,8 +274,13 @@ async def dispatch(db: AsyncSession, notification: Notification) -> int:
 
 
 async def _post_webhook(url: str, payload: dict) -> None:
-    """Isolated for tests; raises on any failure."""
-    async with httpx.AsyncClient(timeout=10) as client:
+    """Isolated for tests; raises on any failure. The destination is
+    resolve-checked at send time and redirects are never followed."""
+    try:
+        assert_public_url(url)
+    except FetchError as exc:
+        raise httpx.HTTPError(f"Blocked destination: {exc}") from exc
+    async with httpx.AsyncClient(timeout=10, follow_redirects=False) as client:
         response = await client.post(url, json=payload)
         response.raise_for_status()
 
@@ -381,8 +389,7 @@ async def process_escalations(db: AsyncSession) -> int:
                     )
                 ).scalars()
                 if any(
-                    (c.payload_json or {}).get("source_notification_id")
-                    == str(notification.id)
+                    (c.payload_json or {}).get("source_notification_id") == str(notification.id)
                     for c in candidates
                 ):
                     continue
@@ -402,9 +409,7 @@ async def process_escalations(db: AsyncSession) -> int:
                 },
             )
             escalated += 1
-            logger.warning(
-                "Escalated notification %s via rule %s", notification.id, rule.id
-            )
+            logger.warning("Escalated notification %s via rule %s", notification.id, rule.id)
     await db.flush()
     return escalated
 

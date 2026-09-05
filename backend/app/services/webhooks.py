@@ -51,9 +51,7 @@ def _validate(url: str, event_types: list) -> None:
         )
     unknown = [e for e in event_types if e not in KNOWN_EVENT_TYPES]
     if unknown:
-        raise ValidationAppError(
-            f"Unknown event types: {unknown}", field="event_types_json"
-        )
+        raise ValidationAppError(f"Unknown event types: {unknown}", field="event_types_json")
 
 
 async def get_subscription(
@@ -83,6 +81,18 @@ async def list_subscriptions(
     return list(rows.scalars().all())
 
 
+def _check_destination(url: str) -> None:
+    """Refuse internal or non-http(s) destinations when a subscription is
+    saved, so the mistake is visible in the form rather than as a dead
+    delivery later."""
+    from app.integrations.fetch import FetchError, check_url_shape
+
+    try:
+        check_url_shape(url)
+    except FetchError as exc:
+        raise ValidationAppError(str(exc), field="url") from exc
+
+
 async def create_subscription(
     db: AsyncSession,
     organization_id: uuid.UUID,
@@ -91,14 +101,13 @@ async def create_subscription(
     description: str | None,
     event_types: list,
 ) -> tuple[WebhookSubscription, str]:
+    _check_destination(url)
     """Returns (subscription, raw_secret). The secret is never retrievable
     again — only rotation issues a new one."""
     _validate(url, event_types)
     count = (
         await db.execute(
-            select(func.count()).where(
-                WebhookSubscription.organization_id == organization_id
-            )
+            select(func.count()).where(WebhookSubscription.organization_id == organization_id)
         )
     ).scalar_one()
     if count >= MAX_SUBSCRIPTIONS:
@@ -136,6 +145,8 @@ async def update_subscription(
     subscription_id: uuid.UUID,
     **changes,
 ) -> WebhookSubscription:
+    if changes.get("url") is not None:
+        _check_destination(str(changes["url"]))
     subscription = await get_subscription(db, organization_id, subscription_id)
     for field in ("url", "description", "event_types_json", "active"):
         if field in changes and changes[field] is not None:
@@ -184,9 +195,7 @@ def _payload_for(notification: Notification) -> dict:
         "title": notification.title,
         "message": notification.message,
         "payload": notification.payload_json,
-        "occurred_at": notification.created_at.isoformat()
-        if notification.created_at
-        else None,
+        "occurred_at": notification.created_at.isoformat() if notification.created_at else None,
     }
 
 
@@ -222,8 +231,18 @@ async def enqueue(db: AsyncSession, notification: Notification) -> int:
 
 
 async def _post(url: str, body: bytes, headers: dict) -> int:
-    """Isolated for tests; returns the HTTP status, raises on transport errors."""
-    async with httpx.AsyncClient(timeout=10) as client:
+    """Isolated for tests; returns the HTTP status, raises on transport errors.
+
+    SSRF guard: the destination is re-resolved here, at send time, and
+    every address must be public; redirects are never followed (a redirect
+    to an internal address would otherwise bypass the check)."""
+    from app.integrations.fetch import FetchError, assert_public_url
+
+    try:
+        assert_public_url(url)
+    except FetchError as exc:
+        raise httpx.HTTPError(f"Blocked destination: {exc}") from exc
+    async with httpx.AsyncClient(timeout=10, follow_redirects=False) as client:
         response = await client.post(url, content=body, headers=headers)
         return response.status_code
 

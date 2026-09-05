@@ -325,8 +325,22 @@ audit trail recorded actor, entity, before/after, IP and request id.
 | O2 | Background jobs logged nothing about themselves: no task id, no start/finish, no duration, no error context. | Fixed — `workers/instrumentation.py::job_context` wraps deployment fan-out, media processing and every maintenance beat: `job`, `task_id` (as `request_id`), the ids worked on, `phase`, `duration_ms`, `error` + traceback on failure, returned counts on success. |
 | O3 | A user reporting "it failed" had nothing to quote. | Fixed — 5xx errors shown in the portal carry `(ref <request id>)`. |
 
+## 11. Production security review
+
+`docs/SECURITY_REVIEW.md` walks the checklist — secrets, default
+credentials, JWT/sessions, CORS, CSRF, rate limiting, uploads, signed
+URLs, SSRF, IDOR, RBAC, API keys, webhook signatures, SQL injection, XSS,
+headers, error exposure, logs, debug settings, demo data — with what the
+code does for each and a go-live checklist.
+
+| # | Finding | Status |
+|---|---|---|
+| S1 | **Webhook deliveries, notification-rule webhook channels and the SSO token exchange made outbound requests without the SSRF guard** the data-source fetcher already had: a tenant administrator could target `127.0.0.1`, the cloud metadata address or the private network. | Fixed — destinations are shape-checked when saved (the form says why) and resolve-checked again at send time; redirects are never followed. Test `test_webhook_destinations_must_be_public`. |
+| S2 | The platform administrator was seeded in every environment with the development password unless an env var overrode it. | Fixed — seeding in production refuses to run without `SEED_PLATFORM_PASSWORD`. |
+| S3 | The portal's `Content-Security-Policy` is not set by the API (it serves JSON); it belongs to the static host. | Carried to gate 12 as deployment configuration. |
+
 ## Next gates
 
-11. production security review, 12. CI/CD, 13. documentation freeze.
+12. CI/CD, 13. documentation freeze.
 6. UX polish, performance, observability, production security review,
    CI/CD, documentation freeze — in that order.
