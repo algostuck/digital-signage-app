@@ -142,9 +142,18 @@ async def test_expired_flag(client, admin_tokens):
 
 
 async def test_calendar_endpoint(client, admin_tokens):
+    from tests.test_device_ops_api import enroll_with
+
+    device_id, _ = await enroll_with(client, admin_tokens, "SN-CALBASIC")
     a = await create_campaign(client, admin_tokens, name="Cal A", priority=50)
     b = await create_campaign(client, admin_tokens, name="Cal B", priority=50)
     for campaign, (start, end) in ((a, ("09:00", "12:00")), (b, ("11:00", "14:00"))):
+        resp = await client.post(
+            f"/api/v1/campaigns/{campaign['id']}/targets",
+            headers=bearer(admin_tokens),
+            json={"targets": [{"target_type": "device", "target_id": device_id}]},
+        )
+        assert resp.status_code == 200
         resp = await client.post(
             "/api/v1/schedules",
             headers=bearer(admin_tokens),
@@ -164,8 +173,19 @@ async def test_calendar_endpoint(client, admin_tokens):
     assert resp.status_code == 200
     data = resp.json()["data"]
     assert len(data["events"]) == 4  # 2 schedules x 2 days
-    assert data["conflict_count"] == 2  # equal priority overlap each day
-    assert sum(1 for e in data["events"] if e["conflict"]) == 4
+    # Equal priority on a shared screen, grouped across both days — but both
+    # campaigns are drafts, so it is low severity and not actionable.
+    ours = [c for c in data["conflicts"] if c["campaigns"][0]["campaign_id"] in (a["id"], b["id"])]
+    assert len(ours) == 1
+    assert ours[0]["reason"] == "equal_priority_shared_screens"
+    assert ours[0]["severity"] == "low"
+    assert ours[0]["dates"]["count"] == 2
+    assert data["conflict_count"] == 0
+    assert all(e["conflict_ids"] == [ours[0]["id"]] for e in data["events"])
+    assert all(not e["conflict"] for e in data["events"])
+    assert data["timezone"] and data["now"]["date"]
+    assert data["events"][0]["recurrence_text"] == "Every day from 7 Sep to 8 Sep"
+    assert data["events"][0]["screens"] == 1
 
     # Range validation
     resp = await client.get(

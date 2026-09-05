@@ -356,3 +356,117 @@ async def test_variant_isolation(client, admin_tokens, org_b):  # noqa: F811
         json={"targets": [{"target_type": "device", "target_id": device_id}]},
     )
     assert resp.status_code == 404
+
+
+async def test_calendar_workspace_conflicts_and_filters(client, admin_tokens):
+    """docs/SCHEDULE_UX_AUDIT.md §10: conflicts need shared screens, are
+    grouped and graded, and the calendar filters narrow only the view."""
+    x, _ = await enroll_with(client, admin_tokens, "SN-WS-X")
+    y, _ = await enroll_with(client, admin_tokens, "SN-WS-Y")
+    dates = {"start_date": "2027-03-01", "end_date": "2027-03-02"}
+
+    def window(start, end):
+        return {"start_time": start, "end_time": end, **dates}
+
+    a = await ready_campaign(
+        client,
+        admin_tokens,
+        device_ids=[x],
+        priority=50,
+        name="WS A",
+        schedule=window("09:00", "12:00"),
+    )
+    b = await ready_campaign(
+        client,
+        admin_tokens,
+        device_ids=[x],
+        priority=50,
+        name="WS B",
+        schedule=window("11:00", "14:00"),
+    )
+    c = await ready_campaign(
+        client,
+        admin_tokens,
+        device_ids=[y],
+        priority=50,
+        name="WS C",
+        schedule=window("09:00", "12:00"),
+    )
+    d = await ready_campaign(
+        client,
+        admin_tokens,
+        device_ids=[x],
+        priority=70,
+        name="WS D",
+        schedule=window("08:00", "15:00"),
+    )
+    resp = await client.post(
+        "/api/v1/schedules",
+        headers=bearer(admin_tokens),
+        json={
+            "campaign_id": a["id"],
+            "kind": "blackout",
+            "name": "WS A dark",
+            **window("09:00", "13:00"),
+        },
+    )
+    assert resp.status_code == 201
+    ids = {a["id"], b["id"], c["id"], d["id"]}
+    mine = "&".join(f"campaign_id={i}" for i in ids)
+
+    async def calendar(extra=""):
+        resp = await client.get(
+            f"/api/v1/schedules/calendar?from=2027-03-01&to=2027-03-02&{mine}{extra}",
+            headers=bearer(admin_tokens),
+        )
+        assert resp.status_code == 200, resp.text
+        return resp.json()["data"]
+
+    data = await calendar()
+    assert {e["campaign_id"] for e in data["events"]} == ids
+    by_reason = {}
+    for conflict in data["conflicts"]:
+        by_reason.setdefault(conflict["reason"], []).append(conflict)
+    # A/B: equal priority on device X -> high. C never shares a screen.
+    equal = by_reason["equal_priority_shared_screens"]
+    assert len(equal) == 1 and equal[0]["severity"] == "high"
+    assert {x["campaign_id"] for x in equal[0]["campaigns"]} == {a["id"], b["id"]}
+    assert equal[0]["dates"]["count"] == 2 and equal[0]["screens_affected"]["count"] == 1
+    # D (70) fully covers A and B on X -> two medium "never plays" items.
+    shadowed = by_reason["shadowed_by_priority"]
+    assert {x["campaigns"][0]["campaign_id"] for x in shadowed} == {a["id"], b["id"]}
+    assert all(x["severity"] == "medium" and x["winner_campaign_id"] == d["id"] for x in shadowed)
+    # A's play window sits inside its own blackout.
+    inside = by_reason["inside_blackout"]
+    assert len(inside) == 1 and inside[0]["severity"] == "medium"
+    summary = data["summary"]
+    graded = (summary["conflicts_high"], summary["conflicts_medium"], summary["conflicts_low"])
+    assert graded == (1, 3, 0)
+    assert data["conflict_count"] == summary["conflicts_actionable"] == 4
+    assert summary["campaigns"] == 4 and summary["screens"] == 2
+    assert summary["play_windows"] == 8 and summary["blackout_windows"] == 2
+    assert not any(e["conflict"] for e in data["events"] if e["campaign_id"] == c["id"])
+    assert all(e["conflict"] for e in data["events"] if e["campaign_id"] == b["id"])
+    assert all(e["campaign_status"] == "approved" for e in data["events"])
+    assert data["events"][0]["recurrence_text"] == "Every day from 1 Mar to 2 Mar"
+
+    # Filters narrow the view, not the engine.
+    only_y = await calendar(f"&device_id={y}")
+    assert {e["campaign_id"] for e in only_y["events"]} == {c["id"]}
+    assert only_y["summary"]["conflicts_actionable"] == 0
+    assert only_y["summary"]["conflicts_total_estate"] >= 4
+    # Only the side needing attention is flagged: D wins on priority and
+    # plays fine, so it is not "in conflict" itself.
+    conflicts_only = await calendar("&conflicts_only=true")
+    assert {e["campaign_id"] for e in conflicts_only["events"]} == {a["id"], b["id"]}
+    assert not any(e["conflict"] for e in data["events"] if e["campaign_id"] == d["id"])
+    blackouts = await calendar("&kind=blackout")
+    assert len(blackouts["events"]) == 2 and blackouts["summary"]["play_windows"] == 0
+    high_only = await calendar("&priority_min=60")
+    assert {e["campaign_id"] for e in high_only["events"]} == {d["id"]}
+    assert (await calendar("&status=draft"))["events"] == []
+    resp = await client.get(
+        "/api/v1/schedules/calendar?from=2027-03-01&to=2027-03-02&status=bogus",
+        headers=bearer(admin_tokens),
+    )
+    assert resp.status_code == 400

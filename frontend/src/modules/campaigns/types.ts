@@ -97,6 +97,16 @@ export interface DeploymentDeviceRow {
   acknowledged_at: string | null;
 }
 
+export type RecurrenceType = "once" | "daily" | "weekly" | "monthly";
+export type ConflictSeverity = "high" | "medium" | "low";
+export type ConflictReason =
+  | "equal_priority_shared_screens"
+  | "shadowed_by_priority"
+  | "inside_blackout";
+
+/** One schedule on one day, as the schedule workspace contract returns it
+ * (docs/SCHEDULE_UX_AUDIT.md §10.2). Minutes are wall-clock in the
+ * event's own timezone (`timezone`, else the tenant zone). */
 export interface CalendarEvent {
   schedule_id: string;
   campaign_id: string;
@@ -110,13 +120,72 @@ export interface CalendarEvent {
   timezone: string | null;
   kind: "play" | "blackout";
   overnight: boolean;
+  /** True only for actionable (high / medium) conflicts on a play window. */
   conflict: boolean;
+  campaign_status: string | null;
+  recurrence_type: RecurrenceType;
+  recurrence_text: string;
+  days_of_week: number[] | null;
+  expired: boolean;
+  /** The window covers the server's "now" and the campaign is published. */
+  live: boolean;
+  screens: number;
+  locations: number;
+  conflict_ids: string[];
+}
+
+export interface ConflictCampaign {
+  campaign_id: string;
+  campaign_name: string;
+  campaign_status: string | null;
+  campaign_priority: number;
+  schedule_id: string;
+  schedule_name: string | null;
+  schedule_priority: number;
+  kind: "play" | "blackout";
+}
+
+/** One actionable conflict grouped across the range (§10.3). */
+export interface ScheduleConflict {
+  id: string;
+  severity: ConflictSeverity;
+  reason: ConflictReason;
+  message: string;
+  window: [number, number];
+  campaigns: ConflictCampaign[];
+  winner_campaign_id: string | null;
+  screens_affected: { count: number; names: string[] };
+  dates: { first: string; last: string; count: number };
+  suggestions: string[];
+}
+
+export interface CalendarSummary {
+  campaigns: number;
+  screens: number;
+  play_windows: number;
+  blackout_windows: number;
+  conflicts_actionable: number;
+  conflicts_high: number;
+  conflicts_medium: number;
+  conflicts_low: number;
+  conflicts_total_estate: number;
+}
+
+export interface CalendarNow {
+  at: string;
+  date: string;
+  minute: number;
 }
 
 export interface CalendarData {
   range_start: string;
   range_end: string;
+  timezone: string;
+  now: CalendarNow | null;
   events: CalendarEvent[];
+  conflicts: ScheduleConflict[];
+  summary: CalendarSummary | null;
+  /** Actionable conflicts in the (filtered) range. */
   conflict_count: number;
 }
 
@@ -128,6 +197,11 @@ export function minuteLabel(minute: number): string {
   return `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}`;
 }
 
+/** Civil date of a local Date as YYYY-MM-DD. Never via toISOString(),
+ * which is UTC and shifts the day for anyone east of Greenwich. */
 export function isoDate(date: Date): string {
-  return date.toISOString().slice(0, 10);
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, "0");
+  const d = String(date.getDate()).padStart(2, "0");
+  return `${y}-${m}-${d}`;
 }

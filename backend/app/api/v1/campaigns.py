@@ -2,12 +2,14 @@ import datetime as dt
 import uuid
 
 from fastapi import APIRouter, Depends, Query
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import CurrentTenantId, CurrentUser, PageParams, require_permissions
 from app.core.errors import ValidationAppError
 from app.db.session import get_db
-from app.models import Campaign
+from app.models import Campaign, Device
+from app.models.campaign import CampaignStatus
 from app.schemas.campaigns import (
     CalendarEventOut,
     CalendarOut,
@@ -16,6 +18,7 @@ from app.schemas.campaigns import (
     CampaignOut,
     CampaignUpdate,
     ConflictCheckRequest,
+    ConflictOut,
     EffectiveDeviceOut,
     ScheduleCreate,
     ScheduleOut,
@@ -28,7 +31,7 @@ from app.schemas.campaigns import (
 )
 from app.schemas.envelope import success
 from app.services import campaigns as service
-from app.services import publishing, scheduling
+from app.services import publishing, schedule_calendar, scheduling
 
 router = APIRouter()
 
@@ -463,7 +466,15 @@ async def check_conflicts(
         created_at=campaign.created_at,
         schedules=[proposal_schedule],
     )
-    existing = await service.campaigns_with_schedules(db, tenant_id)
+    existing = await schedule_calendar.campaigns_with_targets(db, tenant_id)
+    if body.schedule_id is not None:
+        for existing_campaign in existing:
+            existing_campaign.schedules = [
+                s for s in existing_campaign.schedules if s.id != body.schedule_id
+            ]
+    # The proposal carries the real campaign's status and targets so the
+    # shared-screen engine grades it exactly as the calendar would.
+    proposal_campaign.status = campaign.status
     events = scheduling.expand_calendar(existing, range_start, range_end)
     events += scheduling.expand_calendar([proposal_campaign], range_start, range_end)
     report = [
@@ -471,12 +482,30 @@ async def check_conflicts(
         for row in scheduling.overlap_report(events)
         if any(c["campaign_id"] == str(campaign.id) for c in row["campaigns"])
     ]
+    device_sets = await schedule_calendar.campaign_device_sets(db, tenant_id, existing)
+    device_names = dict(
+        (
+            await db.execute(
+                select(Device.id, Device.name).where(Device.organization_id == tenant_id)
+            )
+        ).all()
+    )
+    conflicts = [
+        c
+        for c in scheduling.analyse_conflicts(events, device_sets, device_names=device_names)
+        if any(
+            x["campaign_id"] == str(campaign.id) and x["schedule_id"] == "proposed"
+            for x in c["campaigns"]
+        )
+    ]
     return success(
         {
             "range_start": range_start.isoformat(),
             "range_end": range_end.isoformat(),
             "overlaps": report,
             "conflict_count": sum(1 for row in report if row["conflict"]),
+            "conflicts": [ConflictOut.model_validate(c).model_dump(mode="json") for c in conflicts],
+            "actionable_count": sum(1 for c in conflicts if c["severity"] != "low"),
         }
     )
 
@@ -487,21 +516,53 @@ async def get_calendar(
     tenant_id: CurrentTenantId,
     range_start: dt.date = Query(alias="from"),
     range_end: dt.date = Query(alias="to"),
+    location_id: uuid.UUID | None = Query(default=None),
+    group_id: uuid.UUID | None = Query(default=None),
+    device_id: uuid.UUID | None = Query(default=None),
+    campaign_id: list[uuid.UUID] | None = Query(default=None),
+    status: list[str] | None = Query(default=None),
+    kind: str | None = Query(default=None, pattern="^(play|blackout)$"),
+    priority_min: int | None = Query(default=None, ge=1, le=100),
+    priority_max: int | None = Query(default=None, ge=1, le=100),
+    conflicts_only: bool = Query(default=False),
     db: AsyncSession = Depends(get_db),
 ) -> dict:
+    """Schedule workspace calendar (docs/SCHEDULE_UX_AUDIT.md §10): expanded
+    events, actionable conflicts on shared screens, summary and the tenant
+    clock. Filters narrow what is shown; conflicts are always computed on
+    the whole estate."""
     if range_end < range_start:
         raise ValidationAppError("'to' must not be before 'from'", field="to")
     if (range_end - range_start).days > MAX_CALENDAR_DAYS:
         raise ValidationAppError(
             f"Calendar range is limited to {MAX_CALENDAR_DAYS} days", field="to"
         )
-    campaigns = await service.campaigns_with_schedules(db, tenant_id)
-    events = scheduling.expand_calendar(campaigns, range_start, range_end)
-    conflicts = scheduling.detect_conflicts(events)
+    valid_statuses = {s.value for s in CampaignStatus}
+    for value in status or []:
+        if value not in valid_statuses:
+            raise ValidationAppError(f"Unknown campaign status '{value}'", field="status")
+    filters = schedule_calendar.CalendarFilters(
+        location_id=location_id,
+        group_id=group_id,
+        device_id=device_id,
+        campaign_ids=list(campaign_id or []),
+        statuses=list(status or []),
+        kind=kind,
+        priority_min=priority_min,
+        priority_max=priority_max,
+        conflicts_only=conflicts_only,
+    )
+    data = await schedule_calendar.build_calendar(
+        db, tenant_id, range_start=range_start, range_end=range_end, filters=filters
+    )
     out = CalendarOut(
-        range_start=range_start,
-        range_end=range_end,
-        events=[CalendarEventOut.model_validate(vars(e)) for e in events],
-        conflict_count=len(conflicts),
+        range_start=data["range_start"],
+        range_end=data["range_end"],
+        timezone=data["timezone"],
+        now=data["now"],
+        events=[CalendarEventOut.model_validate(vars(e)) for e in data["events"]],
+        conflicts=data["conflicts"],
+        summary=data["summary"],
+        conflict_count=data["conflict_count"],
     )
     return success(out.model_dump(mode="json"))

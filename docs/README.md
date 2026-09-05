@@ -21,6 +21,7 @@ customer needs; the second is the working history behind it.
 | Admin guide | [ADMIN_GUIDE.md](ADMIN_GUIDE.md) | running a tenant, module by module |
 | Client demo guide | [CLIENT_DEMO_GUIDE.md](CLIENT_DEMO_GUIDE.md) · [DEMO_CREDENTIALS.md](DEMO_CREDENTIALS.md) · [DEMO_DATA_CATALOG.md](DEMO_DATA_CATALOG.md) | the scripted story, accounts and dataset |
 | Hardening evidence | [HARDENING_AUDIT.md](HARDENING_AUDIT.md) | every gate, its script, its results and fixes |
+| Scheduling | [SCHEDULE_UX_AUDIT.md](SCHEDULE_UX_AUDIT.md) | the schedule workspace: audit, data contract, conflict rules, implementation |
 | Dashboard | [ORGANIZATION_ADMIN_DASHBOARD_ARCHITECTURE.md](ORGANIZATION_ADMIN_DASHBOARD_ARCHITECTURE.md) · […_DATA_MAP.md](ORGANIZATION_ADMIN_DASHBOARD_DATA_MAP.md) · […_COMPONENTS.md](ORGANIZATION_ADMIN_DASHBOARD_COMPONENTS.md) · […_QA.md](ORGANIZATION_ADMIN_DASHBOARD_QA.md) | the executive dashboard end to end |
 | Design system | [UI_UX_DESIGN_SYSTEM.md](UI_UX_DESIGN_SYSTEM.md) · [UI_UX_ACCESSIBILITY_CHECKLIST.md](UI_UX_ACCESSIBILITY_CHECKLIST.md) · [UI_UX_RESPONSIVE_GUIDELINES.md](UI_UX_RESPONSIVE_GUIDELINES.md) | tokens, AA/AAA rules, breakpoints |
 

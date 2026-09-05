@@ -140,6 +140,9 @@ class ConflictCheckRequest(BaseModel):
     priority: int = Field(default=50, ge=1, le=100)
     range_start: dt.date | None = None
     range_end: dt.date | None = None
+    # Editing an existing window: leave its current definition out of the
+    # comparison so it does not "conflict" with itself.
+    schedule_id: uuid.UUID | None = None
 
 
 class TargetIn(BaseModel):
@@ -222,10 +225,80 @@ class CalendarEventOut(BaseModel):
     kind: str = "play"
     overnight: bool
     conflict: bool
+    # Schedule workspace contract (docs/SCHEDULE_UX_AUDIT.md §10.2)
+    campaign_status: str | None = None
+    recurrence_type: str = "daily"
+    recurrence_text: str = ""
+    days_of_week: list[int] | None = None
+    expired: bool = False
+    live: bool = False
+    screens: int = 0
+    locations: int = 0
+    conflict_ids: list[str] = Field(default_factory=list)
+
+
+class ConflictCampaignOut(BaseModel):
+    campaign_id: uuid.UUID
+    campaign_name: str
+    campaign_status: str | None
+    campaign_priority: int
+    schedule_id: uuid.UUID
+    schedule_name: str | None
+    schedule_priority: int
+    kind: str
+
+
+class ConflictDatesOut(BaseModel):
+    first: dt.date
+    last: dt.date
+    count: int
+
+
+class ConflictScreensOut(BaseModel):
+    count: int
+    names: list[str]
+
+
+class ConflictOut(BaseModel):
+    """One actionable scheduling conflict, grouped across the range
+    (docs/SCHEDULE_UX_AUDIT.md §10.3)."""
+
+    id: str
+    severity: str = Field(pattern="^(high|medium|low)$")
+    reason: str
+    message: str
+    window: list[int]
+    campaigns: list[ConflictCampaignOut]
+    winner_campaign_id: uuid.UUID | None
+    screens_affected: ConflictScreensOut
+    dates: ConflictDatesOut
+    suggestions: list[str]
+
+
+class CalendarSummaryOut(BaseModel):
+    campaigns: int
+    screens: int
+    play_windows: int
+    blackout_windows: int
+    conflicts_actionable: int
+    conflicts_high: int
+    conflicts_medium: int
+    conflicts_low: int
+    conflicts_total_estate: int
+
+
+class CalendarNowOut(BaseModel):
+    at: dt.datetime
+    date: dt.date
+    minute: int
 
 
 class CalendarOut(BaseModel):
     range_start: dt.date
     range_end: dt.date
+    timezone: str = "UTC"
+    now: CalendarNowOut | None = None
     events: list[CalendarEventOut]
+    conflicts: list[ConflictOut] = Field(default_factory=list)
+    summary: CalendarSummaryOut | None = None
     conflict_count: int

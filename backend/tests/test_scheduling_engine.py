@@ -179,3 +179,118 @@ def test_expired_helper():
     assert scheduling.is_schedule_expired(schedule, dt.date(2026, 8, 29))
     assert not scheduling.is_schedule_expired(schedule, dt.date(2026, 8, 1))
     assert not scheduling.is_schedule_expired(make_schedule(), dt.date(2026, 8, 29))
+
+
+# --- schedule workspace: recurrence text and the shared-screen conflict engine
+
+
+def test_recurrence_summary_wording():
+    assert scheduling.recurrence_summary(make_schedule()) == ("daily", "Every day")
+    kind, text = scheduling.recurrence_summary(make_schedule(days_of_week=[0, 1, 2, 3, 4]))
+    assert (kind, text) == ("weekly", "Every weekday")
+    kind, text = scheduling.recurrence_summary(
+        make_schedule(days_of_week=[0, 2, 4], end_date=dt.date(2026, 9, 30))
+    )
+    assert (kind, text) == ("weekly", "Every Mon, Wed, Fri until 30 Sep")
+    kind, text = scheduling.recurrence_summary(
+        make_schedule(
+            recurrence_json={"days_of_month": [1, 15]},
+            start_date=dt.date(2026, 9, 1),
+            end_date=dt.date(2026, 12, 31),
+            exception_dates_json=["2026-10-02"],
+        )
+    )
+    assert kind == "monthly"
+    assert text == "Monthly on 1st, 15th from 1 Sep to 31 Dec, except 1 date"
+    once = make_schedule(start_date=dt.date(2026, 10, 2), end_date=dt.date(2026, 10, 2))
+    assert scheduling.recurrence_summary(once) == ("once", "Once on 2 Oct")
+
+
+def _campaign(name, priority, status="published", schedules=()):
+    campaign = Campaign(
+        id=uuid.uuid4(),
+        organization_id=uuid.uuid4(),
+        name=name,
+        priority=priority,
+        status=status,
+        created_at=dt.datetime(2026, 1, 1, tzinfo=dt.UTC),
+    )
+    campaign.schedules = list(schedules)
+    return campaign
+
+
+def _window(start_h, end_h, **kw):
+    return make_schedule(
+        start_time=dt.time(start_h, 0),
+        end_time=dt.time(end_h, 0),
+        start_date=dt.date(2026, 9, 7),
+        end_date=dt.date(2026, 9, 8),
+        **kw,
+    )
+
+
+def test_analyse_conflicts_requires_shared_screens():
+    a = _campaign("A", 50, schedules=[_window(9, 12)])
+    b = _campaign("B", 50, schedules=[_window(11, 14)])
+    c = _campaign("C", 50, schedules=[_window(9, 12)])
+    events = scheduling.expand_calendar([a, b, c], dt.date(2026, 9, 7), dt.date(2026, 9, 8))
+    screen = uuid.uuid4()
+    other = uuid.uuid4()
+    conflicts = scheduling.analyse_conflicts(
+        events, {str(a.id): {screen}, str(b.id): {screen}, str(c.id): {other}}
+    )
+    # A/B share a screen at equal priority: one grouped, high conflict for both days.
+    assert [c["reason"] for c in conflicts] == [scheduling.REASON_EQUAL]
+    assert conflicts[0]["severity"] == "high"
+    assert conflicts[0]["dates"] == {"first": "2026-09-07", "last": "2026-09-08", "count": 2}
+    assert conflicts[0]["window"] == [11 * 60, 12 * 60]
+    assert conflicts[0]["screens_affected"]["count"] == 1
+    # C overlaps A in time but never on a screen: not a conflict.
+    flagged = {e.campaign_name for e in events if e.conflict}
+    assert flagged == {"A", "B"}
+    assert all(e.conflict_ids == [conflicts[0]["id"]] for e in events if e.conflict)
+
+
+def test_analyse_conflicts_shadowed_and_blackout_and_low_severity():
+    screen = uuid.uuid4()
+    winner = _campaign("Winner", 70, schedules=[_window(8, 15)])
+    loser = _campaign("Loser", 50, schedules=[_window(9, 12)])
+    partial = _campaign("Partial", 50, schedules=[_window(14, 18)])
+    draft = _campaign("Draft", 70, status="draft", schedules=[_window(8, 15)])
+    blackout_owner = _campaign(
+        "Dark", 60, schedules=[_window(23, 0), _window(22, 0, kind="blackout")]
+    )
+    campaigns = [winner, loser, partial, draft, blackout_owner]
+    events = scheduling.expand_calendar(campaigns, dt.date(2026, 9, 7), dt.date(2026, 9, 7))
+    conflicts = scheduling.analyse_conflicts(
+        events, {str(c.id): {screen} for c in campaigns}
+    )
+    by_reason = {}
+    for c in conflicts:
+        by_reason.setdefault(c["reason"], []).append(c)
+
+    shadowed = by_reason[scheduling.REASON_SHADOWED]
+    # Loser is fully covered by Winner (medium); Partial only overlaps and is
+    # normal priority behaviour; Draft covering Loser is low and not actionable.
+    assert {(c["campaigns"][0]["campaign_name"], c["severity"]) for c in shadowed} == {
+        ("Loser", "medium"),
+        ("Loser", "low"),
+    }
+    assert all(c["winner_campaign_id"] in {str(winner.id), str(draft.id)} for c in shadowed)
+    assert not any(c["campaigns"][0]["campaign_name"] == "Partial" for c in conflicts)
+
+    # Winner and Draft at equal priority 70: low because Draft is not playing.
+    equal = by_reason[scheduling.REASON_EQUAL]
+    assert [c["severity"] for c in equal] == ["low"]
+
+    inside = by_reason[scheduling.REASON_BLACKOUT]
+    assert len(inside) == 1 and inside[0]["severity"] == "medium"
+    assert inside[0]["campaigns"][1]["kind"] == "blackout"
+
+    # Only the side that needs attention is flagged: the shadowed window and
+    # the play window inside the blackout — the winner and the blackout are not.
+    actionable = {e.campaign_name for e in events if e.conflict}
+    assert actionable == {"Loser", "Dark"}
+    assert not any(e.conflict for e in events if e.kind == "blackout")
+    assert conflicts[0]["severity"] == "medium"  # sorted: no high, medium first
+    assert conflicts[-1]["severity"] == "low"

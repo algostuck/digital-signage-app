@@ -77,7 +77,14 @@ Ordered items (assets and layouts) with durations and transitions;
 2. **Targets**: locations (with descendants), devices, groups or tags,
    with exclusions; *Preview* resolves the exact screens.
 3. **Schedule**: play windows and blackout windows, recurrence, time
-   zone; the calendar shows conflicts.
+   zone. *Campaigns › Schedule* is the scheduling workspace: day / week /
+   month views, filters by location, group, campaign, status, priority
+   and type, a health panel whose conflict count is *actionable* (two
+   windows only conflict when they overlap on the same screens), a
+   *Review conflicts* list with the reason and how to resolve it, and the
+   selected day's NOW PLAYING / NEXT / LATER beside the calendar. Click an
+   empty slot to schedule, drag a window to move it (you confirm after a
+   conflict check), hover or focus a window for its details.
 4. **Approval**: submit; an approver (someone with `campaigns.approve`
    who is not the submitter when maker-checker is on) approves or returns
    it with a comment.

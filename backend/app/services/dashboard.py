@@ -1036,14 +1036,17 @@ async def _approvals(db, organization_id) -> list[dict]:
 
 
 async def _schedule_today(db, organization_id, now, tz) -> list[dict]:
-    from app.services import campaigns as campaigns_service
-
     today = now.astimezone(tz).date()
     now_minute = now.astimezone(tz).hour * 60 + now.astimezone(tz).minute
-    campaigns = await campaigns_service.campaigns_with_schedules(db, organization_id)
+    from app.services import schedule_calendar
+
+    campaigns = await schedule_calendar.campaigns_with_targets(db, organization_id)
     published = [c for c in campaigns if c.status == CampaignStatus.PUBLISHED.value]
     events = scheduling.expand_calendar(published, today, today)
-    conflicts = {id(e) for pair in scheduling.detect_conflicts(events) for e in pair}
+    # Same engine as the schedule workspace: a conflict needs shared screens.
+    device_sets = await schedule_calendar.campaign_device_sets(db, organization_id, published)
+    scheduling.analyse_conflicts(events, device_sets)
+    conflicts = {id(e) for e in events if e.conflict}
     events.sort(key=lambda e: (e.start_minute, -e.campaign_priority))
     return [
         {

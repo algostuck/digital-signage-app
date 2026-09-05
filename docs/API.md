@@ -37,6 +37,7 @@ Every response carries `meta.request_id` and the `X-Request-ID` header
 | Design | `/layouts`, `/templates`, `/widgets`, `/data-sources`, `/data-variables`, `/ai/*` | `layouts.*`, `widgets.manage` |
 | Playlists & campaigns | `/playlists`, `/campaigns`, `/campaigns/{id}/targets`, `/campaigns/{id}/variants`, `/experiments`, `/decision-policies`, `/decision-rules`, `/decision-log` | `playlists.*`, `campaigns.*` |
 | Approvals & schedules | `/approvals/*`, `/approval-policies`, `/schedules`, `/schedules/calendar`, `/calendar` | `campaigns.approve`, `schedules.*` |
+| Schedule workspace | `GET /schedules/calendar?from&to` (+ `location_id`, `group_id`, `device_id`, `campaign_id[]`, `status[]`, `kind`, `priority_min`, `priority_max`, `conflicts_only`) → events with status / recurrence / target counts / `live`, actionable `conflicts[]` graded high / medium / low on **shared screens**, `summary`, `timezone`, `now`; `POST /schedules/conflicts` dry-run. Contract: [SCHEDULE_UX_AUDIT.md](SCHEDULE_UX_AUDIT.md) §10 | `schedules.view` |
 | Publishing | `/deployments` | `deployments.*`, `campaigns.publish` |
 | Player (device-facing) | `/player/*` | device token |
 | Reports & analytics | `/reports/*`, `/analytics/*`, `/data-exports`, `/dashboard/organization` | `reports.*` + plan entitlements |

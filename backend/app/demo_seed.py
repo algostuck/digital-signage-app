@@ -925,6 +925,62 @@ class OrgBuilder:
                 timezone="Asia/Kolkata", priority=clash.priority,
             ))
             self._bump("schedules")
+
+        # Every rule type the schedule workspace can show (SCHEDULE_UX_AUDIT
+        # §10.5): blackouts, a monthly recurrence, an exception date and one
+        # deliberate play window inside a blackout.
+        if len(self.published_campaigns) >= 3:
+            today = _now().date()
+            holiday, payday, closing = self.published_campaigns[:3]
+            gandhi_jayanti = dt.date(today.year, 10, 2)
+            if gandhi_jayanti < today:
+                gandhi_jayanti = dt.date(today.year + 1, 10, 2)
+            extra = [
+                Schedule(
+                    organization_id=self.org.id, campaign_id=holiday.id,
+                    name="Gandhi Jayanti — store closure", kind="blackout",
+                    start_date=gandhi_jayanti, end_date=gandhi_jayanti,
+                    timezone="Asia/Kolkata", priority=holiday.priority,
+                ),
+                Schedule(
+                    organization_id=self.org.id, campaign_id=closing.id,
+                    name="Store closed — overnight", kind="blackout",
+                    start_date=today - dt.timedelta(days=10),
+                    end_date=today + dt.timedelta(days=90),
+                    start_time=dt.time(22, 30), end_time=dt.time(7, 0),
+                    timezone="Asia/Kolkata", priority=closing.priority,
+                ),
+                Schedule(
+                    organization_id=self.org.id, campaign_id=closing.id,
+                    name="Late-night teaser (demo — inside blackout)", kind="play",
+                    start_date=today - dt.timedelta(days=3),
+                    end_date=today + dt.timedelta(days=20),
+                    start_time=dt.time(23, 0), end_time=dt.time(0, 0),
+                    timezone="Asia/Kolkata", priority=closing.priority,
+                ),
+                Schedule(
+                    organization_id=self.org.id, campaign_id=payday.id,
+                    name="Payday Promo — 1st & 15th", kind="play",
+                    start_date=today - dt.timedelta(days=15),
+                    end_date=today + dt.timedelta(days=120),
+                    start_time=dt.time(10, 0), end_time=dt.time(20, 0),
+                    recurrence_json={"days_of_month": [1, 15]},
+                    timezone="Asia/Kolkata", priority=payday.priority,
+                ),
+                Schedule(
+                    organization_id=self.org.id, campaign_id=payday.id,
+                    name="Weekday Lunch Rush (except Gandhi Jayanti)", kind="play",
+                    start_date=today - dt.timedelta(days=7),
+                    end_date=today + dt.timedelta(days=60),
+                    start_time=dt.time(12, 30), end_time=dt.time(14, 30),
+                    days_of_week=[0, 1, 2, 3, 4],
+                    exception_dates_json=[gandhi_jayanti.isoformat()],
+                    timezone="Asia/Kolkata", priority=payday.priority,
+                ),
+            ]
+            for schedule in extra:
+                self.db.add(schedule)
+                self._bump("schedules")
         await self.db.flush()
 
     async def create_deployments(self) -> None:
