@@ -238,8 +238,19 @@ a campaign published to the simulated screen → heartbeat `sync_required`
 → device decommissioned → the simulator's next call is refused and it
 shows the token-revoked state. Nothing was left behind.
 
+## 7. Client demo journey
+
+`docs/CLIENT_DEMO_GUIDE.md` — one controlled tenant (Reliance Retail), the
+presenter accounts, a 10-minute preparation checklist (seed refresh,
+audits green, a live simulator screen on a second display), the 20-minute
+story Dashboard → Map → Device → Content → Designer → Playlist → Campaign →
+Schedule → Approval → Preview → Publish → live screen → Monitoring →
+Proof of play → Analytics, what to do when something goes wrong, and the
+clean-up.
+
 ## Next gates
 
-7. Client demo journey (scripted story on one controlled tenant).
+8. UX polish pass, 9. performance, 10. observability, 11. production
+   security review, 12. CI/CD, 13. documentation freeze.
 6. UX polish, performance, observability, production security review,
    CI/CD, documentation freeze — in that order.
