@@ -22,8 +22,16 @@ async def _process(version_id: str) -> None:
     default_retry_delay=30,
 )
 def process_asset_version(self, version_id: str) -> str:
-    try:
-        asyncio.run(_process(version_id))
-    except Exception as exc:  # transient infra failures retry with backoff
-        raise self.retry(exc=exc) from exc
+    from app.workers.instrumentation import job_context
+
+    with job_context(
+        "media.process_asset_version",
+        self.request.id,
+        version_id=version_id,
+        attempt=self.request.retries,
+    ):
+        try:
+            asyncio.run(_process(version_id))
+        except Exception as exc:  # transient infra failures retry with backoff
+            raise self.retry(exc=exc) from exc
     return version_id

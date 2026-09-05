@@ -275,9 +275,58 @@ buttons left are antd's own pagination arrows and input clear icons,
 which carry titles on their wrappers. Keyboard focus rings were verified
 on the dashboard in gate 1 of the dashboard QA.
 
+## 9. Performance
+
+`audit_performance.py` times the requests behind the demo's screens
+against Reliance Retail (130 devices, 22 campaigns, 30 days of playback),
+one at a time and then with 8 concurrent clients. Budgets: 300 ms p95 for
+lists and details, 800 ms for aggregates; under concurrency the p95 must
+stay within 2× the sequential figure.
+
+Sequential (10 runs each, warm, local PostgreSQL, single uvicorn process):
+
+| Endpoint | p50 | p95 |
+|---|---|---|
+| Dashboard aggregate, 7 / 30 days | 120 ms | 140–230 ms |
+| Device list (50 / 200 rows), filters, search | 10–20 ms | 13–26 ms |
+| Monitoring devices / fleet health | 15 / 32 ms | 17 / 41 ms |
+| Content library, search | 13–16 ms | 15–20 ms |
+| Location tree (95 kB) / list | 18 ms | 25 ms |
+| Campaign, playlist, layout, deployment lists | 16–62 ms | 19–107 ms |
+| Schedule calendar (30 days) | 10 ms | 13 ms |
+| Proof of play, playback, uptime, campaign performance, analytics | 18–38 ms | 20–58 ms |
+| TV preview manifest | 74 ms | 124 ms |
+| Device / campaign / layout detail, effective targets, search | 7–28 ms | 9–43 ms |
+
+Every endpoint is inside budget. The largest payloads are the 200-row
+device page (118 kB) and the location tree (95 kB); both are gzip-friendly
+JSON and neither approaches a problem at demo scale.
+
+Under 8 concurrent clients on the single development process the API
+serves ~43 requests/s and the p95 of the heavy endpoints rises 6–18× (the
+dashboard to 850 ms, the preview manifest to 330 ms): one Python process
+serialising all responses. Two changes for that:
+
+| # | Finding | Status |
+|---|---|---|
+| P1 | Several viewers of the same dashboard each paid the ~15-query aggregate every 30 s. | Fixed — the dashboard response is cached per tenant / user / range / permission set for 15 s; `generated_at` in the payload makes its age visible. |
+| P2 | Concurrency scales with processes, not threads: the dev server is one uvicorn worker. | Deployment note (gate 12): run `--workers` = CPU cores (or gunicorn with uvicorn workers) and size the asyncpg pool accordingly; the per-request cost is already low. |
+
+## 10. Observability
+
+Documented in `docs/OBSERVABILITY.md`. State before this gate: request ids
+were propagated (`X-Request-ID` in and out, `meta.request_id` in every
+envelope), JSON logs carried request / tenant / user from context, and the
+audit trail recorded actor, entity, before/after, IP and request id.
+
+| # | Gap | Status |
+|---|---|---|
+| O1 | The access line (method, path, status, duration) never carried the tenant or user: Starlette's `BaseHTTPMiddleware` runs the app in another task, so the context the auth dependency set was invisible when the line was written. | Fixed — `RequestContextMiddleware` is now a pure ASGI middleware; the access line names the tenant and user. Test `test_access_log_names_tenant_and_user`. |
+| O2 | Background jobs logged nothing about themselves: no task id, no start/finish, no duration, no error context. | Fixed — `workers/instrumentation.py::job_context` wraps deployment fan-out, media processing and every maintenance beat: `job`, `task_id` (as `request_id`), the ids worked on, `phase`, `duration_ms`, `error` + traceback on failure, returned counts on success. |
+| O3 | A user reporting "it failed" had nothing to quote. | Fixed — 5xx errors shown in the portal carry `(ref <request id>)`. |
+
 ## Next gates
 
-9. performance, 10. observability, 11. production security review,
-   12. CI/CD, 13. documentation freeze.
+11. production security review, 12. CI/CD, 13. documentation freeze.
 6. UX polish, performance, observability, production security review,
    CI/CD, documentation freeze — in that order.

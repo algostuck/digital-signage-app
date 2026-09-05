@@ -11,7 +11,12 @@ import asyncio
 from app.workers.celery_app import celery_app
 
 
-def _run(coro_factory):
+def _run(coro_factory, job: str | None = None):
+    """Run one maintenance coroutine in its own session, inside a job
+    context so its log lines carry the job name and its outcome/duration
+    are recorded (see workers/instrumentation.py)."""
+    from app.workers.instrumentation import job_context
+
     async def wrapper():
         from app.db.session import get_session_factory
 
@@ -20,7 +25,14 @@ def _run(coro_factory):
             await db.commit()
             return result
 
-    return asyncio.run(wrapper())
+    name = job or getattr(coro_factory, "__name__", "maintenance")
+    with job_context(f"maintenance.{name}", None) as out:
+        result = asyncio.run(wrapper())
+        if isinstance(result, dict):
+            out.update(result)
+        elif result is not None:
+            out["result"] = result
+        return result
 
 
 @celery_app.task(name="app.workers.maintenance.detect_offline_devices")

@@ -26,7 +26,11 @@ export class ApiError extends Error {
     public errors: ApiErrorItem[],
     public requestId?: string,
   ) {
-    super(errors[0]?.message ?? `Request failed (${status})`);
+    // Unexpected failures carry the request id in the message the UI shows,
+    // so a screenshot of the toast is enough to find the server-side log
+    // line ("ref 1a2b3c4d" -> request_id in the API and job logs).
+    const base = errors[0]?.message ?? `Request failed (${status})`;
+    super(status >= 500 && requestId ? `${base} (ref ${requestId.slice(0, 8)})` : base);
     this.name = "ApiError";
   }
   get code(): string {

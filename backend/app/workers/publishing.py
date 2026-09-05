@@ -22,8 +22,16 @@ async def _process(deployment_id: str) -> None:
     default_retry_delay=15,
 )
 def process_deployment(self, deployment_id: str) -> str:
-    try:
-        asyncio.run(_process(deployment_id))
-    except Exception as exc:  # bounded backoff (NFR-005)
-        raise self.retry(exc=exc) from exc
+    from app.workers.instrumentation import job_context
+
+    with job_context(
+        "publishing.process_deployment",
+        self.request.id,
+        deployment_id=deployment_id,
+        attempt=self.request.retries,
+    ):
+        try:
+            asyncio.run(_process(deployment_id))
+        except Exception as exc:  # bounded backoff (NFR-005)
+            raise self.retry(exc=exc) from exc
     return deployment_id
