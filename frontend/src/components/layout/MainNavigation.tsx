@@ -1,6 +1,7 @@
-import { Menu, Typography } from "antd";
+import { Menu, Typography, theme } from "antd";
 import { useEffect, useMemo, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
+import { useThemeMode } from "@/design-system";
 import {
   filterNavigation,
   matchNavigation,
@@ -9,7 +10,6 @@ import {
   toMenuItems,
 } from "../../config/navigation";
 import { useAuth } from "../../lib/auth";
-import { useThemeMode } from "@/design-system";
 
 interface Props {
   collapsed: boolean;
@@ -25,6 +25,7 @@ interface Props {
 export function MainNavigation({ collapsed, onNavigate }: Props) {
   const { hasPermission, user } = useAuth();
   const { mode } = useThemeMode();
+  const { token } = theme.useToken();
   const navigate = useNavigate();
   const { pathname } = useLocation();
 
@@ -52,11 +53,23 @@ export function MainNavigation({ collapsed, onNavigate }: Props) {
   }, [routeOpenKeys]);
 
   return (
-    <nav aria-label="Main navigation" className="sidebar-scroll min-h-0 flex-1 overflow-y-auto py-3">
+    <nav
+      aria-label="Main navigation"
+      className="sidebar-scroll"
+      style={{ minHeight: 0, flex: 1, overflowY: "auto", paddingBlock: token.paddingSM }}
+    >
       {!collapsed && (
         <Typography.Text
           type="secondary"
-          className="block px-4 pb-2 !text-xs font-semibold uppercase tracking-wider"
+          strong
+          style={{
+            display: "block",
+            paddingInline: token.padding,
+            paddingBottom: token.paddingXS,
+            fontSize: token.fontSizeSM,
+            textTransform: "uppercase",
+            letterSpacing: "0.08em",
+          }}
         >
           Main navigation
         </Typography.Text>
@@ -74,7 +87,7 @@ export function MainNavigation({ collapsed, onNavigate }: Props) {
         selectedKeys={selectedKeys}
         {...(collapsed ? {} : { openKeys, onOpenChange: setOpenKeys })}
         inlineIndent={21}
-        className="!border-e-0 !bg-transparent"
+        style={{ borderInlineEnd: 0, background: "transparent" }}
         onClick={({ key }) => {
           const path = paths.get(key);
           // The <Link> in the label handles anchor clicks; this makes the

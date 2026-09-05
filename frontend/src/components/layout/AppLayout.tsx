@@ -1,9 +1,10 @@
 import { MenuFoldOutlined, MenuOutlined, MenuUnfoldOutlined } from "@ant-design/icons";
-import { Button, Drawer, Grid, Layout, theme } from "antd";
-import { useEffect, useState } from "react";
+import { Button, Drawer, Flex, Grid, Layout, theme } from "antd";
+import { useEffect, useMemo, useState } from "react";
 import { Outlet, ScrollRestoration } from "react-router-dom";
-import { SIDEBAR_BG } from "@/design-system";
-import { useThemeMode } from "@/design-system";
+import { BreadcrumbProvider, SHELL, SIDEBAR_BG, useThemeMode } from "@/design-system";
+import { breadcrumbsFor, filterNavigation, NAVIGATION } from "../../config/navigation";
+import { useAuth } from "../../lib/auth";
 import { GlobalSearch } from "./GlobalSearch";
 import { HeaderActions } from "./HeaderActions";
 import { Sidebar } from "./Sidebar";
@@ -12,11 +13,16 @@ import { TenantSwitcher } from "./TenantSwitcher";
 const { Header, Sider, Content } = Layout;
 const { useBreakpoint } = Grid;
 
-const SIDER_WIDTH = 260;
-
+/**
+ * Application shell (docs/design-system/COMPONENT_CATALOGUE.md): antd
+ * Layout with a sticky Sider ≥ md (collapsible to the 80px rail), a
+ * Drawer below md, a 55px header and a centred content container. It also
+ * provides the breadcrumb resolver every PageHeader derives its trail from.
+ */
 export function AppLayout() {
   const { token } = theme.useToken();
   const { mode } = useThemeMode();
+  const { hasPermission, user } = useAuth();
   const screens = useBreakpoint();
   const isMobile = !screens.md;
   const isTablet = Boolean(screens.md) && !screens.lg;
@@ -29,15 +35,23 @@ export function AppLayout() {
     if (!isMobile) setCollapsed(isTablet);
   }, [isMobile, isTablet]);
 
+  const resolveBreadcrumbs = useMemo(() => {
+    const nodes = filterNavigation(NAVIGATION, {
+      hasPermission,
+      isSuperuser: user?.is_superuser ?? false,
+    });
+    return (pathname: string) => breadcrumbsFor(nodes, pathname);
+  }, [hasPermission, user?.is_superuser]);
+
   return (
-    <Layout className="min-h-screen">
+    <Layout style={{ minHeight: "100vh" }}>
       {isMobile ? (
         <Drawer
           placement="left"
           closable={false}
           open={drawerOpen}
           onClose={() => setDrawerOpen(false)}
-          size={SIDER_WIDTH}
+          size={SHELL.siderWidth}
           styles={{ body: { padding: 0, background: SIDEBAR_BG[mode] } }}
         >
           <Sidebar onNavigate={() => setDrawerOpen(false)} />
@@ -45,7 +59,8 @@ export function AppLayout() {
       ) : (
         <Sider
           theme={mode}
-          width={SIDER_WIDTH}
+          width={SHELL.siderWidth}
+          collapsedWidth={SHELL.siderCollapsedWidth}
           collapsible
           collapsed={collapsed}
           trigger={null}
@@ -65,47 +80,47 @@ export function AppLayout() {
 
       <Layout>
         <Header
-          className="!flex items-center gap-3 !px-4"
-          style={{ borderBottom: `1px solid ${token.colorBorderSecondary}` }}
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: token.marginSM,
+            paddingInline: token.padding,
+            borderBottom: `1px solid ${token.colorBorderSecondary}`,
+          }}
         >
           <Button
             type="text"
             aria-label={
-              isMobile
-                ? "Open navigation"
-                : collapsed
-                  ? "Expand navigation"
-                  : "Collapse navigation"
+              isMobile ? "Open navigation" : collapsed ? "Expand navigation" : "Collapse navigation"
             }
             aria-expanded={isMobile ? drawerOpen : !collapsed}
-            icon={
-              isMobile ? (
-                <MenuOutlined />
-              ) : collapsed ? (
-                <MenuUnfoldOutlined />
-              ) : (
-                <MenuFoldOutlined />
-              )
-            }
+            icon={isMobile ? <MenuOutlined /> : collapsed ? <MenuUnfoldOutlined /> : <MenuFoldOutlined />}
             onClick={() => (isMobile ? setDrawerOpen(true) : setCollapsed((c) => !c))}
           />
           {!isMobile && <GlobalSearch />}
-          <div className="ml-auto flex items-center gap-2">
+          <Flex align="center" gap={token.marginXS} style={{ marginInlineStart: "auto" }}>
             <TenantSwitcher />
             <HeaderActions />
-          </div>
+          </Flex>
         </Header>
         {/* Centered container, applied once for every screen: 24px page
             gutters (16px below md) on the Content, and an inner wrapper
             with auto margins whose max-width follows the golden ratio of
             the space beside the sidebar — 61.8cqw of the Content, floored
-            at 1024px (Tailwind's 5xl) and capped at 1440px. Container
-            units, not viewport units, so it stays correct whether the
-            sidebar is expanded, collapsed or a drawer. */}
-        <Content className="p-4 md:p-6" style={{ containerType: "inline-size" }}>
-          <div className="mx-auto w-full" style={{ maxWidth: "clamp(1024px, 61.8cqw, 1440px)" }}>
+            at 1024px and capped at 1440px. Container units, not viewport
+            units, so it stays correct whether the sidebar is expanded,
+            collapsed or a drawer. */}
+        <Content
+          style={{
+            padding: isMobile ? token.padding : token.paddingLG,
+            containerType: "inline-size",
+          }}
+        >
+          <div style={{ marginInline: "auto", width: "100%", maxWidth: SHELL.contentMaxWidth }}>
             <ScrollRestoration />
-            <Outlet />
+            <BreadcrumbProvider resolve={resolveBreadcrumbs}>
+              <Outlet />
+            </BreadcrumbProvider>
           </div>
         </Content>
       </Layout>

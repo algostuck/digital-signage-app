@@ -380,3 +380,26 @@ export function matchNavigation(
     openKeys: match.parent ? [match.parent.key] : [],
   };
 }
+
+/**
+ * Breadcrumb trail for a route (docs/design-system/ANTD_REFERENCE_ANALYSIS.md
+ * §3.1): pages under a module show `Module / Page`, top-level pages show
+ * nothing, and detail pages get `Module / Page` with the page linked so the
+ * page can append the entity itself.
+ */
+export function breadcrumbsFor(nodes: NavNode[], pathname: string): { label: string; to?: string }[] {
+  let best: { node: NavNode; parent?: NavNode } | null = null;
+  const walk = (list: NavNode[], parent?: NavNode) => {
+    for (const node of list) {
+      if (node.path && (pathname === node.path || pathname.startsWith(`${node.path}/`))) {
+        if (!best || node.path.length > (best.node.path?.length ?? 0)) best = { node, parent };
+      }
+      if (node.children) walk(node.children, node);
+    }
+  };
+  walk(nodes);
+  if (!best) return [];
+  const match = best as { node: NavNode; parent?: NavNode };
+  if (!match.parent) return [];
+  return [{ label: match.parent.label }, { label: match.node.label, to: match.node.path }];
+}

@@ -31,8 +31,14 @@ export {
 export { statusColor, statusLabel, statusMeta, statusTone, type StatusDomain, type StatusMeta } from "./tokens/status";
 export { BREAKPOINTS, DRAWER, GRID, HEADING, SPACE } from "./tokens/scale";
 
+// patterns
+export { BreadcrumbProvider, useBreadcrumbs, type BreadcrumbResolver, type Crumb } from "./patterns/breadcrumbs";
+
 // components
-export { PageHeader } from "./components/PageHeader";
+export { PageHeader, type PageHeaderProps } from "./components/PageHeader";
+export { PageContainer } from "./components/PageContainer";
+export { ExceptionPage } from "./components/ExceptionPage";
+export { ResponsiveActions, type SecondaryAction } from "./components/ResponsiveActions";
 export { DataTable } from "./components/DataTable";
 export { FilterBar } from "./components/FilterBar";
 export { StatCard } from "./components/StatCard";

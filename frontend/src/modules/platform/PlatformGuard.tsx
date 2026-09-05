@@ -1,5 +1,5 @@
-import { Result } from "antd";
 import type { ReactNode } from "react";
+import { ExceptionPage } from "@/design-system";
 import { useAuth } from "../../lib/auth";
 
 /** Every console page renders through this. The navigation already hides
@@ -8,10 +8,10 @@ export function PlatformGuard({ children }: { children: ReactNode }) {
   const { user } = useAuth();
   if (!user?.is_superuser) {
     return (
-      <Result
-        status="403"
+      <ExceptionPage
+        status={403}
         title="Platform Console unavailable"
-        subTitle="Platform administrator access is required for this area."
+        description="Platform administrator access is required for this area."
       />
     );
   }

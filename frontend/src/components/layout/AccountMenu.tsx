@@ -5,8 +5,9 @@ import {
   SettingOutlined,
   UserOutlined,
 } from "@ant-design/icons";
-import { Avatar, Dropdown, Typography, theme, type MenuProps } from "antd";
+import { Avatar, Button, Dropdown, Flex, Typography, theme, type MenuProps } from "antd";
 import { useNavigate } from "react-router-dom";
+import { SHELL } from "@/design-system";
 import { useAuth } from "../../lib/auth";
 import { useEntitlements } from "../../lib/entitlements";
 
@@ -14,6 +15,8 @@ import { useEntitlements } from "../../lib/entitlements";
  * Sticky account surface at the foot of the sidebar. Identity and plan
  * come from the live session and the entitlements endpoint — nothing here
  * is hard-coded. Destinations are limited to routes that actually exist.
+ * The trigger is an antd text Button so hover, focus and keyboard
+ * behaviour come from the component system, not hand-written CSS.
  */
 export function AccountMenu({ collapsed }: { collapsed: boolean }) {
   const { user, logout, hasPermission } = useAuth();
@@ -31,7 +34,9 @@ export function AccountMenu({ collapsed }: { collapsed: boolean }) {
       key: "identity",
       type: "group",
       label: (
-        <span className="block max-w-56 truncate text-xs">{user?.email ?? "Signed in"}</span>
+        <Typography.Text type="secondary" ellipsis style={{ display: "block", maxWidth: 224, fontSize: token.fontSizeSM }}>
+          {user?.email ?? "Signed in"}
+        </Typography.Text>
       ),
     },
     ...(hasPermission("organization.view")
@@ -67,39 +72,49 @@ export function AccountMenu({ collapsed }: { collapsed: boolean }) {
   const planLabel = entitlements?.plan_name ? `${entitlements.plan_name} plan` : "No plan assigned";
 
   return (
-    <div
-      className="flex h-[55px] shrink-0 items-center px-2"
-      style={{ borderTop: `1px solid ${token.colorBorderSecondary}` }}
+    <Flex
+      align="center"
+      style={{
+        height: SHELL.headerHeight,
+        flexShrink: 0,
+        paddingInline: token.paddingXS,
+        borderTop: `1px solid ${token.colorBorderSecondary}`,
+      }}
     >
       <Dropdown menu={{ items }} trigger={["click"]} placement="topRight" arrow>
-        <button
-          type="button"
+        <Button
+          type="text"
+          block
           aria-label={`Account menu for ${user?.full_name ?? "current user"}`}
-          className={`account-trigger flex w-full cursor-pointer items-center gap-3 border-0 bg-transparent px-2 py-2 text-left ${
-            collapsed ? "justify-center" : ""
-          }`}
-          style={{ borderRadius: token.borderRadius }}
+          style={{
+            height: "auto",
+            paddingBlock: token.paddingXS,
+            paddingInline: token.paddingXS,
+            justifyContent: collapsed ? "center" : "flex-start",
+          }}
         >
-          <Avatar size={collapsed ? 32 : 36} icon={<UserOutlined />} className="shrink-0" />
-          {!collapsed && (
-            <>
-              <span className="min-w-0 flex-1 leading-tight">
-                <Typography.Text strong className="block truncate !text-sm">
-                  {user?.full_name ?? "—"}
-                </Typography.Text>
-                <Typography.Text type="secondary" className="block truncate !text-xs">
-                  {planLabel}
-                </Typography.Text>
-              </span>
-              <DownOutlined
-                className="shrink-0 text-xs"
-                style={{ color: token.colorTextTertiary }}
-                aria-hidden
-              />
-            </>
-          )}
-        </button>
+          <Flex align="center" gap={12} style={{ width: "100%", minWidth: 0 }}>
+            <Avatar size={collapsed ? 32 : 36} icon={<UserOutlined />} style={{ flexShrink: 0 }} />
+            {!collapsed && (
+              <>
+                <Flex vertical style={{ minWidth: 0, flex: 1, lineHeight: 1.2 }} align="flex-start">
+                  <Typography.Text strong ellipsis style={{ display: "block", width: "100%" }}>
+                    {user?.full_name ?? "—"}
+                  </Typography.Text>
+                  <Typography.Text
+                    type="secondary"
+                    ellipsis
+                    style={{ display: "block", width: "100%", fontSize: token.fontSizeSM }}
+                  >
+                    {planLabel}
+                  </Typography.Text>
+                </Flex>
+                <DownOutlined style={{ color: token.colorTextTertiary, fontSize: token.fontSizeSM, flexShrink: 0 }} aria-hidden />
+              </>
+            )}
+          </Flex>
+        </Button>
       </Dropdown>
-    </div>
+    </Flex>
   );
 }

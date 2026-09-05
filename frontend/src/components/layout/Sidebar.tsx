@@ -19,7 +19,7 @@ export function Sidebar({
 }) {
   const { mode } = useThemeMode();
   return (
-    <div className="flex h-full flex-col" style={{ background: SIDEBAR_BG[mode] }}>
+    <div style={{ display: "flex", height: "100%", flexDirection: "column", background: SIDEBAR_BG[mode] }}>
       <SidebarLogo collapsed={collapsed} />
       <MainNavigation collapsed={collapsed} onNavigate={onNavigate} />
       <AccountMenu collapsed={collapsed} />

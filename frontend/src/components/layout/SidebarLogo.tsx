@@ -1,5 +1,6 @@
-import { Typography, theme } from "antd";
+import { Flex, Typography, theme } from "antd";
 import { Link } from "react-router-dom";
+import { SHELL } from "@/design-system";
 
 /** Sticky brand header. Pinned by the sidebar's flex column — it never
  * takes part in the navigation scroll. */
@@ -9,28 +10,45 @@ export function SidebarLogo({ collapsed }: { collapsed: boolean }) {
   return (
     <Link
       to="/dashboard"
-      style={{ borderBottom: `1px solid ${token.colorBorderSecondary}` }}
-      className={`flex h-[55px] shrink-0 items-center gap-3 no-underline ${
-        collapsed ? "justify-center px-2" : "px-4"
-      }`}
+      style={{
+        display: "flex",
+        alignItems: "center",
+        justifyContent: collapsed ? "center" : "flex-start",
+        gap: 12,
+        height: SHELL.headerHeight,
+        flexShrink: 0,
+        paddingInline: collapsed ? token.paddingXS : token.padding,
+        borderBottom: `1px solid ${token.colorBorderSecondary}`,
+        textDecoration: "none",
+      }}
       aria-label="Digital Signage Cloud — go to dashboard"
     >
-      <span
-        className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-sm font-bold text-white"
-        style={{ background: token.colorPrimary }}
+      <Flex
+        align="center"
+        justify="center"
+        style={{
+          width: 36,
+          height: 36,
+          flexShrink: 0,
+          borderRadius: token.borderRadius,
+          background: token.colorPrimary,
+          color: "#FFFFFF",
+          fontWeight: 700,
+          fontSize: token.fontSize,
+        }}
         aria-hidden
       >
         DS
-      </span>
+      </Flex>
       {!collapsed && (
-        <span className="min-w-0 leading-tight">
-          <Typography.Text strong className="block truncate !text-[15px]">
+        <Flex vertical style={{ minWidth: 0, lineHeight: 1.2 }}>
+          <Typography.Text strong ellipsis style={{ display: "block", fontSize: token.fontSizeLG }}>
             Digital Signage
           </Typography.Text>
-          <Typography.Text type="secondary" className="block truncate !text-xs">
+          <Typography.Text type="secondary" ellipsis style={{ display: "block", fontSize: token.fontSizeSM }}>
             Cloud Platform
           </Typography.Text>
-        </span>
+        </Flex>
       )}
     </Link>
   );

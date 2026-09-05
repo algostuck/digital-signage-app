@@ -64,24 +64,6 @@ body {
   background: rgb(255 255 255 / 32%);
 }
 
-/* Account trigger hover/focus, theme-aware. */
-.account-trigger {
-  transition: background-color 0.2s;
-}
-.account-trigger:hover {
-  background: rgb(100 116 139 / 12%);
-}
-:root[data-theme="dark"] .account-trigger:hover {
-  background: rgb(255 255 255 / 10%);
-}
-.account-trigger:focus-visible {
-  outline: 2px solid #1d4ed8;
-  outline-offset: 2px;
-}
-:root[data-theme="dark"] .account-trigger:focus-visible {
-  outline-color: #93c5fd;
-}
-
 /* The selected row and the parent of a selected row both shift to a
  * heavier weight, so the active state is never carried by hue alone
  * (WCAG 2.2 §1.4.1) — the filled pill is reinforcement, not the signal. */

@@ -1,8 +1,9 @@
 import { LockOutlined } from "@ant-design/icons";
-import { Button, Result } from "antd";
+import { Button } from "antd";
 import type { ReactNode } from "react";
 import { Link } from "react-router-dom";
 import { useEntitlements } from "../../lib/entitlements";
+import { ExceptionPage } from "./ExceptionPage";
 
 interface EntitlementGuardProps {
   /** Entitlement key, e.g. "sso", "experiments", "video_wall". */
@@ -19,15 +20,16 @@ export function EntitlementGuard({ feature, featureName, children }: Entitlement
   const { hasFeature, entitlements } = useEntitlements();
   if (hasFeature(feature)) return <>{children}</>;
   return (
-    <Result
+    <ExceptionPage
+      status={403}
       icon={<LockOutlined />}
       title={`${featureName} is not included in your plan`}
-      subTitle={
+      description={
         entitlements?.plan_name
           ? `Your current plan is ${entitlements.plan_name}. Upgrade to unlock this feature.`
           : "Upgrade your plan to unlock this feature."
       }
-      extra={
+      actions={
         <Link to="/settings">
           <Button type="primary">View plans</Button>
         </Link>

@@ -63,7 +63,8 @@ export function GlobalSearch() {
               label: (
                 <Typography.Text
                   type="secondary"
-                  className="!text-xs font-semibold uppercase tracking-wider"
+                  strong
+                  style={{ fontSize: token.fontSizeSM, textTransform: "uppercase", letterSpacing: "0.08em" }}
                 >
                   {module}
                 </Typography.Text>
@@ -76,12 +77,12 @@ export function GlobalSearch() {
                       {row.name}
                     </Typography.Text>
                     {row.subtitle && (
-                      <Typography.Text type="secondary" ellipsis className="!text-xs">
+                      <Typography.Text type="secondary" ellipsis style={{ fontSize: token.fontSizeSM }}>
                         {row.subtitle}
                       </Typography.Text>
                     )}
                     {row.status && (
-                      <span className="ms-auto shrink-0">
+                      <span style={{ marginInlineStart: "auto", flexShrink: 0 }}>
                         <StatusBadge status={row.status} />
                       </span>
                     )}
@@ -95,7 +96,7 @@ export function GlobalSearch() {
     // made the field stretch to the full 64px header height; the native
     // control sizes correctly (40px at size="large").
     <AutoComplete
-      className="w-full max-w-[420px] min-w-[160px]"
+      style={{ width: "100%", maxWidth: 420, minWidth: 160 }}
       value={term}
       options={options}
       open={open && debounced.length >= 2}

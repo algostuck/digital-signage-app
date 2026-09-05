@@ -1,6 +1,7 @@
 import { Skeleton } from "antd";
 import { lazy, Suspense, type ReactNode } from "react";
 import { createBrowserRouter, Navigate } from "react-router-dom";
+import { ExceptionPage } from "@/design-system";
 import { AppLayout } from "../components/layout/AppLayout";
 import { ForgotPasswordPage } from "../modules/auth/ForgotPasswordPage";
 import { LoginPage } from "../modules/auth/LoginPage";
@@ -53,6 +54,7 @@ export const router = createBrowserRouter([
       {
         path: "/",
         element: <AppLayout />,
+        errorElement: <ExceptionPage status={500} />,
         children: [
           { index: true, element: <Navigate to="/dashboard" replace /> },
           { path: "dashboard", element: withSuspense(<DashboardPage />) },
@@ -84,6 +86,7 @@ export const router = createBrowserRouter([
           { path: "platform/plans", element: withSuspense(<PlansPage />) },
           { path: "platform/plan-requests", element: withSuspense(<PlanRequestsPage />) },
           { path: "platform/invoices", element: withSuspense(<InvoicesPage />) },
+          { path: "*", element: <ExceptionPage status={404} /> },
         ],
       },
     ],
