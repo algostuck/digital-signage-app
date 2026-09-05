@@ -1,5 +1,7 @@
 ﻿"""Tenant isolation tests (FR-AUTH-007, ADR-002): mandatory per module."""
 
+import uuid
+
 import pytest
 from sqlalchemy.ext.asyncio import async_sessionmaker
 
@@ -281,3 +283,53 @@ async def test_same_email_in_two_tenants_logs_into_correct_org(client, admin_tok
     a_login = await login(client, "shared@sharedmail.com", "SharedA@123")
     b_login = await login(client, "shared@sharedmail.com", "SharedB@123")
     assert a_login["user"]["organization_id"] != b_login["user"]["organization_id"]
+
+
+async def test_campaign_targets_cannot_reference_another_tenant(client, admin_tokens, org_b):
+    """A campaign in Tenant A must not accept Tenant B's ids as targets —
+    for the replace-set targets call and for variant targets alike."""
+    b_tokens = await login(client, "admin@org-b-corp.com", "BAdmin@12345")
+    resp = await client.post(
+        "/api/v1/locations", headers=bearer(b_tokens), json={"name": "B Store"}
+    )
+    assert resp.status_code == 201, resp.text
+    b_location = resp.json()["data"]["id"]
+
+    resp = await client.post(
+        "/api/v1/campaigns", headers=bearer(admin_tokens), json={"name": "A Campaign"}
+    )
+    campaign_id = resp.json()["data"]["id"]
+
+    resp = await client.post(
+        f"/api/v1/campaigns/{campaign_id}/targets",
+        headers=bearer(admin_tokens),
+        json={"targets": [{"target_type": "location", "target_id": b_location}]},
+    )
+    assert resp.status_code == 404, resp.text
+
+    resp = await client.post(
+        f"/api/v1/campaigns/{campaign_id}/targets",
+        headers=bearer(admin_tokens),
+        json={"targets": [{"target_type": "device", "target_id": str(uuid.uuid4())}]},
+    )
+    assert resp.status_code == 404, resp.text
+
+    # The campaign still has no targets stored.
+    resp = await client.get(
+        f"/api/v1/campaigns/{campaign_id}", headers=bearer(admin_tokens)
+    )
+    assert resp.json()["data"].get("targets", []) == []
+
+    from tests.test_layouts_api import create_layout
+
+    layout = await create_layout(client, admin_tokens, "A Layout")
+    resp = await client.post(
+        f"/api/v1/campaigns/{campaign_id}/variants",
+        headers=bearer(admin_tokens),
+        json={
+            "name": "B-targeted variant",
+            "layout_id": layout["id"],
+            "targets": [{"target_type": "location", "target_id": b_location}],
+        },
+    )
+    assert resp.status_code == 404, resp.text

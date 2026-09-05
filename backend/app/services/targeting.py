@@ -132,3 +132,39 @@ def snapshot_targets(targets: list[CampaignTarget]) -> dict:
             for t in targets
         ]
     }
+
+
+async def validate_targets(
+    db: AsyncSession, organization_id: uuid.UUID, targets: list[dict]
+) -> None:
+    """Every target must name something that exists in *this* tenant.
+
+    Resolution already filters by organization, so a foreign id could never
+    reach another tenant's devices — but accepting it stored a dangling
+    reference that silently targeted nothing. Reject it at the boundary,
+    with the same "not found" the caller would get for any other id.
+    """
+    from app.core.errors import NotFoundError
+    from app.models.location import Tag
+    from app.repositories import devices as devices_repo
+
+    for spec in targets:
+        target_type = spec.get("target_type")
+        target_id = uuid.UUID(str(spec.get("target_id")))
+        if target_type == TargetType.DEVICE.value:
+            model, label = Device, "Device"
+        elif target_type == TargetType.LOCATION.value:
+            model, label = Location, "Location"
+        elif target_type == TargetType.TAG.value:
+            model, label = Tag, "Tag"
+        elif target_type == TargetType.GROUP.value:
+            if await devices_repo.get_group(db, organization_id, target_id) is None:
+                raise NotFoundError(f"Device group {target_id} not found")
+            continue
+        else:
+            continue  # unknown types are rejected by the caller's own check
+        exists = await db.scalar(
+            select(model.id).where(model.organization_id == organization_id, model.id == target_id)
+        )
+        if exists is None:
+            raise NotFoundError(f"{label} {target_id} not found")

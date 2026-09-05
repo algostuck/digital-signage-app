@@ -197,7 +197,7 @@ async def test_entitlement_and_credit_limits(client, admin_tokens, org_b):  # no
             ],
         },
     )
-    assert resp.status_code == 200, resp.text
+    assert resp.status_code == 201, resp.text
     tenants = (
         await client.get("/api/v1/platform/tenants", headers=bearer(platform))
     ).json()["data"]

@@ -50,7 +50,7 @@ async def get_tenant(
     return success(await platform_service.get_tenant(db, tenant_id))
 
 
-@router.post("/tenants")
+@router.post("/tenants", status_code=201)
 async def create_tenant(
     body: TenantCreate, admin: PlatformAdmin, db: AsyncSession = Depends(get_db)
 ) -> dict:
@@ -162,7 +162,7 @@ async def list_plans(_admin: PlatformAdmin, db: AsyncSession = Depends(get_db)) 
     return success([plan_out(plan) for plan in plans])
 
 
-@router.post("/plans")
+@router.post("/plans", status_code=201)
 async def upsert_plan(
     body: PlanUpsert, _admin: PlatformAdmin, db: AsyncSession = Depends(get_db)
 ) -> dict:

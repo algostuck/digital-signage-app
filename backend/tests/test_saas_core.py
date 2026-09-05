@@ -59,7 +59,7 @@ async def test_platform_creates_tenant_with_owner(client, seeded):
             "owner_password": "Owner@12345",
         },
     )
-    assert resp.status_code == 200, resp.text
+    assert resp.status_code == 201, resp.text
     tenant_id = resp.json()["data"]["id"]
 
     # Assign a subscription and read it back.
@@ -292,7 +292,7 @@ async def _tighten_devices_to_current(client, admin_tokens):
             "entitlements": [{"key": "max_devices", "int_value": used}],
         },
     )
-    assert resp.status_code == 200, resp.text
+    assert resp.status_code == 201, resp.text
     resp = await client.patch(
         f"/api/v1/platform/tenants/{tenant_id}/subscription/plan",
         headers=bearer(tokens),

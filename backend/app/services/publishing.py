@@ -99,10 +99,12 @@ async def set_targets(
     if campaign.status == CampaignStatus.ARCHIVED.value:
         raise BusinessRuleError("Restore the campaign before editing targets")
     valid_types = {t.value for t in TargetType}
-    rows = []
     for spec in targets:
         if spec["target_type"] not in valid_types:
             raise BusinessRuleError(f"Unknown target type '{spec['target_type']}'")
+    await targeting.validate_targets(db, organization_id, targets)
+    rows = []
+    for spec in targets:
         rows.append(
             CampaignTarget(
                 campaign_id=campaign.id,
@@ -123,9 +125,7 @@ async def effective_devices(
     db: AsyncSession, organization_id: uuid.UUID, campaign_id: uuid.UUID
 ) -> list[Device]:
     campaign = await get_campaign(db, organization_id, campaign_id)
-    device_ids = await targeting.resolve_effective_devices(
-        db, organization_id, campaign.targets
-    )
+    device_ids = await targeting.resolve_effective_devices(db, organization_id, campaign.targets)
     if not device_ids:
         return []
     result = await db.execute(select(Device).where(Device.id.in_(device_ids)))
@@ -200,9 +200,7 @@ async def publish_campaign(
         if layout is None or layout.current_version_id is None:
             raise BusinessRuleError("The campaign layout must be published first")
 
-    device_ids = await targeting.resolve_effective_devices(
-        db, organization_id, campaign.targets
-    )
+    device_ids = await targeting.resolve_effective_devices(db, organization_id, campaign.targets)
     if not device_ids:
         raise BusinessRuleError("Campaign targets resolve to no active devices")
 
@@ -261,8 +259,7 @@ async def publish_campaign(
         action="CAMPAIGN_PUBLISHED",
         entity_type="campaign",
         entity_id=campaign.id,
-        after={"deployment_id": str(deployment.id), "version": version,
-               "devices": len(device_ids)},
+        after={"deployment_id": str(deployment.id), "version": version, "devices": len(device_ids)},
     )
 
     from app.services import events
@@ -439,7 +436,10 @@ async def retry_deployment(
     from app.services import audit
 
     await audit.record(
-        db, organization_id, action="DEPLOYMENT_RETRIED", entity_type="deployment",
+        db,
+        organization_id,
+        action="DEPLOYMENT_RETRIED",
+        entity_type="deployment",
         entity_id=deployment.id,
     )
     return deployment
@@ -460,7 +460,10 @@ async def cancel_deployment(
     from app.services import audit
 
     await audit.record(
-        db, organization_id, action="DEPLOYMENT_CANCELLED", entity_type="deployment",
+        db,
+        organization_id,
+        action="DEPLOYMENT_CANCELLED",
+        entity_type="deployment",
         entity_id=deployment.id,
     )
     return deployment

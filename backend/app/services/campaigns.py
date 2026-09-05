@@ -93,9 +93,7 @@ async def create_campaign(
 ) -> Campaign:
     from app.services import entitlements as entitlements_service
 
-    await entitlements_service.ensure_subscription_allows(
-        db, organization_id, "campaign_create"
-    )
+    await entitlements_service.ensure_subscription_allows(db, organization_id, "campaign_create")
     await _validate_bindings(db, organization_id, playlist_id=playlist_id, layout_id=layout_id)
     campaign = Campaign(
         organization_id=organization_id,
@@ -175,9 +173,7 @@ MAX_VARIANTS = 20
 
 def _validate_variant_targets(targets: list[dict]) -> list[dict]:
     if not isinstance(targets, list) or not targets:
-        raise ValidationAppError(
-            "A variant needs at least one target", field="targets"
-        )
+        raise ValidationAppError("A variant needs at least one target", field="targets")
     seen = set()
     for target in targets:
         if target.get("target_type") not in VARIANT_TARGET_TYPES:
@@ -215,6 +211,9 @@ async def create_variant(
         )
     await _validate_bindings(db, organization_id, playlist_id=playlist_id, layout_id=layout_id)
     _validate_variant_targets(targets)
+    from app.services import targeting
+
+    await targeting.validate_targets(db, organization_id, targets)
 
     variant = CampaignVariant(
         id=uuid.uuid4(),
@@ -266,9 +265,7 @@ async def resolve_variant_for_device(
 
     matching = []
     for variant in campaign.variants:
-        if await targeting.device_matches_targets(
-            db, organization_id, device_id, variant.targets
-        ):
+        if await targeting.device_matches_targets(db, organization_id, device_id, variant.targets):
             matching.append(variant)
     if not matching:
         return None
@@ -451,9 +448,7 @@ async def delete_schedule(
     await db.flush()
 
 
-async def campaigns_with_schedules(
-    db: AsyncSession, organization_id: uuid.UUID
-) -> list[Campaign]:
+async def campaigns_with_schedules(db: AsyncSession, organization_id: uuid.UUID) -> list[Campaign]:
     result = await db.execute(
         select(Campaign).where(
             Campaign.organization_id == organization_id,
