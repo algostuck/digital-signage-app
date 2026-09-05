@@ -1,9 +1,9 @@
 import { PlaySquareOutlined, PlusOutlined } from "@ant-design/icons";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Alert, Button, Card, Col, Flex, Form, Input, Modal, Row, Typography } from "antd";
+import { Alert, Button, Card, Col, Flex, Form, Input, Modal, Row, Select, Typography } from "antd";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { PageContainer } from "@/design-system";
+import { FilterBar, PageContainer, SearchBar, statusLabel } from "@/design-system";
 import { EmptyState, LoadingState } from "@/design-system";
 import { StatusBadge } from "@/design-system";
 import { api, ApiError } from "../../lib/api";
@@ -17,9 +17,16 @@ export function PlaylistsPage() {
   const navigate = useNavigate();
   const [createOpen, setCreateOpen] = useState(false);
 
+  const [search, setSearch] = useState("");
+  const [statusFilter, setStatusFilter] = useState("");
   const playlistsQuery = useQuery({
-    queryKey: ["playlists"],
-    queryFn: () => api.get<PlaylistSummary[]>("/playlists?page_size=100"),
+    queryKey: ["playlists", search, statusFilter],
+    queryFn: () =>
+      api.get<PlaylistSummary[]>(
+        `/playlists?page_size=100${search ? `&q=${encodeURIComponent(search)}` : ""}${
+          statusFilter ? `&status=${statusFilter}` : ""
+        }`,
+      ),
   });
 
   const playlists = playlistsQuery.data?.data ?? [];
@@ -28,6 +35,28 @@ export function PlaylistsPage() {
     <PageContainer
         title="Playlists"
         description="Ordered sequences of content and layouts, versioned for publishing."
+        filters={
+          <FilterBar
+            search={<SearchBar value={search} onChange={setSearch} placeholder="Search playlists" label="Search playlists" />}
+            activeCount={(search ? 1 : 0) + (statusFilter ? 1 : 0)}
+            onReset={() => {
+              setSearch("");
+              setStatusFilter("");
+            }}
+          >
+            <Select
+              style={{ width: 160 }}
+              value={statusFilter}
+              aria-label="Filter by status"
+              onChange={setStatusFilter}
+              options={[
+                { value: "", label: "All statuses" },
+                { value: "draft", label: statusLabel("draft", "content") },
+                { value: "published", label: statusLabel("published", "content") },
+              ]}
+            />
+          </FilterBar>
+        }
         actions={
           canManage && (
             <Button type="primary" icon={<PlusOutlined />} onClick={() => setCreateOpen(true)}>

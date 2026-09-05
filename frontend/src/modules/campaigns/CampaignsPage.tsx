@@ -19,7 +19,7 @@ import {
 } from "antd";
 import { useState } from "react";
 import { useSearchParams } from "react-router-dom";
-import { PageContainer } from "@/design-system";
+import { FilterBar, PageContainer, SearchBar, statusLabel } from "@/design-system";
 import { EmptyState, LoadingState } from "@/design-system";
 import { StatusBadge } from "@/design-system";
 import { api, ApiError } from "../../lib/api";
@@ -51,12 +51,15 @@ export function CampaignsPage() {
   const [tab, setTab] = useState<"campaigns" | "decisioning" | "experiments">("campaigns");
   const [searchParams] = useSearchParams();
   const [statusFilter, setStatusFilter] = useState(searchParams.get("status") ?? "");
+  const [search, setSearch] = useState(searchParams.get("q") ?? "");
 
   const campaignsQuery = useQuery({
-    queryKey: ["campaigns", statusFilter],
+    queryKey: ["campaigns", statusFilter, search],
     queryFn: () =>
       api.get<CampaignSummary[]>(
-        `/campaigns?page_size=100${statusFilter ? `&status=${statusFilter}` : ""}`,
+        `/campaigns?page_size=100${statusFilter ? `&status=${statusFilter}` : ""}${
+          search ? `&q=${encodeURIComponent(search)}` : ""
+        }`,
       ),
   });
 
@@ -156,27 +159,34 @@ export function CampaignsPage() {
         title="Campaigns"
         description="Plan, target, approve and publish content campaigns."
         actions={
+          tab === "campaigns" &&
+          canManage && (
+            <Button type="primary" icon={<PlusOutlined />} onClick={() => setCreateOpen(true)}>
+              New campaign
+            </Button>
+          )
+        }
+        filters={
           tab === "campaigns" && (
-            <>
+            <FilterBar
+              search={<SearchBar value={search} onChange={setSearch} placeholder="Search campaigns" label="Search campaigns" />}
+              activeCount={(statusFilter ? 1 : 0) + (search ? 1 : 0)}
+              onReset={() => {
+                setStatusFilter("");
+                setSearch("");
+              }}
+            >
               <Select
-                className="w-44"
+                style={{ width: 176 }}
                 value={statusFilter}
                 aria-label="Filter by status"
                 onChange={setStatusFilter}
                 options={[
                   { value: "", label: "All statuses" },
-                  ...CAMPAIGN_STATUSES.map((s) => ({
-                    value: s,
-                    label: s.replace(/_/g, " ").replace(/^\w/, (c) => c.toUpperCase()),
-                  })),
+                  ...CAMPAIGN_STATUSES.map((s) => ({ value: s, label: statusLabel(s, "campaign") })),
                 ]}
               />
-              {canManage && (
-                <Button type="primary" icon={<PlusOutlined />} onClick={() => setCreateOpen(true)}>
-                  New campaign
-                </Button>
-              )}
-            </>
+            </FilterBar>
           )
         }
       >

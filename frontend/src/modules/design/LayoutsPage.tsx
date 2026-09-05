@@ -16,7 +16,7 @@ import {
 } from "antd";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { PageContainer } from "@/design-system";
+import { FilterBar, PageContainer, SearchBar, statusLabel } from "@/design-system";
 import { EmptyState, LoadingState } from "@/design-system";
 import { StatusBadge } from "@/design-system";
 import { api, ApiError } from "../../lib/api";
@@ -55,25 +55,49 @@ function LayoutsTab() {
   const navigate = useNavigate();
   const [createOpen, setCreateOpen] = useState(false);
 
+  const [search, setSearch] = useState("");
+  const [statusFilter, setStatusFilter] = useState("");
   const layoutsQuery = useQuery({
-    queryKey: ["layouts"],
-    queryFn: () => api.get<LayoutSummary[]>("/layouts?page_size=100"),
+    queryKey: ["layouts", search, statusFilter],
+    queryFn: () =>
+      api.get<LayoutSummary[]>(
+        `/layouts?page_size=100${search ? `&q=${encodeURIComponent(search)}` : ""}${
+          statusFilter ? `&status=${statusFilter}` : ""
+        }`,
+      ),
   });
 
   const layouts = layoutsQuery.data?.data ?? [];
 
   return (
-    <div>
-      <Flex justify="space-between" align="center" className="mb-4">
-        <Typography.Text type="secondary">
-          Screen compositions with generic zones.
-        </Typography.Text>
-        {canManage && (
-          <Button type="primary" icon={<PlusOutlined />} onClick={() => setCreateOpen(true)}>
-            New layout
-          </Button>
-        )}
-      </Flex>
+    <Flex vertical gap={16}>
+      <FilterBar
+        search={<SearchBar value={search} onChange={setSearch} placeholder="Search layouts" label="Search layouts" />}
+        activeCount={(search ? 1 : 0) + (statusFilter ? 1 : 0)}
+        onReset={() => {
+          setSearch("");
+          setStatusFilter("");
+        }}
+        extra={
+          canManage && (
+            <Button type="primary" icon={<PlusOutlined />} onClick={() => setCreateOpen(true)}>
+              New layout
+            </Button>
+          )
+        }
+      >
+        <Select
+          style={{ width: 160 }}
+          value={statusFilter}
+          aria-label="Filter by status"
+          onChange={setStatusFilter}
+          options={[
+            { value: "", label: "All statuses" },
+            { value: "draft", label: statusLabel("draft", "content") },
+            { value: "published", label: statusLabel("published", "content") },
+          ]}
+        />
+      </FilterBar>
 
       {layoutsQuery.isLoading ? (
         <LoadingState rows={4} />
@@ -131,7 +155,7 @@ function LayoutsTab() {
           onCreated={(id) => navigate(`/design/${id}`)}
         />
       )}
-    </div>
+    </Flex>
   );
 }
 

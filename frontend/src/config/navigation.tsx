@@ -94,7 +94,7 @@ export const NAVIGATION: NavNode[] = [
     children: [
       {
         key: "/campaigns",
-        label: "Campaigns",
+        label: "All Campaigns",
         path: "/campaigns",
         icon: <RocketOutlined />,
         permission: ["campaigns.view"],

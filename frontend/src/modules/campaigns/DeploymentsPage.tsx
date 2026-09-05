@@ -16,7 +16,7 @@ import {
 import { ToneTag } from "@/design-system";
 import { useState } from "react";
 import { useSearchParams } from "react-router-dom";
-import { PageContainer } from "@/design-system";
+import { FilterBar, PageContainer, statusLabel } from "@/design-system";
 import { EmptyState, LoadingState } from "@/design-system";
 import { StatusBadge } from "@/design-system";
 import { api, ApiError } from "../../lib/api";
@@ -66,20 +66,22 @@ export function DeploymentsPage() {
     <PageContainer
         title="Publishing"
         description="Deployment jobs with per-device delivery status. Players acknowledge after syncing."
-        actions={
-          <Select
-            className="w-44"
-            value={statusFilter}
-            aria-label="Filter by status"
-            onChange={setStatusFilter}
-            options={[
-              { value: "", label: "All statuses" },
-              ...["queued", "publishing", "partial", "published", "failed", "cancelled"].map((s) => ({
-                value: s,
-                label: s.charAt(0).toUpperCase() + s.slice(1),
-              })),
-            ]}
-          />
+        filters={
+          <FilterBar activeCount={statusFilter ? 1 : 0} onReset={() => setStatusFilter("")}>
+            <Select
+              style={{ width: 176 }}
+              value={statusFilter}
+              aria-label="Filter by status"
+              onChange={setStatusFilter}
+              options={[
+                { value: "", label: "All statuses" },
+                ...["queued", "publishing", "partial", "published", "failed", "cancelled"].map((s) => ({
+                  value: s,
+                  label: statusLabel(s, "deployment"),
+                })),
+              ]}
+            />
+          </FilterBar>
         }
       >
 

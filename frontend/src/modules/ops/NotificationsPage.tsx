@@ -1,22 +1,12 @@
 import { CheckOutlined } from "@ant-design/icons";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import {
-  Badge,
-  Button,
-  Card,
-  Checkbox,
-  Flex,
-  Select,
-  Space,
-  Tabs,
-  Typography,
-} from "antd";
+import { Badge, Button, Card, Checkbox, Flex, Select, Tabs, Typography } from "antd";
 import { ToneTag } from "@/design-system";
 import { EntityList } from "@/design-system";
 import { toneOf } from "@/design-system";
 import { useState } from "react";
 import { useSearchParams } from "react-router-dom";
-import { PageContainer } from "@/design-system";
+import { FilterBar, PageContainer } from "@/design-system";
 import { EmptyState, LoadingState } from "@/design-system";
 import { api } from "../../lib/api";
 import { timeAgo } from "../devices/types";
@@ -90,35 +80,37 @@ function InboxTab() {
   const unread = rows.filter((r) => !r.read_at).length;
 
   return (
-    <div>
-      <Flex justify="space-between" align="center" wrap gap="small" className="mb-3">
-        <Space wrap>
-          <Select
-            className="w-40"
-            value={severity}
-            aria-label="Filter by severity"
-            onChange={setSeverity}
-            options={[
-              { value: "", label: "All severities" },
-              { value: "critical", label: "Critical" },
-              { value: "warning", label: "Warning" },
-              { value: "info", label: "Info" },
-            ]}
-          />
-          <Checkbox checked={unreadOnly} onChange={(e) => setUnreadOnly(e.target.checked)}>
-            Unread only
-          </Checkbox>
-        </Space>
-        {unread > 0 && (
-          <Button
-            icon={<CheckOutlined />}
-            loading={markAll.isPending}
-            onClick={() => markAll.mutate()}
-          >
-            Mark all read ({unread})
-          </Button>
-        )}
-      </Flex>
+    <Flex vertical gap={16}>
+      <FilterBar
+        activeCount={(severity ? 1 : 0) + (unreadOnly ? 1 : 0)}
+        onReset={() => {
+          setSeverity("");
+          setUnreadOnly(false);
+        }}
+        extra={
+          unread > 0 && (
+            <Button icon={<CheckOutlined />} loading={markAll.isPending} onClick={() => markAll.mutate()}>
+              Mark all read ({unread})
+            </Button>
+          )
+        }
+      >
+        <Select
+          style={{ width: 160 }}
+          value={severity}
+          aria-label="Filter by severity"
+          onChange={setSeverity}
+          options={[
+            { value: "", label: "All severities" },
+            { value: "critical", label: "Critical" },
+            { value: "warning", label: "Warning" },
+            { value: "info", label: "Info" },
+          ]}
+        />
+        <Checkbox checked={unreadOnly} onChange={(e) => setUnreadOnly(e.target.checked)}>
+          Unread only
+        </Checkbox>
+      </FilterBar>
 
       {inboxQuery.isLoading ? (
         <LoadingState rows={4} />
@@ -165,6 +157,6 @@ function InboxTab() {
           )}
         />
       )}
-    </div>
+    </Flex>
   );
 }
