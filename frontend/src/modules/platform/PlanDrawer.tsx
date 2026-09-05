@@ -1,19 +1,6 @@
 import { useMutation } from "@tanstack/react-query";
-import {
-  Alert,
-  Button,
-  Checkbox,
-  Col,
-  Divider,
-  Drawer,
-  Form,
-  Input,
-  InputNumber,
-  Row,
-  Space,
-  Switch,
-  Typography,
-} from "antd";
+import { Alert, Button, Checkbox, Col, Divider, Form, Input, InputNumber, Row, Space, Switch, Typography } from "antd";
+import { EntityDrawer } from "@/design-system";
 import { useEffect } from "react";
 import { api } from "../../lib/api";
 import { useEntitlementCatalogue, usePlatformFeedback } from "./api";
@@ -105,11 +92,11 @@ export function PlanDrawer({
   });
 
   return (
-    <Drawer
+    <EntityDrawer
       title={editing ? `Edit plan — ${plan.name}` : "New plan"}
       open={open}
       onClose={onClose}
-      size={640}
+      size="wide"
       destroyOnHidden
       footer={
         <Space className="w-full justify-end">
@@ -232,6 +219,6 @@ export function PlanDrawer({
           </Col>
         </Row>
       </Form>
-    </Drawer>
+    </EntityDrawer>
   );
 }

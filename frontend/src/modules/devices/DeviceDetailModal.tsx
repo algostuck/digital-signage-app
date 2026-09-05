@@ -1,19 +1,8 @@
 import { DesktopOutlined, SendOutlined } from "@ant-design/icons";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import {
-  Alert,
-  Button,
-  Descriptions,
-  Drawer,
-  Flex,
-  Image,
-  Popconfirm,
-  Select,
-  Space,
-  Timeline,
-  Typography,
-} from "antd";
+import { Alert, Button, Descriptions, Flex, Image, Popconfirm, Select, Space, Timeline, Typography } from "antd";
 import { ToneTag } from "@/design-system";
+import { EntityDrawer } from "@/design-system";
 import { EntityList } from "@/design-system";
 import { toneOf } from "@/design-system";
 import { useState } from "react";
@@ -126,9 +115,9 @@ export function DeviceDetailModal({ deviceId, onClose, onChanged }: Props) {
   const device = deviceQuery.data?.data ?? null;
   if (!device) {
     return (
-      <Drawer title="Device details" open onClose={onClose} size={640} placement="right">
+      <EntityDrawer title="Device details" open onClose={onClose} size="wide">
         <LoadingState rows={8} />
-      </Drawer>
+      </EntityDrawer>
     );
   }
 
@@ -137,12 +126,12 @@ export function DeviceDetailModal({ deviceId, onClose, onChanged }: Props) {
   const commands = commandsQuery.data?.data ?? [];
 
   return (
-    <Drawer
+    <EntityDrawer
       title={device.name}
       open
       onClose={onClose}
-      width={640}
-      placement="right"
+      size="wide"
+      status={<StatusBadge domain="device" status={device.status} />}
       extra={
         <Button icon={<DesktopOutlined />} onClick={() => setPreviewOpen(true)}>
           TV preview
@@ -373,6 +362,6 @@ export function DeviceDetailModal({ deviceId, onClose, onChanged }: Props) {
         open={previewOpen}
         onClose={() => setPreviewOpen(false)}
       />
-    </Drawer>
+    </EntityDrawer>
   );
 }

@@ -1,5 +1,5 @@
 import { Pie } from "@ant-design/plots";
-import { Typography } from "antd";
+import { Button, Typography } from "antd";
 import { useMemo, useRef } from "react";
 import { useChartTheme } from "./theme";
 import { ChartHost } from "./ChartHost";
@@ -103,14 +103,15 @@ export function Donut({
           return (
             <li key={s.key} className="py-1">
               {onSelect ? (
-                <button
-                  type="button"
+                <Button
+                  type="text"
+                  block
                   onClick={() => onSelect(s.key)}
-                  className="flex w-full items-center gap-2 rounded px-1 text-left hover:bg-[rgba(29,78,216,0.08)]"
+                  style={{ height: "auto", paddingInline: 4, paddingBlock: 2, justifyContent: "flex-start" }}
                   aria-label={`${s.label}: ${s.value}, ${pctValue} percent. Show these`}
                 >
                   {row}
-                </button>
+                </Button>
               ) : (
                 <div className="flex items-center gap-2 px-1">{row}</div>
               )}

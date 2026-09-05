@@ -1,23 +1,8 @@
-import {
-  DownloadOutlined,
-  InboxOutlined,
-  RedoOutlined,
-  SendOutlined,
-  UploadOutlined,
-} from "@ant-design/icons";
+import { DownloadOutlined, InboxOutlined, RedoOutlined, SendOutlined, UploadOutlined } from "@ant-design/icons";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import {
-  Alert,
-  Button,
-  Descriptions,
-  Drawer,
-  Flex,
-  Image,
-  Popconfirm,
-  Space,
-  Typography,
-} from "antd";
+import { Alert, Button, Descriptions, Flex, Image, Popconfirm, Space, Typography } from "antd";
 import { ToneTag } from "@/design-system";
+import { EntityDrawer } from "@/design-system";
 import { EntityList } from "@/design-system";
 import { useState } from "react";
 import { LoadingState } from "@/design-system";
@@ -76,21 +61,21 @@ export function AssetDetailModal({ assetId, onClose, onChanged }: Props) {
   const asset = assetQuery.data?.data ?? null;
   if (!asset) {
     return (
-      <Drawer title="Content details" open onClose={onClose} size={600} placement="right">
+      <EntityDrawer title="Content details" open onClose={onClose} size="wide">
         <LoadingState rows={6} />
-      </Drawer>
+      </EntityDrawer>
     );
   }
 
   const version = asset.current_version;
 
   return (
-    <Drawer
+    <EntityDrawer
       title={asset.name}
       open
       onClose={onClose}
-      width={600}
-      placement="right"
+      size="wide"
+      status={<StatusBadge domain="content" status={asset.status} />}
       footer={
         <Flex wrap justify="flex-end" gap="small">
           <Button icon={<DownloadOutlined />} onClick={download}>
@@ -208,6 +193,6 @@ export function AssetDetailModal({ assetId, onClose, onChanged }: Props) {
           onUploaded={refresh}
         />
       )}
-    </Drawer>
+    </EntityDrawer>
   );
 }

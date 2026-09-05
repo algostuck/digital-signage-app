@@ -1,21 +1,8 @@
 import { PlusOutlined } from "@ant-design/icons";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import {
-  Alert,
-  Button,
-  Card,
-  Checkbox,
-  Col,
-  Drawer,
-  Flex,
-  Form,
-  Input,
-  Row,
-  Space,
-  Tooltip,
-  Typography,
-} from "antd";
+import { Alert, Button, Card, Checkbox, Col, Flex, Form, Input, Row, Space, Tooltip, Typography } from "antd";
 import { ToneTag } from "@/design-system";
+import { EntityDrawer } from "@/design-system";
 import { useMemo, useState } from "react";
 import { ErrorState, LoadingState } from "@/design-system";
 import { api, ApiError } from "../../lib/api";
@@ -163,10 +150,10 @@ function RoleDrawer({
   }
 
   return (
-    <Drawer
+    <EntityDrawer
       title={role ? `Edit role: ${role.name}` : "Add role"}
       open
-      size={600}
+      size="wide"
       onClose={onClose}
       footer={
         <Flex justify="flex-end" gap="small">
@@ -225,6 +212,6 @@ function RoleDrawer({
         </Form.Item>
         {error && <Alert type="error" message={error} showIcon role="alert" />}
       </Form>
-    </Drawer>
+    </EntityDrawer>
   );
 }

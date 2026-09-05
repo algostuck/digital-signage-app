@@ -1,23 +1,8 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import {
-  Alert,
-  Button,
-  Checkbox,
-  Descriptions,
-  Divider,
-  Drawer,
-  Flex,
-  Input,
-  InputNumber,
-  Popconfirm,
-  Select,
-  Space,
-  Steps,
-  Tag,
-  Typography,
-} from "antd";
+import { Alert, Button, Checkbox, Descriptions, Divider, Flex, Input, InputNumber, Popconfirm, Select, Space, Steps, Tag, Typography } from "antd";
 import { useState } from "react";
 import { LoadingState } from "@/design-system";
+import { EntityDrawer } from "@/design-system";
 import { StatusBadge } from "@/design-system";
 import { api, ApiError } from "../../lib/api";
 import { useAuth } from "../../lib/auth";
@@ -172,9 +157,9 @@ export function CampaignDetailModal({ campaignId, onClose, onChanged }: Props) {
   const campaign = campaignQuery.data?.data ?? null;
   if (!campaign) {
     return (
-      <Drawer title="Campaign" open onClose={onClose} size={640} placement="right">
+      <EntityDrawer title="Campaign" open onClose={onClose} size="wide">
         <LoadingState rows={6} />
-      </Drawer>
+      </EntityDrawer>
     );
   }
 
@@ -239,13 +224,12 @@ export function CampaignDetailModal({ campaignId, onClose, onChanged }: Props) {
   const effectiveCount = effectiveQuery.data?.data?.length ?? 0;
 
   return (
-    <Drawer
+    <EntityDrawer
       title={campaign.name}
       open
       onClose={onClose}
-      width={640}
-      placement="right"
-      extra={<StatusBadge status={status} />}
+      size="wide"
+      status={<StatusBadge domain="campaign" status={status} />}
       footer={
         <Flex justify="flex-end" wrap gap="small">
           {canManage && status === "draft" && (
@@ -517,6 +501,6 @@ export function CampaignDetailModal({ campaignId, onClose, onChanged }: Props) {
 
         {error && <Alert type="error" message={error} showIcon role="alert" />}
       </Space>
-    </Drawer>
+    </EntityDrawer>
   );
 }

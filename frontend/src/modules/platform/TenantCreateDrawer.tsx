@@ -1,5 +1,6 @@
 import { useMutation } from "@tanstack/react-query";
-import { Alert, Button, Divider, Drawer, Form, Input, InputNumber, Select, Space } from "antd";
+import { Alert, Button, Divider, Form, Input, InputNumber, Select, Space } from "antd";
+import { EntityDrawer } from "@/design-system";
 import { useNavigate } from "react-router-dom";
 import { api } from "../../lib/api";
 import { timezoneOptions, usePlans, usePlatformFeedback } from "./api";
@@ -64,11 +65,10 @@ export function TenantCreateDrawer({ open, onClose }: { open: boolean; onClose()
   });
 
   return (
-    <Drawer
+    <EntityDrawer
       title="New tenant"
       open={open}
       onClose={onClose}
-      size={520}
       destroyOnHidden
       footer={
         <Space className="w-full justify-end">
@@ -183,6 +183,6 @@ export function TenantCreateDrawer({ open, onClose }: { open: boolean; onClose()
           }
         </Form.Item>
       </Form>
-    </Drawer>
+    </EntityDrawer>
   );
 }

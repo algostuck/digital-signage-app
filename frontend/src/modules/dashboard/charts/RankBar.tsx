@@ -1,4 +1,4 @@
-import { Progress, Typography } from "antd";
+import { Button, Progress, Typography } from "antd";
 import type { ReactNode } from "react";
 
 export interface RankRow {
@@ -53,13 +53,14 @@ export function RankBar({ rows, max, ariaLabel }: { rows: RankRow[]; max?: numbe
         return (
           <li key={row.key} className="py-1.5">
             {row.onClick ? (
-              <button
-                type="button"
+              <Button
+                type="text"
+                block
                 onClick={row.onClick}
-                className="block w-full rounded px-1 text-left hover:bg-[rgba(29,78,216,0.08)]"
+                style={{ height: "auto", display: "block", paddingInline: 4, paddingBlock: 4, textAlign: "left" }}
               >
                 {inner}
-              </button>
+              </Button>
             ) : (
               <div className="px-1">{inner}</div>
             )}
